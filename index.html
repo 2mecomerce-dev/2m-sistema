@@ -572,6 +572,81 @@
     *{animation:none !important; transition:none !important;}
   }
 
+  /* ---------- Rotina & Melhoria Contínua ---------- */
+  .badge{display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; white-space:nowrap;}
+  .badge-good{background:var(--accent-soft); color:var(--accent-d);}
+  .badge-warning{background:var(--amber-soft); color:var(--amber);}
+  .badge-critical{background:#FBEAEA; color:var(--danger);}
+  .badge-neutral{background:var(--surface-2); color:var(--muted);}
+
+  .kpi-ic.danger{background:#FBEAEA; color:var(--danger);}
+  .kpi-ic.good{background:var(--accent-soft); color:var(--accent-d);}
+  .kpi-ic.neutral{background:var(--surface-2); color:var(--muted);}
+
+  .progress-track{height:8px; border-radius:999px; background:var(--surface-2); overflow:hidden;}
+  .progress-fill{height:100%; border-radius:999px; transition:width .35s ease;}
+
+  .rt-cb{width:19px; height:19px; border-radius:6px; accent-color:var(--accent); cursor:pointer; flex-shrink:0;}
+  .rt-cat-head{display:flex; align-items:center; gap:12px; padding:14px 18px; border-bottom:1px solid var(--border);}
+  .rt-cat-ic{width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;}
+  .rt-cat-name{font-weight:700; font-size:14px;}
+  .rt-cat-progress{flex:1; min-width:100px;}
+  .rt-cat-count{font-size:11.5px; color:var(--muted); font-weight:600; white-space:nowrap;}
+  .rt-cat-body{padding:4px 18px 14px;}
+  .rt-item-row{display:flex; align-items:center; gap:11px; padding:9px 0; border-top:1px dashed var(--border); font-size:13px;}
+  .rt-item-row:first-child{border-top:none;}
+  .rt-item-row .done-text{text-decoration:line-through; color:var(--faint);}
+  .rt-add-row{display:flex; gap:8px; margin-top:10px;}
+
+  .rt-kanban{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
+  @media (max-width:1040px){ .rt-kanban{grid-template-columns:1fr;} }
+  .rt-kcol{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-lg); padding:12px; min-height:80px;}
+  .rt-kcol-head{display:flex; align-items:center; justify-content:space-between; padding:4px 6px 12px;}
+  .rt-kcol-title{font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.6px;}
+  .rt-kcol-count{background:var(--border); border-radius:999px; padding:2px 9px; font-size:11.5px; font-weight:700; color:var(--muted);}
+  .rt-tcard{background:var(--surface); border:1px solid var(--border); border-radius:var(--r-md); padding:12px; margin-bottom:10px; box-shadow:var(--sh-sm);}
+  .rt-tcard-title{font-weight:700; font-size:13.5px; margin-bottom:8px;}
+  .rt-tcard-meta{display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-bottom:9px;}
+  .rt-tcard-foot{display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .rt-tcard-foot select{font-size:12px; padding:6px 8px; width:auto;}
+
+  .rt-acct-card{border:1px solid var(--border); border-radius:var(--r-md); padding:14px 16px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;}
+  .rt-acct-name{font-weight:700; font-size:14px; margin-bottom:4px;}
+  .rt-days-row{display:flex; gap:7px; flex-wrap:wrap; margin-left:auto;}
+  .rt-day-chip{display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer;}
+  .rt-day-chip input{display:none;}
+  .rt-day-chip .dcircle{width:26px; height:26px; border-radius:50%; border:2px solid var(--border-strong); display:flex; align-items:center; justify-content:center; font-size:11.5px; color:var(--faint); transition:background .15s,border-color .15s,color .15s;}
+  .rt-day-chip input:checked + .dcircle{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .rt-day-chip .dlabel{font-size:10px; color:var(--faint); font-weight:600;}
+
+  .rt-timeline-item{padding:12px 0; border-top:1px dashed var(--border);}
+  .rt-timeline-item:first-child{border-top:none; padding-top:0;}
+  .rt-timeline-date{font-size:11px; color:var(--faint); font-weight:700; margin-bottom:4px;}
+  .rt-timeline-row{font-size:13px; margin-top:2px;}
+
+  .rt-info-banner{display:flex; gap:12px; align-items:flex-start; background:var(--accent-soft); border:1px solid rgba(14,159,133,.25);
+    border-radius:var(--r-md); padding:14px 16px; font-size:13px; color:var(--ink); margin-bottom:20px;}
+  .rt-legend-row{display:flex; gap:14px; flex-wrap:wrap; margin-top:8px;}
+  .rt-legend-chip{display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--muted);}
+  .rt-dot{width:9px; height:9px; border-radius:50%; display:inline-block;}
+  .rt-dot-good{background:var(--accent);} .rt-dot-warning{background:var(--amber);} .rt-dot-critical{background:var(--danger);}
+
+  .rt-store-tabs{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:16px;}
+
+  .rt-stats-row{display:grid; grid-template-columns:repeat(5,1fr); gap:16px; margin-bottom:20px;}
+  @media (max-width:1040px){ .rt-stats-row{grid-template-columns:repeat(2,1fr);} }
+  .rt-cat-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:16px;}
+  @media (max-width:1040px){ .rt-cat-grid{grid-template-columns:1fr;} }
+  .rt-label{font-size:12px; color:var(--muted); font-weight:600; display:flex; flex-direction:column; gap:5px;}
+  .rt-input, .rt-select{
+    font-family:inherit; font-size:13.5px; padding:9px 12px;
+    border:1px solid var(--border-strong); border-radius:var(--r-sm); background:var(--surface-2); color:var(--ink); width:100%;
+  }
+  .rt-input:focus, .rt-select:focus{outline:none; border-color:var(--accent); background:#fff;}
+  .rt-form-row{display:grid; gap:12px; align-items:end; margin-top:14px;}
+  @media (max-width:880px){ .rt-form-row{grid-template-columns:1fr !important;} }
+  .rt-link-danger{background:none; border:none; color:var(--danger); font-size:12px; font-weight:600; cursor:pointer; padding:5px 4px;}
+
   /* ---------- Auth ---------- */
   .app.hidden{display:none;}
   .auth-screen{
@@ -646,6 +721,10 @@
       <div class="nav-item" data-view="fornecedor" data-title="Pagamento ao Fornecedor" data-eyebrow="Financeiro">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         Fornecedor
+      </div>
+      <div class="nav-item" data-view="rotina" data-title="Rotina & Melhoria Contínua" data-eyebrow="Operações">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Rotina
       </div>
       <div class="nav-item soon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
@@ -939,6 +1018,21 @@
             </table>
           </div>
         </div>
+      </section>
+
+      <!-- ===== VIEW: ROTINA & MELHORIA CONTÍNUA ===== -->
+      <section class="view" id="view-rotina">
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-body" style="padding:16px 20px;">
+            <div class="period-tabs" id="rtSubtabs">
+              <button class="ptab active" data-subtab="overview">🏠 Visão Geral</button>
+              <button class="ptab" data-subtab="routine">✅ Rotina Semanal</button>
+              <button class="ptab" data-subtab="tasks">🗂️ Tarefas Pontuais</button>
+              <button class="ptab" data-subtab="marketing">📈 Marketing & TikTok</button>
+            </div>
+          </div>
+        </div>
+        <div id="rtContent"></div>
       </section>
 
       <!-- ===== VIEW: CONFIGURAÇÕES ===== -->
@@ -2363,6 +2457,7 @@ document.querySelectorAll('.nav-item[data-view]').forEach(item => {
     window.scrollTo({top:0, behavior:'smooth'});
     if(v === 'fornecedor') refreshFornecedorView();
     if(v === 'produtos') renderAliasTable();
+    if(v === 'rotina') rtInit();
   });
 });
 
@@ -2371,6 +2466,749 @@ const appEl = document.getElementById('app');
 const scrim = document.getElementById('scrim');
 menuBtn.addEventListener('click', ()=> appEl.classList.toggle('nav-open'));
 scrim.addEventListener('click', ()=> appEl.classList.remove('nav-open'));
+
+/* ═══════════════════════════════════════════════════════
+   ROTINA & MELHORIA CONTÍNUA
+   ═══════════════════════════════════════════════════════ */
+
+const rtCategoryStyles = [
+  { color:'#2a78d6', icon:'📦' },
+  { color:'#eb6834', icon:'💬' },
+  { color:'#1baf7a', icon:'💰' },
+  { color:'#eda100', icon:'🛒' },
+  { color:'#e87ba4', icon:'📊' },
+  { color:'#0E9F85', icon:'📣' },
+  { color:'#4a3aa7', icon:'🔄' },
+];
+
+function rtDefaultCategories(){
+  const raw = [
+    { name:"Estoque & Operações", items:[
+      "Conferir produtos com estoque baixo ou zerado",
+      "Verificar pedidos pendentes de envio/expedição",
+      "Checar prazos de entrega em atraso",
+      "Confirmar reposição com fornecedores",
+    ]},
+    { name:"Atendimento ao Cliente", items:[
+      "Responder mensagens e comentários pendentes",
+      "Verificar reclamações e avaliações negativas recentes",
+      "Revisar tempo médio de resposta ao cliente",
+      "Verificar solicitações de troca/devolução em aberto",
+    ]},
+    { name:"Financeiro", items:[
+      "Conferir fluxo de caixa da semana",
+      "Conciliar vendas recebidas com repasses das plataformas",
+      "Revisar custo de frete médio",
+      "Revisar margem de contribuição dos produtos mais vendidos",
+    ]},
+    { name:"Vendas & Catálogo", items:[
+      "Revisar produtos mais vendidos e menos vendidos da semana",
+      "Atualizar fotos, descrições ou preços de produtos",
+      "Verificar se há produtos sem estoque ainda anunciados",
+      "Avaliar oportunidades de novos produtos/fornecedores",
+    ]},
+    { name:"Análise de Dados", items:[
+      "Revisar taxa de conversão da semana",
+      "Revisar ticket médio",
+      "Revisar taxa de abandono de carrinho",
+      "Comparar desempenho com a semana anterior",
+    ]},
+    { name:"Marketing (resumo operacional)", items:[
+      "Revisar ROAS e CPA das campanhas ativas",
+      "Pausar ou ajustar anúncios abaixo da meta",
+      "Planejar pautas de conteúdo/postagens da semana",
+      "Revisar concorrência (preços, promoções, novidades)",
+    ]},
+    { name:"Melhoria Contínua", items:[
+      "Reunião semanal de revisão dos indicadores",
+      "Definir de 1 a 3 ações de melhoria prioritárias",
+      "Revisar se ações da semana anterior foram implementadas",
+    ]},
+  ];
+  return raw.map((c, ci) => ({ ...c, items: c.items.map((text,i) => ({ id:`r-${ci}-${i}`, text, done:false })) }));
+}
+
+function rtDefaultState(){
+  return {
+    targets: { roas: 15, cpa: 10, tiktokPerAccount: 3 },
+    routine: { categories: rtDefaultCategories() },
+    tasks: [{ id:'t1', title:'Negociar novo prazo com fornecedor X', category:'Operacional', priority:'Alta', due:'', status:'A Fazer' }],
+    stores: ['2MCalçados','2MPerformance','2Mshoes','Fastshoes'],
+    marketing: { entries: [], weekOrder: [] },
+    tiktok: {
+      accounts: ['Conta 1','Conta 2','Conta 3'],
+      days: ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'],
+      week: { 'Conta 1':[false,false,false,false,false,false,false], 'Conta 2':[false,false,false,false,false,false,false], 'Conta 3':[false,false,false,false,false,false,false] },
+      boosts: []
+    },
+    improvementLog: []
+  };
+}
+
+let rtState = rtDefaultState();
+let rtActiveSubtab = 'overview';
+let rtMarketingStoreFilter = 'Todas';
+let rtInitialized = false;
+let rtSaveTimer = null;
+
+function rtHexToRgba(hex, a){
+  const v = hex.replace('#','');
+  const r = parseInt(v.substring(0,2),16), g = parseInt(v.substring(2,4),16), b = parseInt(v.substring(4,6),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+function rtStatusBadge(kind, label){
+  const map = { good:{cls:'badge-good',icon:'✓'}, warning:{cls:'badge-warning',icon:'!'}, critical:{cls:'badge-critical',icon:'✕'}, neutral:{cls:'badge-neutral',icon:'–'} };
+  const m = map[kind];
+  return `<span class="badge ${m.cls}">${m.icon} ${label}</span>`;
+}
+function rtProgressBar(pct, color){
+  return `<div class="progress-track"><div class="progress-fill" style="width:${Math.min(100,pct)}%; background:${color};"></div></div>`;
+}
+function rtKpiIcClass(kind){
+  return kind==='good' ? 'good' : kind==='warning' ? 'amber' : kind==='critical' ? 'danger' : 'neutral';
+}
+function rtStatCard({icon, label, value, sub, kind}){
+  return `
+  <div class="kpi">
+    <div class="kpi-top"><span class="kpi-ic ${rtKpiIcClass(kind.k)}">${icon}</span><span class="kpi-label">${label}</span></div>
+    <div class="kpi-num mono">${value}</div>
+    <div style="margin:4px 0 2px;">${rtStatusBadge(kind.k, kind.label)}</div>
+    ${sub ? `<div class="kpi-foot">${sub}</div>` : ''}
+  </div>`;
+}
+
+/* ---------- computed ---------- */
+function rtEnsureWeekOrder(label){
+  if(!rtState.marketing.weekOrder.includes(label)) rtState.marketing.weekOrder.push(label);
+}
+function rtEntriesForLabel(label){
+  return rtState.marketing.entries.filter(e=>e.label===label);
+}
+function rtConsolidatedWeeks(){
+  return rtState.marketing.weekOrder.map(label=>{
+    const es = rtEntriesForLabel(label);
+    const invest = es.reduce((s,e)=>s+e.invest,0);
+    const revenue = es.reduce((s,e)=>s+e.revenue,0);
+    const orders = es.reduce((s,e)=>s+e.orders,0);
+    return { label, invest, revenue, orders, roas: invest ? revenue/invest : 0, cpa: orders ? invest/orders : 0, storesReported: es.length };
+  }).filter(w=>w.storesReported>0);
+}
+function rtStoreWeeks(store){
+  return rtState.marketing.entries.filter(e=>e.store===store);
+}
+function rtLatestWeekBreakdown(){
+  if(rtState.marketing.weekOrder.length===0) return { label:null, rows:[] };
+  const label = rtState.marketing.weekOrder[rtState.marketing.weekOrder.length-1];
+  const rows = rtState.stores.map(store => ({ store, entry: rtState.marketing.entries.find(e=>e.store===store && e.label===label) || null }));
+  return { label, rows };
+}
+function rtComputeLastWeekMarketing(){
+  const cw = rtConsolidatedWeeks();
+  return cw.length ? cw[cw.length-1] : null;
+}
+function rtComputeRoutineCompletion(){
+  const items = rtState.routine.categories.flatMap(c=>c.items);
+  const done = items.filter(i=>i.done).length;
+  return { done, total: items.length, pct: items.length? Math.round(done/items.length*100):0 };
+}
+function rtComputeTasksCompletion(){
+  const total = rtState.tasks.length;
+  const done = rtState.tasks.filter(t=>t.status==='Concluído').length;
+  return { done, total, pct: total? Math.round(done/total*100):0 };
+}
+function rtComputeTiktokWeekTotal(){
+  let total = 0;
+  Object.values(rtState.tiktok.week).forEach(arr => total += arr.filter(Boolean).length);
+  return total;
+}
+function rtGetWeekBounds(){
+  const d = new Date();
+  const start = new Date(d); start.setHours(0,0,0,0); start.setDate(d.getDate() - ((d.getDay()+6)%7));
+  const end = new Date(start); end.setDate(start.getDate()+6); end.setHours(23,59,59,999);
+  return { start, end };
+}
+function rtComputeBoostWeekTotal(){
+  const { start, end } = rtGetWeekBounds();
+  return rtState.tiktok.boosts.filter(b => { const bd = new Date(b.date+'T12:00:00'); return bd>=start && bd<=end; }).reduce((s,b)=>s+b.amount,0);
+}
+function rtComputeBoostAllTimeTotal(){
+  return rtState.tiktok.boosts.reduce((s,b)=>s+b.amount,0);
+}
+
+/* ---------- overview ---------- */
+function rtRenderOverview(){
+  const lastW = rtComputeLastWeekMarketing();
+  const roas = lastW ? lastW.roas : null;
+  const cpa = lastW ? lastW.cpa : null;
+  const routineC = rtComputeRoutineCompletion();
+  const tasksC = rtComputeTasksCompletion();
+  const tiktokTotal = rtComputeTiktokWeekTotal();
+  const tiktokTarget = rtState.targets.tiktokPerAccount * rtState.tiktok.accounts.length;
+
+  const roasKind = roas==null ? {k:'neutral', label:'sem dados'} : (roas>=rtState.targets.roas ? {k:'good', label:'meta atingida'} : {k:'critical', label:'abaixo da meta'});
+  const cpaKind = cpa==null ? {k:'neutral', label:'sem dados'} : (cpa < rtState.targets.cpa ? {k:'good', label:'dentro da meta'} : {k:'critical', label:'acima da meta'});
+  const tiktokKind = tiktokTotal>=tiktokTarget ? {k:'good', label:'meta batida'} : (tiktokTotal>=tiktokTarget*0.5 ? {k:'warning', label:'em andamento'} : {k:'critical', label:'atenção'});
+  const routineKind = routineC.pct===100 ? {k:'good', label:'semana completa'} : (routineC.pct>=50 ? {k:'warning', label:'em andamento'} : {k:'critical', label:'atrasada'});
+  const tasksKind = tasksC.pct===100 && tasksC.total>0 ? {k:'good', label:'tudo em dia'} : {k:'neutral', label:'acompanhando'};
+
+  return `
+  <div class="rt-info-banner">
+    <span>💡</span>
+    <div>
+      Este painel usa <b>cores para indicar status</b> em toda a rotina — assim você identifica rapidamente o que precisa de atenção sem ler número por número.
+      <div class="rt-legend-row">
+        <span class="rt-legend-chip"><span class="rt-dot rt-dot-good"></span> Meta atingida</span>
+        <span class="rt-legend-chip"><span class="rt-dot rt-dot-warning"></span> Em andamento / atenção</span>
+        <span class="rt-legend-chip"><span class="rt-dot rt-dot-critical"></span> Abaixo da meta / atrasado</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="rt-stats-row">
+    ${rtStatCard({icon:'💹', label:'ROAS atual', value: roas? roas.toFixed(1)+'x' : '—', sub:'Meta: 15x', kind: roasKind})}
+    ${rtStatCard({icon:'💸', label:'Custo por pedido', value: cpa? fmtBRL(cpa) : '—', sub:'Meta: menor que R$10', kind: cpaKind})}
+    ${rtStatCard({icon:'🎵', label:'Posts TikTok (semana)', value: `${tiktokTotal}/${tiktokTarget}`, sub:'3 contas × 3 posts', kind: tiktokKind})}
+    ${rtStatCard({icon:'✅', label:'Rotina semanal', value: `${routineC.pct}%`, sub:`${routineC.done}/${routineC.total} itens feitos`, kind: routineKind})}
+    ${rtStatCard({icon:'🗂️', label:'Tarefas pontuais', value: `${tasksC.pct}%`, sub:`${tasksC.done}/${tasksC.total} concluídas`, kind: tasksKind})}
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <div class="card-title">🔄 Melhoria contínua da semana</div>
+        <div class="card-desc">Registre o que foi identificado, a ação tomada e o resultado observado. Com o tempo isso vira seu histórico de melhoria contínua.</div>
+      </div>
+      <span class="badge badge-neutral">ciclo PDCA</span>
+    </div>
+    <div class="card-body">
+      <form id="rtImprovementForm" class="rt-form-row" style="grid-template-columns:1fr 1fr 1fr auto; margin-top:0;">
+        <label class="rt-label">O que foi identificado?<input type="text" id="rtImpProblem" class="rt-input" placeholder="Ex: taxa de abandono subiu" required></label>
+        <label class="rt-label">Qual ação foi tomada?<input type="text" id="rtImpAction" class="rt-input" placeholder="Ex: simplificar checkout" required></label>
+        <label class="rt-label">Resultado observado (opcional)<input type="text" id="rtImpResult" class="rt-input" placeholder="Ex: caiu 8%"></label>
+        <button type="submit" class="btn btn-accent">Registrar</button>
+      </form>
+      <div id="rtImprovementLog" style="margin-top:18px;"></div>
+    </div>
+  </div>`;
+}
+
+function rtAttachOverviewHandlers(){
+  document.getElementById('rtImprovementForm').addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const problem = document.getElementById('rtImpProblem').value.trim();
+    const action = document.getElementById('rtImpAction').value.trim();
+    const result = document.getElementById('rtImpResult').value.trim();
+    if(!problem || !action) return;
+    rtState.improvementLog.unshift({ date: new Date().toLocaleDateString('pt-BR'), problem, action, result });
+    rtSave();
+    rtRenderActive();
+  });
+  const log = document.getElementById('rtImprovementLog');
+  if(rtState.improvementLog.length===0){
+    log.innerHTML = `<div class="empty-hint">Nenhuma entrada registrada ainda. Comece pela primeira reunião semanal de revisão!</div>`;
+  }else{
+    log.innerHTML = rtState.improvementLog.map(e => `
+      <div class="rt-timeline-item">
+        <div class="rt-timeline-date">${e.date}</div>
+        <div class="rt-timeline-row"><b>Identificado:</b> ${e.problem}</div>
+        <div class="rt-timeline-row"><b>Ação:</b> ${e.action}</div>
+        ${e.result ? `<div class="rt-timeline-row"><b>Resultado:</b> ${e.result}</div>` : ''}
+      </div>`).join('');
+  }
+}
+
+/* ---------- rotina semanal ---------- */
+function rtRenderRoutine(){
+  const c = rtComputeRoutineCompletion();
+  const color = c.pct===100 ? 'var(--accent)' : c.pct>=50 ? 'var(--amber)' : 'var(--danger)';
+  return `
+  <div class="card" style="padding:18px 20px; margin-bottom:20px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+      <div style="flex:1; min-width:220px;">
+        <div style="font-size:12.5px; color:var(--muted); font-weight:600;">Progresso da semana</div>
+        <div style="font-size:20px; font-weight:700; margin:4px 0 8px;">${c.pct}% concluído <span style="font-size:13px; color:var(--muted); font-weight:500;">(${c.done}/${c.total} itens)</span></div>
+        ${rtProgressBar(c.pct, color)}
+      </div>
+      <button id="rtCloseWeekBtn" class="btn btn-soft">🔁 Fechar semana e reiniciar</button>
+    </div>
+  </div>
+  <div class="rt-cat-grid" id="rtCategories"></div>`;
+}
+
+function rtAttachRoutineHandlers(){
+  const wrap = document.getElementById('rtCategories');
+  wrap.innerHTML = rtState.routine.categories.map((cat, ci) => {
+    const done = cat.items.filter(i=>i.done).length;
+    const pct = cat.items.length ? Math.round(done/cat.items.length*100) : 0;
+    const style = rtCategoryStyles[ci % rtCategoryStyles.length];
+    return `
+    <div class="card">
+      <div class="rt-cat-head">
+        <div class="rt-cat-ic" style="background:${rtHexToRgba(style.color,0.14)}; color:${style.color};">${style.icon}</div>
+        <div class="rt-cat-progress">
+          <div class="rt-cat-name">${cat.name}</div>
+          <div style="margin-top:6px;">${rtProgressBar(pct, style.color)}</div>
+        </div>
+        <div class="rt-cat-count">${done}/${cat.items.length}</div>
+      </div>
+      <div class="rt-cat-body">
+        ${cat.items.map(item => `
+          <div class="rt-item-row">
+            <input type="checkbox" class="rt-cb rt-routine-check" data-cat="${ci}" data-id="${item.id}" ${item.done?'checked':''} style="accent-color:${style.color};">
+            <span class="${item.done ? 'done-text' : ''}">${item.text}</span>
+          </div>`).join('')}
+        <form class="rt-add-item-form rt-add-row" data-cat="${ci}">
+          <input type="text" class="rt-input" placeholder="Adicionar item a esta categoria..." style="font-size:13px;">
+          <button type="submit" class="btn btn-soft btn-sm">+ Adicionar</button>
+        </form>
+      </div>
+    </div>`;
+  }).join('');
+
+  wrap.querySelectorAll('.rt-routine-check').forEach(cb => {
+    cb.addEventListener('change', (e)=>{
+      const ci = e.target.dataset.cat, id = e.target.dataset.id;
+      const item = rtState.routine.categories[ci].items.find(i=>i.id===id);
+      item.done = e.target.checked;
+      rtSave();
+      rtRenderActive();
+    });
+  });
+  wrap.querySelectorAll('.rt-add-item-form').forEach(f => {
+    f.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const ci = e.target.dataset.cat;
+      const input = e.target.querySelector('input');
+      const text = input.value.trim();
+      if(!text) return;
+      rtState.routine.categories[ci].items.push({ id:`r-${ci}-${Date.now()}`, text, done:false });
+      rtSave();
+      rtRenderActive();
+    });
+  });
+
+  document.getElementById('rtCloseWeekBtn').addEventListener('click', async ()=>{
+    const c = rtComputeRoutineCompletion();
+    const ok = await confirmDialog('Fechar a semana?', `A semana está ${c.pct}% concluída. Isso reinicia todos os itens da rotina e do TikTok como pendentes.`, 'Fechar semana');
+    if(!ok) return;
+    rtState.routine.categories.forEach(cat => cat.items.forEach(i => i.done = false));
+    Object.keys(rtState.tiktok.week).forEach(acc => rtState.tiktok.week[acc] = rtState.tiktok.week[acc].map(()=>false));
+    rtSave();
+    rtRenderActive();
+    showToast('Semana reiniciada');
+  });
+}
+
+/* ---------- tarefas pontuais (kanban) ---------- */
+const rtKanbanColumns = ['A Fazer','Em Andamento','Concluído'];
+const rtKanbanIcon = { 'A Fazer':'🕘', 'Em Andamento':'🚧', 'Concluído':'✅' };
+
+function rtRenderTasks(){
+  return `
+  <div class="card" style="padding:18px 20px; margin-bottom:20px;">
+    <div class="card-title">➕ Nova tarefa pontual</div>
+    <form id="rtTaskForm" class="rt-form-row" style="grid-template-columns:2fr 1.2fr 1fr 1fr auto;">
+      <label class="rt-label">Título<input type="text" id="rtTaskTitle" class="rt-input" placeholder="Título da tarefa" required></label>
+      <label class="rt-label">Categoria<input type="text" id="rtTaskCategory" class="rt-input" placeholder="Ex: Marketing"></label>
+      <label class="rt-label">Prioridade
+        <select id="rtTaskPriority" class="rt-select"><option>Baixa</option><option selected>Média</option><option>Alta</option></select>
+      </label>
+      <label class="rt-label">Prazo<input type="date" id="rtTaskDue" class="rt-input"></label>
+      <button type="submit" class="btn btn-accent">Adicionar</button>
+    </form>
+  </div>
+  <div class="rt-kanban" id="rtKanban"></div>`;
+}
+
+function rtAttachTasksHandlers(){
+  document.getElementById('rtTaskForm').addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const title = document.getElementById('rtTaskTitle').value.trim();
+    if(!title) return;
+    rtState.tasks.unshift({
+      id: 't'+Date.now(),
+      title,
+      category: document.getElementById('rtTaskCategory').value.trim() || 'Geral',
+      priority: document.getElementById('rtTaskPriority').value,
+      due: document.getElementById('rtTaskDue').value,
+      status: 'A Fazer'
+    });
+    rtSave();
+    rtRenderActive();
+  });
+
+  const kanban = document.getElementById('rtKanban');
+  kanban.innerHTML = rtKanbanColumns.map(col => {
+    const items = rtState.tasks.filter(t=>t.status===col);
+    return `
+    <div class="rt-kcol">
+      <div class="rt-kcol-head">
+        <span class="rt-kcol-title">${rtKanbanIcon[col]} ${col}</span>
+        <span class="rt-kcol-count">${items.length}</span>
+      </div>
+      ${items.length===0 ? `<div class="empty-hint" style="padding:18px 8px;">Nada por aqui</div>` : items.map(t => {
+        const overdue = t.due && t.status!=='Concluído' && new Date(t.due) < new Date(new Date().toDateString());
+        const prioBadge = t.priority==='Alta' ? rtStatusBadge('critical','Alta') : t.priority==='Média' ? rtStatusBadge('warning','Média') : rtStatusBadge('neutral','Baixa');
+        return `
+        <div class="rt-tcard">
+          <div class="rt-tcard-title">${t.title}</div>
+          <div class="rt-tcard-meta">
+            <span class="badge badge-neutral">${t.category}</span>
+            ${prioBadge}
+            ${t.due ? `<span class="badge ${overdue?'badge-critical':'badge-neutral'}">${overdue?'⚠ atrasada · ':'📅 '}${new Date(t.due+'T00:00').toLocaleDateString('pt-BR')}</span>` : ''}
+          </div>
+          <div class="rt-tcard-foot">
+            <select class="rt-select rt-task-status" data-id="${t.id}" style="width:auto;">
+              ${rtKanbanColumns.map(s=>`<option ${t.status===s?'selected':''}>${s}</option>`).join('')}
+            </select>
+            <button class="rt-link-danger rt-task-delete" data-id="${t.id}">Excluir</button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+
+  kanban.querySelectorAll('.rt-task-status').forEach(sel=>{
+    sel.addEventListener('change', (e)=>{
+      const t = rtState.tasks.find(x=>x.id===e.target.dataset.id);
+      t.status = e.target.value;
+      rtSave();
+      rtRenderActive();
+    });
+  });
+  kanban.querySelectorAll('.rt-task-delete').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      rtState.tasks = rtState.tasks.filter(x=>x.id!==e.target.dataset.id);
+      rtSave();
+      rtRenderActive();
+    });
+  });
+}
+
+/* ---------- marketing & tiktok ---------- */
+function rtBarChart(weeks, {key, target, higherIsBetter, formatValue}){
+  if(weeks.length===0) return `<div class="empty-hint">Registre a primeira semana para ver o gráfico.</div>`;
+  const values = weeks.map(w=>w[key]);
+  const maxVal = Math.max(...values, target) * 1.2;
+  return `
+  <div class="chart">
+    ${weeks.map(w=>{
+      const val = w[key];
+      const ok = higherIsBetter ? val >= target : val < target;
+      const color = ok ? 'var(--accent)' : 'var(--danger)';
+      const h = Math.max(4, Math.round(val/maxVal*100));
+      return `
+      <div class="bar-col" title="${w.label}: ${formatValue(val)}">
+        <div class="bar-val" style="color:${color};">${formatValue(val)}</div>
+        <div class="bar-track"><div class="bar-fill" style="height:${h}%; background:${color};"></div></div>
+        <div class="bar-lab">${w.label}</div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function rtMarketingStatus(roas, cpa){
+  const roasOk = roas >= rtState.targets.roas;
+  const cpaOk = cpa < rtState.targets.cpa;
+  const kind = roasOk && cpaOk ? 'good' : (roasOk || cpaOk ? 'warning' : 'critical');
+  const label = roasOk && cpaOk ? 'metas batidas' : (roasOk || cpaOk ? 'parcial' : 'abaixo da meta');
+  return { kind, label };
+}
+
+function rtRenderMarketing(){
+  const tiktokTotal = rtComputeTiktokWeekTotal();
+  const tiktokTarget = rtState.targets.tiktokPerAccount * rtState.tiktok.accounts.length;
+  const isAll = rtMarketingStoreFilter === 'Todas';
+  const breakdown = rtLatestWeekBreakdown();
+
+  return `
+  <div class="card" style="padding:20px; margin-bottom:20px;">
+    <div class="card-title">💹 Metas de mídia paga</div>
+    <div class="card-desc" style="margin-top:4px;">Meta de ROAS: <b>15x</b> · Meta de custo por pedido: <b>menor que R$10</b>. Registre os números de cada semana, loja por loja — a visão "Todas as lojas" soma tudo automaticamente.</div>
+
+    <div class="rt-store-tabs" id="rtStoreTabs">
+      <button class="ptab ${isAll?'active':''}" data-store="Todas">📊 Todas as lojas</button>
+      ${rtState.stores.map(s=>`<button class="ptab ${rtMarketingStoreFilter===s?'active':''}" data-store="${s}">${s}</button>`).join('')}
+      <form id="rtAddStoreForm" style="display:flex; gap:6px; align-items:center;">
+        <input type="text" id="rtNewStoreName" class="rt-input" placeholder="+ nome da nova loja" style="width:150px; font-size:12.5px; padding:8px 12px;">
+        <button type="submit" class="btn btn-soft btn-sm">Adicionar loja</button>
+      </form>
+    </div>
+
+    <form id="rtMarketingForm" class="rt-form-row" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr auto;">
+      <label class="rt-label">Loja
+        <select id="rtMkStore" class="rt-select">${rtState.stores.map(s=>`<option ${(!isAll && s===rtMarketingStoreFilter)?'selected':''}>${s}</option>`).join('')}</select>
+      </label>
+      <label class="rt-label">Semana<input type="text" id="rtMkLabel" class="rt-input" placeholder="Ex: 20-26/07" required></label>
+      <label class="rt-label">Investimento (R$)<input type="number" step="0.01" id="rtMkInvest" class="rt-input" placeholder="0,00" required></label>
+      <label class="rt-label">Faturamento (R$)<input type="number" step="0.01" id="rtMkRevenue" class="rt-input" placeholder="0,00" required></label>
+      <label class="rt-label">Nº de pedidos<input type="number" id="rtMkOrders" class="rt-input" placeholder="0" required></label>
+      <button type="submit" class="btn btn-accent">Registrar</button>
+    </form>
+
+    <div class="grid-2" style="margin-top:22px; grid-template-columns:1fr 1fr;">
+      <div>
+        <div class="card-desc" style="margin-bottom:6px;"><b>ROAS por semana ${isAll?'(consolidado)':'— '+rtMarketingStoreFilter}</b></div>
+        ${rtBarChart(isAll ? rtConsolidatedWeeks() : rtStoreWeeks(rtMarketingStoreFilter), {key:'roas', target:rtState.targets.roas, higherIsBetter:true, formatValue:v=>v.toFixed(1)+'x'})}
+      </div>
+      <div>
+        <div class="card-desc" style="margin-bottom:6px;"><b>Custo por pedido ${isAll?'(consolidado)':'— '+rtMarketingStoreFilter}</b></div>
+        ${rtBarChart(isAll ? rtConsolidatedWeeks() : rtStoreWeeks(rtMarketingStoreFilter), {key:'cpa', target:rtState.targets.cpa, higherIsBetter:false, formatValue:v=>fmtBRL(v)})}
+      </div>
+    </div>
+
+    <div style="overflow-x:auto; margin-top:20px;">
+      <table class="alias-table" id="rtMarketingTable"></table>
+    </div>
+
+    ${isAll ? `
+    <div style="margin-top:26px; padding-top:18px; border-top:1px solid var(--border);">
+      <div class="card-title" style="font-size:14px;">🏪 Comparativo entre lojas ${breakdown.label ? `— semana ${breakdown.label}` : ''}</div>
+      <div class="card-desc" style="margin-top:4px;">Visão lado a lado das ${rtState.stores.length} lojas na última semana registrada.</div>
+      <div style="overflow-x:auto; margin-top:12px;">
+        <table class="alias-table" id="rtStoreBreakdownTable"></table>
+      </div>
+    </div>` : ''}
+  </div>
+
+  <div class="card" style="padding:20px; margin-bottom:20px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+      <div class="card-title">🎵 Postagens TikTok</div>
+      <span class="badge badge-neutral">${tiktokTotal}/${tiktokTarget} posts nesta semana</span>
+    </div>
+    <div class="card-desc" style="margin-top:4px;">Meta: 3 posts por semana em cada uma das 3 contas. Clique nos dias em que houve postagem.</div>
+    <div style="display:flex; flex-direction:column; gap:12px; margin-top:16px;" id="rtTiktokAccounts"></div>
+  </div>
+
+  <div class="card" style="padding:20px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+      <div class="card-title">🚀 Impulsionamento dos vídeos (Ads no TikTok)</div>
+      <span class="badge badge-neutral">${fmtBRL(rtComputeBoostWeekTotal())} investidos nesta semana</span>
+    </div>
+    <div class="card-desc" style="margin-top:4px;">Separado do investimento geral acima: registre quanto está sendo gasto para impulsionar cada vídeo postado, por conta.</div>
+    <form id="rtBoostForm" class="rt-form-row" style="grid-template-columns:0.9fr 1.6fr 1fr 1fr auto;">
+      <label class="rt-label">Conta<select id="rtBoostAccount" class="rt-select">${rtState.tiktok.accounts.map(a=>`<option>${a}</option>`).join('')}</select></label>
+      <label class="rt-label">Vídeo / tema do post<input type="text" id="rtBoostVideo" class="rt-input" placeholder="Ex: vídeo do produto X" required></label>
+      <label class="rt-label">Data<input type="date" id="rtBoostDate" class="rt-input" required></label>
+      <label class="rt-label">Valor investido (R$)<input type="number" step="0.01" id="rtBoostAmount" class="rt-input" placeholder="0,00" required></label>
+      <button type="submit" class="btn btn-accent">Registrar</button>
+    </form>
+    <div style="overflow-x:auto; margin-top:16px;">
+      <table class="alias-table" id="rtBoostTable"></table>
+    </div>
+  </div>`;
+}
+
+function rtAttachMarketingHandlers(){
+  const isAll = rtMarketingStoreFilter === 'Todas';
+
+  document.getElementById('rtStoreTabs').querySelectorAll('.ptab').forEach(b=>{
+    b.addEventListener('click', ()=>{ rtMarketingStoreFilter = b.dataset.store; rtRenderActive(); });
+  });
+
+  document.getElementById('rtAddStoreForm').addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const input = document.getElementById('rtNewStoreName');
+    const name = input.value.trim();
+    if(!name || rtState.stores.includes(name)) return;
+    rtState.stores.push(name);
+    rtSave();
+    rtRenderActive();
+  });
+
+  document.getElementById('rtMarketingForm').addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const store = document.getElementById('rtMkStore').value;
+    const label = document.getElementById('rtMkLabel').value.trim();
+    const invest = parseFloat(document.getElementById('rtMkInvest').value);
+    const revenue = parseFloat(document.getElementById('rtMkRevenue').value);
+    const orders = parseInt(document.getElementById('rtMkOrders').value);
+    if(!store || !label || !invest || !revenue || !orders) return;
+    rtEnsureWeekOrder(label);
+    rtState.marketing.entries.push({ id:'m'+Date.now(), store, label, invest, revenue, orders, roas: revenue/invest, cpa: invest/orders });
+    rtSave();
+    rtRenderActive();
+  });
+
+  const table = document.getElementById('rtMarketingTable');
+  const rows = isAll ? rtConsolidatedWeeks() : rtStoreWeeks(rtMarketingStoreFilter);
+  if(rows.length===0){
+    table.innerHTML = `<tr><td style="color:var(--faint); font-style:italic; padding:16px 10px;">Nenhuma semana registrada ${isAll?'ainda':'para '+rtMarketingStoreFilter+' ainda'}.</td></tr>`;
+  }else{
+    table.innerHTML = `
+      <thead><tr><th>Semana</th>${isAll?'<th>Lojas</th>':''}<th>Investimento</th><th>Faturamento</th><th>Pedidos</th><th>ROAS</th><th>CPA</th><th>Status</th></tr></thead>
+      <tbody>
+        ${[...rows].reverse().map(w=>{
+          const st = rtMarketingStatus(w.roas, w.cpa);
+          return `<tr>
+            <td>${w.label}</td>${isAll?`<td>${w.storesReported}/${rtState.stores.length}</td>`:''}<td>${fmtBRL(w.invest)}</td><td>${fmtBRL(w.revenue)}</td><td>${w.orders}</td>
+            <td style="font-weight:700;">${w.roas.toFixed(1)}x</td><td style="font-weight:700;">${fmtBRL(w.cpa)}</td>
+            <td>${rtStatusBadge(st.kind, st.label)}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>`;
+  }
+
+  if(isAll){
+    const breakdownTable = document.getElementById('rtStoreBreakdownTable');
+    const { rows: brows } = rtLatestWeekBreakdown();
+    if(brows.every(r=>!r.entry)){
+      breakdownTable.innerHTML = `<tr><td style="color:var(--faint); font-style:italic; padding:16px 10px;">Registre a primeira semana de alguma loja para ver o comparativo.</td></tr>`;
+    }else{
+      breakdownTable.innerHTML = `
+        <thead><tr><th>Loja</th><th>Investimento</th><th>Faturamento</th><th>Pedidos</th><th>ROAS</th><th>CPA</th><th>Status</th></tr></thead>
+        <tbody>
+          ${brows.map(r=>{
+            if(!r.entry){
+              return `<tr><td>${r.store}</td><td colspan="5" style="color:var(--faint);">ainda não registrado nesta semana</td><td>${rtStatusBadge('neutral','sem dados')}</td></tr>`;
+            }
+            const st = rtMarketingStatus(r.entry.roas, r.entry.cpa);
+            return `<tr>
+              <td>${r.store}</td><td>${fmtBRL(r.entry.invest)}</td><td>${fmtBRL(r.entry.revenue)}</td><td>${r.entry.orders}</td>
+              <td style="font-weight:700;">${r.entry.roas.toFixed(1)}x</td><td style="font-weight:700;">${fmtBRL(r.entry.cpa)}</td>
+              <td>${rtStatusBadge(st.kind, st.label)}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>`;
+    }
+  }
+
+  const wrap = document.getElementById('rtTiktokAccounts');
+  wrap.innerHTML = rtState.tiktok.accounts.map(acc => {
+    const arr = rtState.tiktok.week[acc];
+    const count = arr.filter(Boolean).length;
+    const target = rtState.targets.tiktokPerAccount;
+    const kind = count>=target ? {k:'good',label:'meta batida'} : count>0 ? {k:'warning',label:'em andamento'} : {k:'critical',label:'sem posts'};
+    return `
+    <div class="rt-acct-card">
+      <div>
+        <div class="rt-acct-name">${acc}</div>
+        ${rtStatusBadge(kind.k, kind.label)}
+      </div>
+      <div class="rt-days-row">
+        ${rtState.tiktok.days.map((d,i)=>`
+          <label class="rt-day-chip">
+            <input type="checkbox" class="rt-tiktok-check" data-acc="${acc}" data-day="${i}" ${arr[i]?'checked':''}>
+            <span class="dcircle">${arr[i]?'✓':''}</span>
+            <span class="dlabel">${d}</span>
+          </label>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  wrap.querySelectorAll('.rt-tiktok-check').forEach(cb=>{
+    cb.addEventListener('change',(e)=>{
+      const acc = e.target.dataset.acc, day = e.target.dataset.day;
+      rtState.tiktok.week[acc][day] = e.target.checked;
+      rtSave();
+      rtRenderActive();
+    });
+  });
+
+  const boostDateInput = document.getElementById('rtBoostDate');
+  if(boostDateInput && !boostDateInput.value){
+    boostDateInput.value = new Date().toISOString().slice(0,10);
+  }
+  document.getElementById('rtBoostForm').addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const account = document.getElementById('rtBoostAccount').value;
+    const video = document.getElementById('rtBoostVideo').value.trim();
+    const date = document.getElementById('rtBoostDate').value;
+    const amount = parseFloat(document.getElementById('rtBoostAmount').value);
+    if(!video || !date || !amount) return;
+    rtState.tiktok.boosts.unshift({ id:'b'+Date.now(), account, video, date, amount });
+    rtSave();
+    rtRenderActive();
+  });
+
+  const boostTable = document.getElementById('rtBoostTable');
+  if(rtState.tiktok.boosts.length===0){
+    boostTable.innerHTML = `<tr><td style="color:var(--faint); font-style:italic; padding:16px 10px;">Nenhum impulsionamento registrado ainda.</td></tr>`;
+  }else{
+    const sorted = [...rtState.tiktok.boosts].sort((a,b)=> b.date.localeCompare(a.date));
+    boostTable.innerHTML = `
+      <thead><tr><th>Data</th><th>Conta</th><th>Vídeo</th><th>Valor investido</th><th></th></tr></thead>
+      <tbody>
+        ${sorted.map(b => `
+          <tr>
+            <td>${new Date(b.date+'T12:00:00').toLocaleDateString('pt-BR')}</td>
+            <td><span class="badge badge-neutral">${b.account}</span></td>
+            <td>${b.video}</td>
+            <td style="font-weight:700;">${fmtBRL(b.amount)}</td>
+            <td><button class="rt-link-danger rt-boost-delete" data-id="${b.id}">Excluir</button></td>
+          </tr>`).join('')}
+        <tr>
+          <td colspan="3" style="text-align:right; font-weight:700;">Total investido em impulsionamento</td>
+          <td style="font-weight:800;">${fmtBRL(rtComputeBoostAllTimeTotal())}</td>
+          <td></td>
+        </tr>
+      </tbody>`;
+  }
+  boostTable.querySelectorAll('.rt-boost-delete').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      rtState.tiktok.boosts = rtState.tiktok.boosts.filter(x=>x.id!==e.target.dataset.id);
+      rtSave();
+      rtRenderActive();
+    });
+  });
+}
+
+/* ---------- router + persistência ---------- */
+function rtRenderActive(){
+  document.querySelectorAll('#rtSubtabs .ptab').forEach(b=>{
+    b.classList.toggle('active', b.dataset.subtab === rtActiveSubtab);
+  });
+  const content = document.getElementById('rtContent');
+  if(rtActiveSubtab === 'overview'){ content.innerHTML = rtRenderOverview(); rtAttachOverviewHandlers(); }
+  if(rtActiveSubtab === 'routine'){ content.innerHTML = rtRenderRoutine(); rtAttachRoutineHandlers(); }
+  if(rtActiveSubtab === 'tasks'){ content.innerHTML = rtRenderTasks(); rtAttachTasksHandlers(); }
+  if(rtActiveSubtab === 'marketing'){ content.innerHTML = rtRenderMarketing(); rtAttachMarketingHandlers(); }
+}
+
+document.getElementById('rtSubtabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('.ptab');
+  if(!btn) return;
+  rtActiveSubtab = btn.dataset.subtab;
+  rtRenderActive();
+});
+
+async function rtLoad(){
+  if(!sb) return;
+  const { data, error } = await sb.from('rotina_estado').select('dados').eq('id','principal').maybeSingle();
+  if(!error && data && data.dados && Object.keys(data.dados).length){
+    rtState = data.dados;
+  }else{
+    await sb.from('rotina_estado').upsert({ id:'principal', dados: rtState });
+  }
+}
+
+function rtSave(){
+  if(!sb) return;
+  if(rtSaveTimer) clearTimeout(rtSaveTimer);
+  rtSaveTimer = setTimeout(async () => {
+    await sb.from('rotina_estado').upsert({ id:'principal', dados: rtState, updated_at: new Date().toISOString() });
+  }, 800);
+}
+
+function rtSetupRealtime(){
+  sb.channel('public:rotina_estado')
+    .on('postgres_changes', { event:'*', schema:'public', table:'rotina_estado', filter:'id=eq.principal' }, (payload) => {
+      if(payload.new && payload.new.dados){
+        rtState = payload.new.dados;
+        rtRenderActive();
+      }
+    })
+    .subscribe();
+}
+
+async function rtInit(){
+  if(rtInitialized) return;
+  rtInitialized = true;
+  document.getElementById('rtContent').innerHTML = '<div class="empty-hint">Carregando…</div>';
+  await rtLoad();
+  rtSetupRealtime();
+  rtRenderActive();
+}
 
 /* ---------- Autenticação (Supabase Auth) ---------- */
 let appInitialized = false;
