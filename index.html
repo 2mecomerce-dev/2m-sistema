@@ -2790,8 +2790,10 @@ function rtAttachRoutineHandlers(){
     const done = cat.items.filter(i=>rtItemEffectiveDone(i)).length;
     const pct = cat.items.length ? Math.round(done/cat.items.length*100) : 0;
     const style = rtCategoryStyles[ci % rtCategoryStyles.length];
+    const av = rtAvatarFor(cat.responsavel);
+    const cardRing = cat.responsavel ? `border:2px solid ${av.ring}; box-shadow:0 0 0 3px ${av.bg};` : '';
     return `
-    <div class="card">
+    <div class="card" style="${cardRing}">
       <div class="rt-cat-head">
         <div class="rt-cat-ic" style="background:${rtHexToRgba(style.color,0.14)}; color:${style.color};">${style.icon}</div>
         <div class="rt-cat-progress">
@@ -2803,8 +2805,8 @@ function rtAttachRoutineHandlers(){
       <div class="rt-cat-assign">
         <span class="rt-assign-label">Responsável</span>
         <div class="rt-avatar-select">
-          <div class="rt-avatar" style="border-color:${rtAvatarFor(cat.responsavel).ring}; background:${rtAvatarFor(cat.responsavel).bg}; color:${rtAvatarFor(cat.responsavel).fg};">${rtAvatarFor(cat.responsavel).initial}</div>
-          <span class="rt-avatar-name" style="color:${cat.responsavel ? rtAvatarFor(cat.responsavel).fg : 'var(--faint)'};">${cat.responsavel || 'Sem responsável'}</span>
+          <div class="rt-avatar" style="border-color:${av.ring}; background:${av.bg}; color:${av.fg};">${av.initial}</div>
+          <span class="rt-avatar-name" style="color:${cat.responsavel ? av.fg : 'var(--faint)'};">${cat.responsavel || 'Sem responsável'}</span>
           <select class="rt-cat-resp" data-cat="${ci}">
             <option value="" ${!cat.responsavel?'selected':''}>Sem responsável</option>
             ${rtPeople.map(p=>`<option value="${p}" ${cat.responsavel===p?'selected':''}>${p}</option>`).join('')}
