@@ -15,10 +15,14 @@
     --brand-soft:#EDF4F7;     /* fundo suave */
     --brand-line:#D3E4EA;
     --brand-glow:rgba(79,151,171,.22);
+    --brand-deep:#1E3B45;     /* superfícies escuras (ticket, total) */
+    --brand-deeper:#152A32;
+    --brand-tint:#9CC2CE;     /* texto secundário sobre o escuro */
     --orange:#E87A45;         /* o "M" e a sacola */
     --orange-d:#C25F2E;
     --orange-soft:#FDF1EA;
     --orange-line:#F5DCCB;
+    --orange-ink:#8F4C28;     /* texto secundário sobre fundo laranja suave */
 
     /* Aliases: o accent do sistema agora é a cor da marca */
     --accent:var(--brand);
@@ -79,7 +83,8 @@
 
   /* ---------- Sidebar ---------- */
   .sidebar{
-    background:linear-gradient(180deg,var(--sb-2),var(--sb-1));
+    background:var(--sb-1);
+    border-right:1px solid var(--sb-line);
     color:var(--sb-ink);
     display:flex;
     flex-direction:column;
@@ -95,15 +100,18 @@
     margin-bottom:14px;
     border-bottom:1px solid var(--sb-line);
   }
+  /* Monograma: círculo branco da logo, "2" azul-petróleo e "M" laranja */
   .brand-mark{
-    width:40px; height:40px; border-radius:11px;
-    background:linear-gradient(135deg,var(--accent),#13c39f);
+    width:40px; height:40px; border-radius:50%;
+    background:var(--surface); border:1px solid var(--border);
     display:grid; place-items:center;
-    font-weight:800; font-size:16px; color:#04241d;
-    box-shadow:0 4px 14px var(--accent-glow);
+    font-weight:700; font-size:16px; letter-spacing:-.5px;
+    box-shadow:var(--sh-sm);
     flex-shrink:0;
   }
-  .brand-name{font-weight:700; font-size:15px; color:#fff; letter-spacing:.2px; line-height:1.15;}
+  .brand-mark .bm-2{color:var(--brand);}
+  .brand-mark .bm-m{color:var(--orange);}
+  .brand-name{font-weight:700; font-size:15px; color:var(--sb-ink); letter-spacing:-.2px; line-height:1.15;}
   .brand-sub{font-size:11px; color:var(--sb-faint); letter-spacing:.4px;}
 
   .nav-group{margin-bottom:18px;}
@@ -119,11 +127,11 @@
     transition:background .15s, color .15s;
     user-select:none;
   }
-  .nav-item svg{width:18px; height:18px; flex-shrink:0; opacity:.85;}
-  .nav-item:hover{background:rgba(255,255,255,.05); color:#fff;}
+  .nav-item svg{width:18px; height:18px; flex-shrink:0; opacity:.6;}
+  .nav-item:hover{background:rgba(0,0,0,.04); color:var(--ink);}
   .nav-item.active{
-    background:rgba(14,159,133,.14);
-    color:#fff;
+    background:var(--brand-soft);
+    color:var(--brand-d); font-weight:600;
   }
   .nav-item.active::before{
     content:''; position:absolute; left:-16px; top:8px; bottom:8px;
@@ -139,7 +147,7 @@
   }
   .sidebar-foot{margin-top:auto; padding-top:16px;}
   .foot-card{
-    background:rgba(255,255,255,.04);
+    background:var(--surface);
     border:1px solid var(--sb-line);
     border-radius:var(--r-md);
     padding:13px 14px;
@@ -151,8 +159,8 @@
   .main{display:flex; flex-direction:column; min-width:0;}
   .topbar{
     position:sticky; top:0; z-index:30;
-    background:rgba(236,239,244,.82);
-    backdrop-filter:blur(10px);
+    background:rgba(251,251,253,.78);
+    backdrop-filter:saturate(180%) blur(14px);
     border-bottom:1px solid var(--border);
     padding:16px 30px;
     display:flex; align-items:center; justify-content:space-between; gap:16px;
@@ -255,13 +263,14 @@
     display:inline-flex; align-items:center; gap:8px;
   }
   .btn:active{transform:translateY(1px);}
+  .btn:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
   .btn svg{width:16px; height:16px;}
-  .btn-accent{background:var(--accent); color:#fff; box-shadow:0 2px 10px var(--accent-glow);}
-  .btn-accent:hover{background:var(--accent-d);}
-  .btn-soft{background:var(--surface-2); color:var(--ink); border:1px solid var(--border-strong);}
-  .btn-soft:hover{border-color:var(--accent); color:var(--accent-d);}
+  .btn-accent{background:var(--accent); color:#fff; box-shadow:0 1px 2px var(--accent-glow);}
+  .btn-accent:hover{background:var(--accent-d); box-shadow:0 4px 14px var(--accent-glow);}
+  .btn-soft{background:var(--surface); color:var(--ink); border:1px solid var(--border-strong);}
+  .btn-soft:hover{background:var(--accent-soft); border-color:var(--accent); color:var(--accent-d);}
   .btn-ghost{background:transparent; color:var(--muted); padding:11px 12px;}
-  .btn-ghost:hover{color:var(--danger);}
+  .btn-ghost:hover{color:var(--ink); background:var(--surface-2);}
   .btn:disabled{opacity:.45; cursor:not-allowed; transform:none; box-shadow:none;}
   .btn-sm{padding:8px 12px; font-size:12.5px;}
 
@@ -273,18 +282,18 @@
   }
   .ticket-head{
     display:flex; align-items:center; justify-content:space-between;
-    padding:18px 22px; background:linear-gradient(180deg,#1b1f29,#14171e); color:#fff;
+    padding:18px 22px; background:linear-gradient(180deg,var(--brand-deep),var(--brand-deeper)); color:#fff;
   }
-  .ticket-eyebrow{font-size:10.5px; text-transform:uppercase; letter-spacing:2px; color:#7f93b0;}
+  .ticket-eyebrow{font-size:10.5px; text-transform:uppercase; letter-spacing:2px; color:var(--brand-tint);}
   .ticket-date{font-size:16px; font-weight:700; font-family:'JetBrains Mono',monospace; margin-top:2px;}
   .ticket-total{
-    text-align:right; font-size:12px; color:#8a94a6;
+    text-align:right; font-size:12px; color:var(--brand-tint);
   }
   .ticket-total b{display:block; font-size:26px; color:#fff; font-family:'JetBrains Mono',monospace; line-height:1;}
   .ticket-perf{
     height:14px; background:
       radial-gradient(circle at 7px 14px, var(--canvas) 6px, transparent 6.5px) repeat-x;
-    background-size:18px 14px; background-color:#14171e;
+    background-size:18px 14px; background-color:var(--brand-deeper);
   }
   .ticket{
     font-family:'JetBrains Mono',monospace; font-size:14px; line-height:1.85;
@@ -332,13 +341,13 @@
   }
   .pending-card h3{margin:0 0 4px; font-size:14.5px; color:var(--amber); display:flex; align-items:center; gap:8px;}
   .pending-card h3 svg{width:18px;height:18px;}
-  .pending-card .sub{font-size:12.5px; color:#8a6320; margin-bottom:12px;}
+  .pending-card .sub{font-size:12.5px; color:var(--orange-ink); margin-bottom:12px;}
   .pending-row{
     display:flex; align-items:center; gap:10px; padding:9px 0;
     border-top:1px solid var(--amber-line); font-size:13px; flex-wrap:wrap;
   }
-  .pending-row .sku{font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#8a6320; min-width:96px;}
-  .pending-row .desc{flex:1; color:#7a5a1e; font-size:12px; min-width:80px;}
+  .pending-row .sku{font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--orange-ink); min-width:96px;}
+  .pending-row .desc{flex:1; color:var(--orange-ink); font-size:12px; min-width:80px;}
   .pending-row input{
     width:150px; font-family:inherit; font-size:12.5px; padding:7px 9px;
     border:1px solid var(--amber-line); border-radius:var(--r-sm); background:#fff; text-transform:uppercase;
@@ -351,7 +360,7 @@
   .bar-val{font-size:11px; font-weight:700; font-family:'JetBrains Mono',monospace; color:var(--muted);}
   .bar-track{width:100%; max-width:30px; height:100px; background:var(--surface-2); border-radius:6px 6px 0 0; display:flex; align-items:flex-end; overflow:hidden;}
   .bar-fill{
-    width:100%; background:linear-gradient(180deg,#16b698,var(--accent));
+    width:100%; background:linear-gradient(180deg,var(--brand),var(--brand-d));
     border-radius:6px 6px 0 0; transform-origin:bottom; animation:barGrow .55s cubic-bezier(.22,1,.36,1);
     transition:filter .15s;
   }
@@ -461,9 +470,9 @@
   .fin-total-row{
     display:flex; align-items:center; justify-content:space-between;
     margin-top:14px; padding:16px 14px; border-radius:var(--r-md);
-    background:linear-gradient(135deg,#11332b,#0d2722); color:#fff;
+    background:linear-gradient(135deg,var(--brand-deep),var(--brand-deeper)); color:#fff;
   }
-  .fin-total-row .lab{font-size:12px; text-transform:uppercase; letter-spacing:1px; color:#8fc9bb;}
+  .fin-total-row .lab{font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--brand-tint);}
   .fin-total-row .val{font-size:24px; font-weight:800; font-family:'JetBrains Mono',monospace;}
   .missing{color:var(--amber); font-weight:600; font-size:12px;}
   .cost-wrap{display:inline-flex; align-items:center; gap:6px; background:var(--surface-2); border:1px solid var(--border-strong); border-radius:var(--r-sm); padding:0 10px; max-width:150px;}
@@ -528,12 +537,12 @@
     font-size:11.5px; font-weight:600; letter-spacing:.2px;
   }
   .sync-status .dot{width:7px; height:7px; border-radius:50%;}
-  .sync-status.offline{background:#F3F4F6; color:#69727F;}
-  .sync-status.offline .dot{background:#9AA3B2;}
+  .sync-status.offline{background:var(--surface-2); color:var(--muted);}
+  .sync-status.offline .dot{background:var(--faint);}
   .sync-status.online{background:var(--accent-soft); color:var(--accent-d);}
   .sync-status.online .dot{background:var(--accent);}
-  .sync-status.syncing{background:#EFF6FF; color:#1E40AF;}
-  .sync-status.syncing .dot{background:#3B82F6; animation:pulse 1s infinite;}
+  .sync-status.syncing{background:var(--orange-soft); color:var(--orange-d);}
+  .sync-status.syncing .dot{background:var(--orange); animation:pulse 1s infinite;}
   .sync-status.error{background:#FEEBEB; color:var(--danger);}
   .sync-status.error .dot{background:var(--danger);}
   @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:.3;}}
@@ -647,7 +656,7 @@
   .rt-timeline-date{font-size:11px; color:var(--faint); font-weight:700; margin-bottom:4px;}
   .rt-timeline-row{font-size:13px; margin-top:2px;}
 
-  .rt-info-banner{display:flex; gap:12px; align-items:flex-start; background:var(--accent-soft); border:1px solid rgba(14,159,133,.25);
+  .rt-info-banner{display:flex; gap:12px; align-items:flex-start; background:var(--accent-soft); border:1px solid var(--brand-line);
     border-radius:var(--r-md); padding:14px 16px; font-size:13px; color:var(--ink); margin-bottom:20px;}
   .rt-legend-row{display:flex; gap:14px; flex-wrap:wrap; margin-top:8px;}
   .rt-legend-chip{display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--muted);}
@@ -669,6 +678,62 @@
   .rt-form-row{display:grid; gap:12px; align-items:end; margin-top:14px;}
   @media (max-width:880px){ .rt-form-row{grid-template-columns:1fr !important;} }
   .rt-link-danger{background:none; border:none; color:var(--danger); font-size:12px; font-weight:600; cursor:pointer; padding:5px 4px;}
+
+  /* ---------- Relatórios ---------- */
+  .rep-sec-title{font-size:11px; text-transform:uppercase; letter-spacing:1.3px; color:var(--faint); font-weight:700; margin:28px 0 12px;}
+  .rep-sec-title:first-child{margin-top:0;}
+
+  .rep-grid-2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  .rep-grid-3{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
+  @media (max-width:1040px){ .rep-grid-2,.rep-grid-3{grid-template-columns:1fr;} }
+
+  .delta{
+    display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700;
+    padding:2px 8px; border-radius:20px; font-family:'JetBrains Mono',monospace; letter-spacing:0;
+  }
+  .delta.up{background:var(--accent-soft); color:var(--accent-d);}
+  .delta.down{background:#FBEAEA; color:var(--danger);}
+  .delta.flat{background:var(--surface-2); color:var(--muted);}
+
+  .rep-insight{
+    display:flex; gap:11px; align-items:flex-start;
+    border:1px solid var(--border); border-left:3px solid var(--faint);
+    border-radius:var(--r-md); padding:13px 15px; background:var(--surface);
+  }
+  .rep-insight.good{border-left-color:var(--accent); background:var(--accent-soft); border-color:var(--brand-line);}
+  .rep-insight.warning{border-left-color:var(--orange); background:var(--orange-soft); border-color:var(--orange-line);}
+  .rep-insight.critical{border-left-color:var(--danger); background:#FDF4F4; border-color:#F3C6C6;}
+  .rep-insight .ic{font-size:16px; line-height:1.3;}
+  .rep-insight .t{font-weight:700; font-size:13px; margin-bottom:2px;}
+  .rep-insight .d{font-size:12.5px; color:var(--muted); line-height:1.45;}
+
+  .rep-svg{width:100%; height:auto; display:block;}
+  .rep-svg .gl{stroke:var(--border); stroke-width:1;}
+  .rep-svg .ax{fill:var(--faint); font-size:10px; font-family:'JetBrains Mono',monospace;}
+
+  .rep-hrow{display:grid; grid-template-columns:140px 1fr 128px; gap:12px; align-items:center; padding:7px 0;}
+  @media (max-width:640px){ .rep-hrow{grid-template-columns:100px 1fr 96px; gap:8px;} }
+  .rep-hname{font-size:12.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .rep-htrack{height:10px; border-radius:999px; background:var(--surface-2); overflow:hidden;}
+  .rep-hfill{height:100%; border-radius:999px; transition:width .4s var(--ease-out);}
+  .rep-hval{font-family:'JetBrains Mono',monospace; font-size:12px; text-align:right; color:var(--muted); white-space:nowrap;}
+
+  .rep-heat{display:grid; grid-template-columns:repeat(7,1fr); gap:8px; text-align:center;}
+  @media (max-width:640px){ .rep-heat{grid-template-columns:repeat(4,1fr);} }
+  .rep-heat .cell{border-radius:var(--r-sm); padding:12px 4px; border:1px solid var(--border);}
+  .rep-heat .wd{font-size:10px; text-transform:uppercase; letter-spacing:.7px; color:var(--muted); font-weight:700;}
+  .rep-heat .v{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:15px; margin-top:4px;}
+  .rep-heat .s{font-size:10.5px; color:var(--faint); margin-top:1px;}
+
+  .rep-legend{display:flex; gap:16px; flex-wrap:wrap; font-size:11.5px; color:var(--muted); margin-top:12px;}
+  .rep-legend i{width:10px; height:10px; border-radius:3px; display:inline-block; margin-right:6px; vertical-align:-1px;}
+  .sw-a{background:var(--brand);} .sw-b{background:var(--orange);} .sw-c{background:var(--faint);}
+
+  .rep-note{
+    font-size:12px; color:var(--muted); background:var(--surface-2);
+    border:1px solid var(--border); border-radius:var(--r-sm);
+    padding:10px 12px; margin-top:14px; line-height:1.5;
+  }
 
   /* ---------- Auth ---------- */
   .app.hidden{display:none;}
@@ -704,7 +769,7 @@
 
 <div class="auth-screen" id="authScreen">
   <div class="auth-card">
-    <div class="brand-mark">2M</div>
+    <div class="brand-mark"><span class="bm-2">2</span><span class="bm-m">M</span></div>
     <h1>Central de Operações</h1>
     <p>Entre com sua conta para acessar o sistema.</p>
     <form id="authForm">
@@ -728,7 +793,7 @@
   <!-- Sidebar -->
   <aside class="sidebar">
     <div class="brand">
-      <div class="brand-mark">2M</div>
+      <div class="brand-mark"><span class="bm-2">2</span><span class="bm-m">M</span></div>
       <div>
         <div class="brand-name">2M Commerce</div>
         <div class="brand-sub">Central de Operações</div>
@@ -757,9 +822,9 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6M3 13a9 9 0 1 0 3-7.7L3 8"/></svg>
         Devoluções <span class="soon-tag">em breve</span>
       </div>
-      <div class="nav-item soon">
+      <div class="nav-item" data-view="relatorios" data-title="Relatórios & Análises" data-eyebrow="Inteligência">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M7 16l4-5 3 3 5-6"/></svg>
-        Relatórios <span class="soon-tag">em breve</span>
+        Relatórios
       </div>
     </div>
 
@@ -790,7 +855,7 @@
       </div>
       <div class="foot-card">
         <b>Plataforma em expansão.</b><br>
-        Novas ferramentas para estoque, devoluções e relatórios chegam em breve.
+        Novas ferramentas para estoque e devoluções chegam em breve.
       </div>
     </div>
   </aside>
@@ -1058,6 +1123,22 @@
         <div id="rtContent"></div>
       </section>
 
+      <!-- ===== VIEW: RELATÓRIOS ===== -->
+      <section class="view" id="view-relatorios">
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-body" style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;">
+            <div class="period-tabs" id="repTabs">
+              <button class="ptab" data-rep="7d">7 dias</button>
+              <button class="ptab active" data-rep="30d">30 dias</button>
+              <button class="ptab" data-rep="90d">90 dias</button>
+              <button class="ptab" data-rep="tudo">Todo o período</button>
+            </div>
+            <div class="card-desc" id="repRangeLabel">—</div>
+          </div>
+        </div>
+        <div id="repContent"></div>
+      </section>
+
       <!-- ===== VIEW: CONFIGURAÇÕES ===== -->
       <section class="view" id="view-config">
         <div class="card" style="margin-bottom:20px;">
@@ -1317,6 +1398,7 @@ function renderHistory(){
     });
   }
   renderChart();
+  repRefreshIfActive();
 }
 
 function renderChart(){
@@ -1748,7 +1830,7 @@ function renderPending(){
         <span class="desc">${sample}${count > 1 ? ` (+${count-1} no lote)` : ''}</span>
         ${sugBadge}
       </div>
-      ${desc ? `<div style="font-size:11.5px;color:#8a6320;font-style:italic;padding:2px 0;">📋 Descrição: "${descTrunc}"</div>` : ''}
+      ${desc ? `<div style="font-size:11.5px;color:var(--orange-ink);font-style:italic;padding:2px 0;">📋 Descrição: "${descTrunc}"</div>` : ''}
       <div style="display:flex;align-items:center;gap:8px;">
         <input placeholder="apelido (ex: 070)" data-sku="${sku}" class="pending-input" value="${sug}" style="flex:1;">
         <button class="btn btn-soft btn-sm pending-save" data-sku="${sku}">salvar</button>
@@ -2158,12 +2240,13 @@ function renderCustoTable(){
 function refreshFornecedorView(){
   renderFornecedorTable();
   renderCustoTable();
+  repRefreshIfActive();
 }
 
 document.getElementById('periodTabs').addEventListener('click', (e)=>{
   const btn = e.target.closest('.ptab');
   if(!btn) return;
-  document.querySelectorAll('.ptab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#periodTabs .ptab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   currentPeriod = btn.dataset.period;
   document.getElementById('periodCustom').style.display = currentPeriod === 'custom' ? 'flex' : 'none';
@@ -2254,6 +2337,11 @@ async function sbPullAll(){
 
   history = lotesRes.data.map(loteRowToHistoryItem);
   await store.set('history', JSON.stringify(history));
+
+  if(rtInitialized){
+    await mkLoad();
+    rtRenderActive();
+  }
 
   renderAliasTable();
   renderHistory();
@@ -2481,6 +2569,7 @@ document.querySelectorAll('.nav-item[data-view]').forEach(item => {
     if(v === 'fornecedor') refreshFornecedorView();
     if(v === 'produtos') renderAliasTable();
     if(v === 'rotina') rtInit();
+    if(v === 'relatorios'){ repRender(); rtInit().then(repRender); }
   });
 });
 
@@ -2494,14 +2583,16 @@ scrim.addEventListener('click', ()=> appEl.classList.remove('nav-open'));
    ROTINA & MELHORIA CONTÍNUA
    ═══════════════════════════════════════════════════════ */
 
+/* Paleta de categorias: mesma saturação/luminosidade da marca,
+   ancorada no azul-petróleo e no laranja da logo. */
 const rtCategoryStyles = [
-  { color:'#2a78d6', icon:'📦' },
-  { color:'#eb6834', icon:'💬' },
-  { color:'#1baf7a', icon:'💰' },
-  { color:'#eda100', icon:'🛒' },
-  { color:'#e87ba4', icon:'📊' },
-  { color:'#0E9F85', icon:'📣' },
-  { color:'#4a3aa7', icon:'🔄' },
+  { color:'#4F97AB', icon:'📦' },
+  { color:'#E87A45', icon:'💬' },
+  { color:'#5B9A85', icon:'💰' },
+  { color:'#D9A047', icon:'🛒' },
+  { color:'#C57BA1', icon:'📊' },
+  { color:'#6E8CC4', icon:'📣' },
+  { color:'#8A7CBF', icon:'🔄' },
 ];
 
 function rtDefaultCategories(){
@@ -3039,7 +3130,7 @@ function rtAttachMarketingHandlers(){
     rtRenderActive();
   });
 
-  document.getElementById('rtMarketingForm').addEventListener('submit', (e)=>{
+  document.getElementById('rtMarketingForm').addEventListener('submit', async (e)=>{
     e.preventDefault();
     const store = document.getElementById('rtMkStore').value;
     const label = document.getElementById('rtMkLabel').value.trim();
@@ -3047,10 +3138,20 @@ function rtAttachMarketingHandlers(){
     const revenue = parseFloat(document.getElementById('rtMkRevenue').value);
     const orders = parseInt(document.getElementById('rtMkOrders').value);
     if(!store || !label || !invest || !revenue || !orders) return;
+
+    const entry = { store, label, invest, revenue, orders, roas: revenue/invest, cpa: invest/orders };
+    /* (loja, semana) é chave: relançar a mesma semana corrige, não duplica */
+    const i = rtState.marketing.entries.findIndex(x => x.store === store && x.label === label);
+    const jaExistia = i >= 0;
+    if(jaExistia) rtState.marketing.entries[i] = entry;
+    else rtState.marketing.entries.push(entry);
     rtEnsureWeekOrder(label);
-    rtState.marketing.entries.push({ id:'m'+Date.now(), store, label, invest, revenue, orders, roas: revenue/invest, cpa: invest/orders });
-    rtSave();
     rtRenderActive();
+    repRefreshIfActive();
+
+    const { error } = await mkUpsert(entry);
+    if(error) showToast('Não consegui salvar no banco: ' + error.message);
+    else showToast(jaExistia ? `Semana ${label} de ${store} atualizada` : `Semana ${label} registrada`);
   });
 
   const table = document.getElementById('rtMarketingTable');
@@ -3195,13 +3296,33 @@ document.getElementById('rtSubtabs').addEventListener('click', (e) => {
   rtRenderActive();
 });
 
+/* O documento JSON guarda rotina, tarefas, TikTok e lojas.
+   O marketing saiu daqui e vive na tabela marketing_semanal. */
+function rtSemMarketing(){
+  const { marketing, ...resto } = rtState;
+  return resto;
+}
+
+/* garante que o documento vindo do banco tenha todas as chaves
+   que o render espera, mesmo que tenha sido salvo por uma versão antiga */
+function rtEnsureShape(){
+  const d = rtDefaultState();
+  if(!rtState || typeof rtState !== 'object') rtState = d;
+  Object.keys(d).forEach(k => { if(rtState[k] === undefined) rtState[k] = d[k]; });
+  if(!rtState.marketing || !Array.isArray(rtState.marketing.entries)){
+    rtState.marketing = { entries: [], weekOrder: [] };
+  }
+  if(!rtState.tiktok || !rtState.tiktok.week) rtState.tiktok = d.tiktok;
+}
+
 async function rtLoad(){
   if(!sb) return;
   const { data, error } = await sb.from('rotina_estado').select('dados').eq('id','principal').maybeSingle();
   if(!error && data && data.dados && Object.keys(data.dados).length){
     rtState = data.dados;
+    rtEnsureShape();
   }else{
-    await sb.from('rotina_estado').upsert({ id:'principal', dados: rtState });
+    await sb.from('rotina_estado').upsert({ id:'principal', dados: rtSemMarketing() });
   }
 }
 
@@ -3209,17 +3330,72 @@ function rtSave(){
   if(!sb) return;
   if(rtSaveTimer) clearTimeout(rtSaveTimer);
   rtSaveTimer = setTimeout(async () => {
-    await sb.from('rotina_estado').upsert({ id:'principal', dados: rtState, updated_at: new Date().toISOString() });
+    await sb.from('rotina_estado').upsert({ id:'principal', dados: rtSemMarketing(), updated_at: new Date().toISOString() });
   }, 800);
+}
+
+/* ---------- marketing: tabela própria, uma linha por loja/semana ---------- */
+function mkApplyRows(rows){
+  const entries = rows.map(r => {
+    const invest  = Number(r.investimento) || 0;
+    const revenue = Number(r.faturamento)  || 0;
+    const orders  = Number(r.pedidos)      || 0;
+    return {
+      store: r.loja, label: r.semana, invest, revenue, orders,
+      roas: invest ? revenue/invest : 0,
+      cpa:  orders ? invest/orders  : 0
+    };
+  });
+  const weekOrder = [];
+  rows.forEach(r => { if(!weekOrder.includes(r.semana)) weekOrder.push(r.semana); });
+  rtState.marketing = { entries, weekOrder };
+}
+
+async function mkLoad(){
+  if(!sb) return false;
+  const { data, error } = await sb.from('marketing_semanal')
+    .select('loja,semana,investimento,faturamento,pedidos,criado_em')
+    .order('criado_em', { ascending: true });
+  if(error){
+    syncLog('Marketing: ' + error.message, 'err');
+    return false;
+  }
+  mkApplyRows(data || []);
+  return true;
+}
+
+async function mkUpsert(entry){
+  if(!sb) return { error: { message: 'sem conexão com o banco' } };
+  const { error } = await sb.from('marketing_semanal').upsert({
+    loja: entry.store,
+    semana: entry.label,
+    investimento: entry.invest,
+    faturamento: entry.revenue,
+    pedidos: entry.orders
+  }, { onConflict: 'loja,semana' });
+  if(error) syncLog('Marketing: ' + error.message, 'err');
+  return { error };
 }
 
 function rtSetupRealtime(){
   sb.channel('public:rotina_estado')
     .on('postgres_changes', { event:'*', schema:'public', table:'rotina_estado', filter:'id=eq.principal' }, (payload) => {
       if(payload.new && payload.new.dados){
+        const marketing = rtState.marketing;   // vem da outra tabela, não pode ser sobrescrito
         rtState = payload.new.dados;
+        rtEnsureShape();
+        if(marketing) rtState.marketing = marketing;
         rtRenderActive();
+        repRefreshIfActive();
       }
+    })
+    .subscribe();
+
+  sb.channel('public:marketing_semanal')
+    .on('postgres_changes', { event:'*', schema:'public', table:'marketing_semanal' }, async () => {
+      await mkLoad();
+      rtRenderActive();
+      repRefreshIfActive();
     })
     .subscribe();
 }
@@ -3229,9 +3405,635 @@ async function rtInit(){
   rtInitialized = true;
   document.getElementById('rtContent').innerHTML = '<div class="empty-hint">Carregando…</div>';
   await rtLoad();
+  await mkLoad();
   rtSetupRealtime();
   rtRenderActive();
 }
+
+/* ═══════════════════════════════════════════════════════
+   RELATÓRIOS & ANÁLISES
+   Tudo é derivado do que já existe: histórico de lotes
+   (pares/dia e composição por modelo), custos do fornecedor
+   e os lançamentos semanais de marketing da aba Rotina.
+   ═══════════════════════════════════════════════════════ */
+
+let repPeriod = '30d';
+const REP_WD = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+function repDateKey(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function repDaysOf(p){ return p==='7d'?7 : p==='30d'?30 : p==='90d'?90 : null; }
+
+/* shiftBack = true devolve o período imediatamente anterior, do mesmo tamanho */
+function repRange(period, shiftBack){
+  const n = repDaysOf(period);
+  if(!n) return { from:null, to:null, days:null, label:'Todo o período registrado' };
+  const end = new Date(); end.setHours(12,0,0,0);
+  if(shiftBack) end.setDate(end.getDate() - n);
+  const start = new Date(end); start.setDate(end.getDate() - (n-1));
+  const fk = repDateKey(start), tk = repDateKey(end);
+  return { from:fk, to:tk, days:n, label:`${formatDateKeyToLabel(fk)} a ${formatDateKeyToLabel(tk)}` };
+}
+
+function repAggregate(from, to){
+  const byDay = {}, byModel = {}, byWeekday = [0,0,0,0,0,0,0];
+  let totalPares = 0, lotes = 0, legados = 0;
+  history.forEach(h => {
+    if(from && h.dateKey < from) return;
+    if(to && h.dateKey > to) return;
+    const qtd = h.count || 0;
+    lotes++;
+    totalPares += qtd;
+    byDay[h.dateKey] = (byDay[h.dateKey] || 0) + qtd;
+    byWeekday[new Date(h.dateKey + 'T12:00:00').getDay()] += qtd;
+    const c = h.composicao;
+    if(!c || Object.keys(c).length === 0){ legados++; return; }
+    Object.keys(c).forEach(m => byModel[m] = (byModel[m] || 0) + c[m]);
+  });
+  return { byDay, byModel, byWeekday, totalPares, lotes, legados };
+}
+
+/* série diária contínua (dias sem lote entram como zero) */
+function repDailySeries(from, to, byDay){
+  const keys = Object.keys(byDay).sort();
+  if(keys.length === 0) return [];
+  const d = new Date((from || keys[0]) + 'T12:00:00');
+  const end = new Date((to || keys[keys.length-1]) + 'T12:00:00');
+  const out = [];
+  let guard = 0;
+  while(d <= end && guard++ < 2000){
+    const k = repDateKey(d);
+    out.push({ key:k, value: byDay[k] || 0 });
+    d.setDate(d.getDate() + 1);
+  }
+  return out;
+}
+
+function repMovingAvg(series, w){
+  return series.map((p,i) => {
+    const slice = series.slice(Math.max(0, i-w+1), i+1);
+    return slice.reduce((s,x)=>s+x.value,0) / slice.length;
+  });
+}
+
+/* regressão linear simples sobre a série diária */
+function repTrend(series){
+  const n = series.length;
+  if(n < 5) return null;
+  let sx=0, sy=0, sxy=0, sxx=0;
+  series.forEach((p,i)=>{ sx+=i; sy+=p.value; sxy+=i*p.value; sxx+=i*i; });
+  const den = n*sxx - sx*sx;
+  if(den === 0) return null;
+  const slope = (n*sxy - sx*sy) / den;
+  const intercept = (sy - slope*sx) / n;
+  const mean = sy / n;
+  const proj7 = Math.max(0, Math.round((slope*(n+3) + intercept) * 7));
+  return { slope, intercept, mean, proj7 };
+}
+
+function repPct(cur, prev){
+  if(prev === null || prev === undefined || prev === 0) return null;
+  return (cur - prev) / prev * 100;
+}
+function repDeltaChip(pct, invert, sufixo){
+  if(pct === null || !isFinite(pct)) return `<span class="delta flat">sem base</span>`;
+  const bom = invert ? pct < 0 : pct > 0;
+  const cls = Math.abs(pct) < 1 ? 'flat' : (bom ? 'up' : 'down');
+  const seta = pct > 0.5 ? '▲' : pct < -0.5 ? '▼' : '=';
+  return `<span class="delta ${cls}">${seta} ${Math.abs(pct).toFixed(1)}%${sufixo||''}</span>`;
+}
+
+/* curva ABC (Pareto): A = 80% do volume, B = até 95%, C = cauda */
+function repAbc(byModel){
+  const total = Object.values(byModel).reduce((s,v)=>s+v,0);
+  let acc = 0;
+  const rows = Object.keys(byModel)
+    .map(modelo => ({ modelo, qtd: byModel[modelo] }))
+    .sort((a,b) => b.qtd - a.qtd)
+    .map(r => {
+      const share = total ? r.qtd/total*100 : 0;
+      acc += share;
+      return { ...r, share, acum: acc, classe: acc <= 80.01 ? 'A' : acc <= 95.01 ? 'B' : 'C' };
+    });
+  return { rows, total };
+}
+/* hex literal (e não var()) porque também é usado com alpha em 8 dígitos */
+function repAbcColor(classe){
+  return classe === 'A' ? '#4F97AB' : classe === 'B' ? '#E87A45' : '#A1A1A6';
+}
+
+/* ---------- gráficos (SVG inline) ---------- */
+function repDailyChart(series){
+  if(!series.length) return '<div class="empty-hint">Nenhum lote registrado neste período.</div>';
+  const data = series.length > 180 ? series.slice(-180) : series;
+  const W=720, H=210, pl=38, pr=10, pt=12, pb=28;
+  const iw=W-pl-pr, ih=H-pt-pb;
+  const max = Math.max(1, ...data.map(p=>p.value));
+  const bw = iw / data.length;
+  const yOf = v => pt + ih - (v/max)*ih;
+  const ma = repMovingAvg(data, 7);
+
+  const grid = [0, .5, 1].map(f => {
+    const yy = pt + ih - f*ih;
+    return `<line class="gl" x1="${pl}" y1="${yy.toFixed(1)}" x2="${W-pr}" y2="${yy.toFixed(1)}"/>`
+         + `<text class="ax" x="${pl-6}" y="${(yy+3.5).toFixed(1)}" text-anchor="end">${Math.round(f*max)}</text>`;
+  }).join('');
+
+  const bars = data.map((p,i) => {
+    const bh = p.value > 0 ? Math.max(2, (p.value/max)*ih) : 0;
+    const w = Math.max(1.5, bw*0.62);
+    const x = pl + i*bw + (bw - w)/2;
+    return `<rect x="${x.toFixed(1)}" y="${(pt+ih-bh).toFixed(1)}" width="${w.toFixed(1)}" height="${bh.toFixed(1)}" rx="${Math.min(2, w/2).toFixed(1)}" fill="var(--brand)" opacity=".8"><title>${formatDateKeyToLabel(p.key)} — ${p.value} pares</title></rect>`;
+  }).join('');
+
+  const linha = ma.map((v,i) => `${(pl + i*bw + bw/2).toFixed(1)},${yOf(v).toFixed(1)}`).join(' ');
+  const step = Math.max(1, Math.ceil(data.length/7));
+  const labels = data.map((p,i) => (i % step === 0)
+    ? `<text class="ax" x="${(pl + i*bw + bw/2).toFixed(1)}" y="${H-8}" text-anchor="middle">${p.key.slice(8)}/${p.key.slice(5,7)}</text>`
+    : '').join('');
+
+  return `<svg class="rep-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Pares separados por dia">
+    ${grid}${bars}
+    <polyline points="${linha}" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    ${labels}
+  </svg>`;
+}
+
+function repWeekLineChart(weeks, opts){
+  if(!weeks.length) return '<div class="empty-hint">Nenhuma semana de marketing registrada ainda.</div>';
+  const { key, target, fmt, invert } = opts;
+  const W=720, H=200, pl=52, pr=14, pt=16, pb=30;
+  const iw=W-pl-pr, ih=H-pt-pb;
+  const vals = weeks.map(w => w[key]);
+  const max = Math.max(target || 0, ...vals) * 1.18 || 1;
+  const xOf = i => weeks.length === 1 ? pl + iw/2 : pl + (i/(weeks.length-1))*iw;
+  const yOf = v => pt + ih - (v/max)*ih;
+
+  const grid = [0, .5, 1].map(f => {
+    const yy = pt + ih - f*ih;
+    return `<line class="gl" x1="${pl}" y1="${yy.toFixed(1)}" x2="${W-pr}" y2="${yy.toFixed(1)}"/>`
+         + `<text class="ax" x="${pl-8}" y="${(yy+3.5).toFixed(1)}" text-anchor="end">${fmt(f*max)}</text>`;
+  }).join('');
+
+  const alvo = target ? `<line x1="${pl}" y1="${yOf(target).toFixed(1)}" x2="${W-pr}" y2="${yOf(target).toFixed(1)}" stroke="var(--orange)" stroke-width="1.5" stroke-dasharray="5 4"/>
+    <text class="ax" x="${W-pr}" y="${(yOf(target)-6).toFixed(1)}" text-anchor="end" fill="var(--orange-d)">meta ${fmt(target)}</text>` : '';
+
+  const pts = weeks.map((w,i) => `${xOf(i).toFixed(1)},${yOf(w[key]).toFixed(1)}`).join(' ');
+  const dots = weeks.map((w,i) => {
+    const ok = invert ? w[key] < target : w[key] >= target;
+    return `<circle cx="${xOf(i).toFixed(1)}" cy="${yOf(w[key]).toFixed(1)}" r="4.5" fill="${ok ? 'var(--brand)' : 'var(--danger)'}" stroke="var(--surface)" stroke-width="2"><title>${w.label}: ${fmt(w[key])}</title></circle>`;
+  }).join('');
+  const labels = weeks.map((w,i) => `<text class="ax" x="${xOf(i).toFixed(1)}" y="${H-8}" text-anchor="middle">${w.label}</text>`).join('');
+
+  return `<svg class="rep-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Evolução semanal">
+    ${grid}${alvo}
+    <polyline points="${pts}" fill="none" stroke="var(--brand)" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+    ${dots}${labels}
+  </svg>`;
+}
+
+function repInvestRevenueChart(weeks){
+  if(!weeks.length) return '<div class="empty-hint">Nenhuma semana de marketing registrada ainda.</div>';
+  const W=720, H=200, pl=58, pr=14, pt=16, pb=30;
+  const iw=W-pl-pr, ih=H-pt-pb;
+  const max = Math.max(1, ...weeks.map(w => Math.max(w.invest, w.revenue))) * 1.1;
+  const gw = iw / weeks.length;
+  const bw = Math.min(26, gw*0.34);
+  const yOf = v => pt + ih - (v/max)*ih;
+
+  const grid = [0, .5, 1].map(f => {
+    const yy = pt + ih - f*ih;
+    return `<line class="gl" x1="${pl}" y1="${yy.toFixed(1)}" x2="${W-pr}" y2="${yy.toFixed(1)}"/>`
+         + `<text class="ax" x="${pl-8}" y="${(yy+3.5).toFixed(1)}" text-anchor="end">${Math.round(f*max/1000)}k</text>`;
+  }).join('');
+
+  const barras = weeks.map((w,i) => {
+    const cx = pl + i*gw + gw/2;
+    const hi = Math.max(1, (w.invest/max)*ih), hr = Math.max(1, (w.revenue/max)*ih);
+    return `<rect x="${(cx-bw-2).toFixed(1)}" y="${(pt+ih-hi).toFixed(1)}" width="${bw.toFixed(1)}" height="${hi.toFixed(1)}" rx="3" fill="var(--orange)"><title>${w.label} — investido ${fmtBRL(w.invest)}</title></rect>
+      <rect x="${(cx+2).toFixed(1)}" y="${(pt+ih-hr).toFixed(1)}" width="${bw.toFixed(1)}" height="${hr.toFixed(1)}" rx="3" fill="var(--brand)"><title>${w.label} — faturado ${fmtBRL(w.revenue)}</title></rect>
+      <text class="ax" x="${cx.toFixed(1)}" y="${H-8}" text-anchor="middle">${w.label}</text>`;
+  }).join('');
+
+  return `<svg class="rep-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Investimento e faturamento por semana">${grid}${barras}</svg>`;
+}
+
+/* ---------- leitura automática de pontos fortes e fracos ---------- */
+function repInsights(ctx){
+  const out = [];
+  const { A, P, abc, deltaPares, trend, wd, mkAtual, mkAnterior, semCusto, diasSemLote, modeloAlta, modeloQueda } = ctx;
+
+  if(deltaPares !== null){
+    if(deltaPares >= 10) out.push({k:'good', ic:'📈', t:'Volume em alta', d:`${A.totalPares} pares no período, ${deltaPares.toFixed(1)}% acima do período anterior. É o momento de garantir estoque dos modelos classe A.`});
+    else if(deltaPares <= -10) out.push({k:'critical', ic:'📉', t:'Volume em queda', d:`Queda de ${Math.abs(deltaPares).toFixed(1)}% frente ao período anterior. Vale cruzar com o investimento em mídia da semana para achar a causa.`});
+    else out.push({k:'neutral', ic:'➖', t:'Volume estável', d:`Variação de ${deltaPares.toFixed(1)}% frente ao período anterior — operação sem oscilação relevante.`});
+  }
+
+  if(trend && Math.abs(trend.slope) > 0.05){
+    const sobe = trend.slope > 0;
+    out.push({
+      k: sobe ? 'good' : 'warning',
+      ic: sobe ? '↗️' : '↘️',
+      t: sobe ? 'Tendência de crescimento' : 'Tendência de retração',
+      d: `A reta de tendência ${sobe ? 'sobe' : 'cai'} ${Math.abs(trend.slope).toFixed(2)} par por dia. Mantido o ritmo, os próximos 7 dias somariam cerca de ${trend.proj7} pares.`
+    });
+  }
+
+  if(abc.rows.length){
+    const top = abc.rows[0];
+    if(top.share >= 40) out.push({k:'warning', ic:'⚠️', t:'Concentração em um modelo', d:`${top.modelo} sozinho responde por ${top.share.toFixed(1)}% do volume. Dependência alta: uma ruptura desse modelo derruba o faturamento inteiro.`});
+    else out.push({k:'good', ic:'🧩', t:'Mix equilibrado', d:`O modelo líder (${top.modelo}) representa ${top.share.toFixed(1)}% do volume — carteira diluída o suficiente para absorver uma ruptura.`});
+    const classeA = abc.rows.filter(r=>r.classe==='A').length;
+    const classeC = abc.rows.filter(r=>r.classe==='C').length;
+    if(classeC >= 3) out.push({k:'neutral', ic:'🔍', t:'Cauda longa de modelos', d:`${classeA} modelo(s) fazem 80% do volume, enquanto ${classeC} ficam na cauda (classe C). Candidatos naturais a corte de catálogo ou a um empurrão de mídia.`});
+  }
+
+  if(modeloAlta) out.push({k:'good', ic:'🔥', t:`${modeloAlta.modelo} é o destaque`, d:`Saiu de ${modeloAlta.antes} para ${modeloAlta.agora} pares (${modeloAlta.pct > 0 ? '+' : ''}${modeloAlta.pct.toFixed(0)}%) frente ao período anterior. Melhor candidato para reforçar em mídia.`});
+  if(modeloQueda) out.push({k:'critical', ic:'🧊', t:`${modeloQueda.modelo} perdendo tração`, d:`Caiu de ${modeloQueda.antes} para ${modeloQueda.agora} pares (${modeloQueda.pct.toFixed(0)}%). Verificar preço, anúncio ou ruptura de numeração.`});
+
+  if(wd.melhor && wd.pior && wd.melhor.total > 0){
+    out.push({k:'neutral', ic:'📅', t:`${wd.melhor.nome} é o dia mais forte`, d:`${wd.melhor.nome} concentra ${wd.melhor.total} pares e ${wd.pior.nome} apenas ${wd.pior.total}. Dá para escalonar a mídia e a separação seguindo esse padrão.`});
+  }
+
+  if(semCusto > 0) out.push({k:'warning', ic:'💸', t:'Custos incompletos', d:`${semCusto} modelo(s) vendidos no período estão sem custo cadastrado, então o custo de mercadoria mostrado está subestimado. Cadastre na aba Fornecedor.`});
+
+  if(diasSemLote !== null && diasSemLote.pct >= 30) out.push({k:'warning', ic:'🗓️', t:'Registro com falhas', d:`${diasSemLote.dias} dos ${diasSemLote.total} dias do período não têm lote registrado (${diasSemLote.pct.toFixed(0)}%). Se houve venda nesses dias, os números abaixo estão incompletos.`});
+
+  if(A.legados > 0) out.push({k:'neutral', ic:'🗄️', t:'Lotes antigos sem detalhe', d:`${A.legados} lote(s) do período foram registrados antes do detalhe por modelo existir. Eles contam no total de pares, mas não aparecem na análise por modelo.`});
+
+  if(mkAtual){
+    const meta = rtState.targets || { roas:15, cpa:10 };
+    if(mkAtual.roas >= meta.roas) out.push({k:'good', ic:'🎯', t:'ROAS dentro da meta', d:`ROAS de ${mkAtual.roas.toFixed(1)}x na semana ${mkAtual.label}, contra meta de ${meta.roas}x. Espaço para escalar investimento mantendo a eficiência.`});
+    else out.push({k:'critical', ic:'🎯', t:'ROAS abaixo da meta', d:`ROAS de ${mkAtual.roas.toFixed(1)}x na semana ${mkAtual.label}, contra meta de ${meta.roas}x. Cada real investido está devolvendo ${fmtBRL(mkAtual.roas)} em faturamento.`});
+    if(mkAtual.cpa >= meta.cpa) out.push({k:'warning', ic:'💰', t:'Custo por pedido acima da meta', d:`Está em ${fmtBRL(mkAtual.cpa)} por pedido, contra meta de ${fmtBRL(meta.cpa)}. Revisar criativos e segmentação das campanhas mais caras.`});
+    if(mkAnterior){
+      const dr = repPct(mkAtual.roas, mkAnterior.roas);
+      if(dr !== null && dr <= -15) out.push({k:'critical', ic:'📊', t:'Eficiência de mídia caindo', d:`O ROAS caiu ${Math.abs(dr).toFixed(0)}% frente à semana ${mkAnterior.label} (${mkAnterior.roas.toFixed(1)}x → ${mkAtual.roas.toFixed(1)}x). Sinal clássico de fadiga de criativo.`});
+      else if(dr !== null && dr >= 15) out.push({k:'good', ic:'📊', t:'Eficiência de mídia melhorando', d:`O ROAS subiu ${dr.toFixed(0)}% frente à semana ${mkAnterior.label} (${mkAnterior.roas.toFixed(1)}x → ${mkAtual.roas.toFixed(1)}x).`});
+    }
+  }else{
+    out.push({k:'neutral', ic:'📭', t:'Sem dados de marketing', d:'Nenhuma semana lançada ainda. Registre investimento, faturamento e nº de pedidos na aba Rotina → Marketing & TikTok para liberar as métricas desta página.'});
+  }
+
+  return out;
+}
+
+function repInsightCard(i){
+  return `<div class="rep-insight ${i.k}">
+    <span class="ic">${i.ic}</span>
+    <div><div class="t">${i.t}</div><div class="d">${i.d}</div></div>
+  </div>`;
+}
+
+function repKpi({icon, label, value, delta, foot, kind}){
+  return `<div class="kpi">
+    <div class="kpi-top"><span class="kpi-ic ${kind||''}">${icon}</span><span class="kpi-label">${label}</span></div>
+    <div class="kpi-num mono">${value}</div>
+    ${delta ? `<div style="margin-top:6px;">${delta}</div>` : ''}
+    ${foot ? `<div class="kpi-foot">${foot}</div>` : ''}
+  </div>`;
+}
+
+/* ---------- render ---------- */
+function repRender(){
+  const el = document.getElementById('repContent');
+  if(!el) return;
+
+  const cur = repRange(repPeriod, false);
+  const prev = repRange(repPeriod, true);
+  const lab = document.getElementById('repRangeLabel');
+  if(lab) lab.textContent = cur.label;
+
+  const A = repAggregate(cur.from, cur.to);
+  const P = prev.days ? repAggregate(prev.from, prev.to) : null;
+  const serie = repDailySeries(cur.from, cur.to, A.byDay);
+  const trend = repTrend(serie);
+  const abc = repAbc(A.byModel);
+
+  const diasPeriodo = cur.days || serie.length;
+  const diasComLote = Object.keys(A.byDay).length;
+  const mediaDiaria = diasPeriodo ? A.totalPares / diasPeriodo : 0;
+  const mediaAnterior = P && prev.days ? P.totalPares / prev.days : null;
+  const deltaPares = P ? repPct(A.totalPares, P.totalPares) : null;
+
+  const melhorDia = Object.keys(A.byDay).sort((a,b)=>A.byDay[b]-A.byDay[a])[0] || null;
+
+  let custoTotal = 0, semCusto = 0;
+  Object.keys(A.byModel).forEach(m => {
+    const c = custoMap[m];
+    if(typeof c === 'number' && !isNaN(c)) custoTotal += c * A.byModel[m];
+    else semCusto++;
+  });
+  let custoAnterior = null;
+  if(P){
+    custoAnterior = 0;
+    Object.keys(P.byModel).forEach(m => {
+      const c = custoMap[m];
+      if(typeof c === 'number' && !isNaN(c)) custoAnterior += c * P.byModel[m];
+    });
+  }
+
+  const wdTot = A.byWeekday.map((total,i)=>({ i, nome: REP_WD[i], total }));
+  const wdComDado = wdTot.filter(w=>w.total>0);
+  const wd = {
+    melhor: wdComDado.length ? wdComDado.reduce((a,b)=> b.total>a.total?b:a) : null,
+    pior:   wdComDado.length ? wdComDado.reduce((a,b)=> b.total<a.total?b:a) : null,
+    max:    Math.max(1, ...A.byWeekday)
+  };
+
+  const diasSemLote = cur.days ? { dias: diasPeriodo - diasComLote, total: diasPeriodo, pct: (diasPeriodo - diasComLote)/diasPeriodo*100 } : null;
+
+  /* modelos: variação frente ao período anterior */
+  let modeloAlta = null, modeloQueda = null;
+  if(P){
+    const cands = Object.keys(A.byModel)
+      .filter(m => (P.byModel[m] || 0) >= 3 && A.byModel[m] >= 3)
+      .map(m => ({ modelo:m, agora:A.byModel[m], antes:P.byModel[m], pct: repPct(A.byModel[m], P.byModel[m]) }))
+      .filter(x => x.pct !== null);
+    const subindo = cands.filter(x=>x.pct >= 20).sort((a,b)=>b.pct-a.pct);
+    const caindo  = cands.filter(x=>x.pct <= -20).sort((a,b)=>a.pct-b.pct);
+    modeloAlta = subindo[0] || null;
+    modeloQueda = caindo[0] || null;
+  }
+
+  /* marketing (lançado por semana na aba Rotina) */
+  const semanas = (rtState && rtState.marketing) ? rtConsolidatedWeeks() : [];
+  const mkAtual = semanas.length ? semanas[semanas.length-1] : null;
+  const mkAnterior = semanas.length > 1 ? semanas[semanas.length-2] : null;
+  const metas = (rtState && rtState.targets) ? rtState.targets : { roas:15, cpa:10 };
+
+  const insights = repInsights({ A, P, abc, deltaPares, trend, wd, mkAtual, mkAnterior, semCusto, diasSemLote, modeloAlta, modeloQueda });
+
+  /* ---- blocos ---- */
+  const kpisVendas = `
+  <div class="kpi-row">
+    ${repKpi({ icon:'📦', label:'Pares no período', value:A.totalPares,
+      delta: P ? repDeltaChip(deltaPares, false, ' vs. anterior') : '',
+      foot:`${A.lotes} lote(s) · ${diasComLote} dia(s) com registro` })}
+    ${repKpi({ icon:'📊', label:'Média por dia', value:mediaDiaria.toFixed(1),
+      delta: mediaAnterior !== null ? repDeltaChip(repPct(mediaDiaria, mediaAnterior), false, '') : '',
+      foot:`Sobre ${diasPeriodo} dia(s) corridos` })}
+    ${repKpi({ icon:'🏆', label:'Melhor dia', value: melhorDia ? A.byDay[melhorDia] : '0',
+      foot: melhorDia ? formatDateKeyToLabel(melhorDia) : 'Sem registro no período' })}
+    ${repKpi({ icon:'🏭', label:'Custo de mercadoria', value:fmtBRL(custoTotal),
+      delta: custoAnterior !== null ? repDeltaChip(repPct(custoTotal, custoAnterior), false, '') : '',
+      foot: semCusto ? `${semCusto} modelo(s) sem custo cadastrado` : 'Todos os modelos com custo', kind: semCusto ? 'amber' : '' })}
+  </div>`;
+
+  const cardEvolucao = `
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-head">
+      <div>
+        <div class="card-title">Evolução diária</div>
+        <div class="card-desc">Barras: pares separados por dia. Linha laranja: média móvel de 7 dias, que remove o ruído do dia a dia.</div>
+      </div>
+      ${trend ? `<span class="badge ${trend.slope > 0.05 ? 'badge-good' : trend.slope < -0.05 ? 'badge-critical' : 'badge-neutral'}">${trend.slope > 0 ? '+' : ''}${trend.slope.toFixed(2)} par/dia</span>` : ''}
+    </div>
+    <div class="card-body">
+      ${repDailyChart(serie)}
+      ${trend ? `<div class="rep-note">Reta de tendência do período: <b>${trend.slope > 0 ? '+' : ''}${trend.slope.toFixed(2)} par por dia</b>, média de ${trend.mean.toFixed(1)} pares/dia. Mantido esse ritmo, os próximos 7 dias somariam cerca de <b>${trend.proj7} pares</b> — projeção estatística, não promessa.</div>` : ''}
+    </div>
+  </div>`;
+
+  const cardAbc = `
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <div class="card-title">Curva ABC de modelos</div>
+        <div class="card-desc">Ordenado por volume. Classe A = os modelos que somam 80% das vendas.</div>
+      </div>
+    </div>
+    <div class="card-body">
+      ${abc.rows.length === 0
+        ? '<div class="empty-hint">Nenhum lote com detalhe por modelo neste período.</div>'
+        : abc.rows.map(r => `
+          <div class="rep-hrow">
+            <div class="rep-hname" title="${r.modelo}">${r.modelo}</div>
+            <div class="rep-htrack"><div class="rep-hfill" style="width:${Math.max(2, r.share).toFixed(1)}%; background:${repAbcColor(r.classe)};"></div></div>
+            <div class="rep-hval">${r.qtd} <span style="color:var(--faint);">· ${r.share.toFixed(1)}%</span></div>
+          </div>`).join('')
+      }
+      <div class="rep-legend">
+        <span><i class="sw-a"></i>Classe A — carro-chefe</span>
+        <span><i class="sw-b"></i>Classe B — intermediário</span>
+        <span><i class="sw-c"></i>Classe C — cauda</span>
+      </div>
+    </div>
+  </div>`;
+
+  const cardSemana = `
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <div class="card-title">Volume por dia da semana</div>
+        <div class="card-desc">Soma de todos os pares do período por dia da semana — mostra onde a demanda se concentra.</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="rep-heat">
+        ${[1,2,3,4,5,6,0].map(i => {
+          const v = A.byWeekday[i];
+          const f = v / wd.max;
+          const bg = v === 0 ? 'var(--surface-2)' : `rgba(79,151,171,${(0.10 + f*0.55).toFixed(2)})`;
+          const share = A.totalPares ? (v/A.totalPares*100) : 0;
+          return `<div class="cell" style="background:${bg};">
+            <div class="wd">${REP_WD[i]}</div>
+            <div class="v">${v}</div>
+            <div class="s">${share.toFixed(0)}%</div>
+          </div>`;
+        }).join('')}
+      </div>
+      ${wd.melhor ? `<div class="rep-note">Pico em <b>${wd.melhor.nome}</b> (${wd.melhor.total} pares) e vale em <b>${wd.pior.nome}</b> (${wd.pior.total} pares).</div>` : ''}
+    </div>
+  </div>`;
+
+  const cardInsights = `
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-head">
+      <div>
+        <div class="card-title">Pontos fortes e pontos fracos</div>
+        <div class="card-desc">Leitura automática dos números do período — ${insights.length} observação(ões).</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="rep-grid-2">${insights.map(repInsightCard).join('')}</div>
+    </div>
+  </div>`;
+
+  const linhasModelo = abc.rows.map(r => {
+    const antes = P ? (P.byModel[r.modelo] || 0) : null;
+    const pct = antes !== null ? repPct(r.qtd, antes) : null;
+    const custo = custoMap[r.modelo];
+    const temCusto = typeof custo === 'number' && !isNaN(custo);
+    return `<tr>
+      <td style="font-weight:700;">${r.modelo}</td>
+      <td><span class="badge" style="background:${repAbcColor(r.classe)}1f; color:${repAbcColor(r.classe)};">${r.classe}</span></td>
+      <td class="mono">${r.qtd}</td>
+      <td class="mono">${r.share.toFixed(1)}%</td>
+      <td class="mono">${r.acum.toFixed(1)}%</td>
+      <td>${P ? (antes === 0 && r.qtd > 0 ? '<span class="delta up">novo</span>' : repDeltaChip(pct, false, '')) : '<span class="delta flat">—</span>'}</td>
+      <td class="mono">${temCusto ? fmtBRL(custo) : '<span style="color:var(--orange-d);">definir</span>'}</td>
+      <td class="mono" style="font-weight:700;">${temCusto ? fmtBRL(custo * r.qtd) : '—'}</td>
+    </tr>`;
+  }).join('');
+
+  const cardTabela = `
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <div class="card-title">Detalhe por modelo</div>
+        <div class="card-desc">Participação, acumulado da curva ABC, variação frente ao período anterior e custo de mercadoria.</div>
+      </div>
+    </div>
+    <div class="card-body" style="overflow-x:auto;">
+      <table class="alias-table">
+        <thead><tr>
+          <th>Modelo</th><th>ABC</th><th>Pares</th><th>Share</th><th>Acumulado</th><th>Variação</th><th>Custo un.</th><th>Custo total</th>
+        </tr></thead>
+        <tbody>${linhasModelo || '<tr><td colspan="8" style="color:var(--faint); font-style:italic; padding:18px 10px; text-align:center;">Nenhum modelo com detalhe neste período.</td></tr>'}</tbody>
+      </table>
+    </div>
+  </div>`;
+
+  /* ---- marketing ---- */
+  let blocoMarketing;
+  if(!mkAtual){
+    blocoMarketing = `
+    <div class="card">
+      <div class="card-body">
+        <div class="empty-hint" style="padding:34px 10px;">
+          Nenhuma semana de marketing registrada.<br>
+          Lance investimento, faturamento e nº de pedidos em <b>Rotina → Marketing &amp; TikTok</b> para liberar ROAS, CPA, ticket médio e o comparativo entre lojas.
+        </div>
+      </div>
+    </div>`;
+  }else{
+    const ticket = mkAtual.orders ? mkAtual.revenue / mkAtual.orders : 0;
+    const ticketAnt = mkAnterior && mkAnterior.orders ? mkAnterior.revenue / mkAnterior.orders : null;
+    const st = rtMarketingStatus(mkAtual.roas, mkAtual.cpa);
+    const breakdown = rtLatestWeekBreakdown();
+    const boostSemana = rtComputeBoostWeekTotal();
+
+    /* cruzamento aproximado: mídia da última semana × pares dos últimos 7 dias */
+    const ult7 = repAggregate(repRange('7d', false).from, repRange('7d', false).to);
+    const midiaPorPar = ult7.totalPares ? mkAtual.invest / ult7.totalPares : null;
+    let custo7 = 0;
+    Object.keys(ult7.byModel).forEach(m => {
+      const c = custoMap[m];
+      if(typeof c === 'number' && !isNaN(c)) custo7 += c * ult7.byModel[m];
+    });
+    const margem = mkAtual.revenue - mkAtual.invest - custo7;
+
+    const linhasLojas = breakdown.rows.map(r => {
+      if(!r.entry) return `<tr><td style="font-weight:700;">${r.store}</td><td colspan="6" style="color:var(--faint); font-style:italic;">sem lançamento nesta semana</td></tr>`;
+      const e = r.entry;
+      const roas = e.invest ? e.revenue/e.invest : 0;
+      const cpa = e.orders ? e.invest/e.orders : 0;
+      const tk = e.orders ? e.revenue/e.orders : 0;
+      const s = rtMarketingStatus(roas, cpa);
+      return `<tr>
+        <td style="font-weight:700;">${r.store}</td>
+        <td class="mono">${fmtBRL(e.invest)}</td>
+        <td class="mono">${fmtBRL(e.revenue)}</td>
+        <td class="mono" style="font-weight:700; color:${roas >= metas.roas ? 'var(--accent-d)' : 'var(--danger)'};">${roas.toFixed(1)}x</td>
+        <td class="mono" style="color:${cpa < metas.cpa ? 'var(--accent-d)' : 'var(--danger)'};">${fmtBRL(cpa)}</td>
+        <td class="mono">${e.orders}</td>
+        <td class="mono">${fmtBRL(tk)}</td>
+        <td>${rtStatusBadge(s.kind, s.label)}</td>
+      </tr>`;
+    }).join('');
+
+    blocoMarketing = `
+    <div class="kpi-row">
+      ${repKpi({ icon:'💵', label:'Investimento', value:fmtBRL(mkAtual.invest),
+        delta: mkAnterior ? repDeltaChip(repPct(mkAtual.invest, mkAnterior.invest), false, '') : '',
+        foot:`Semana ${mkAtual.label}` })}
+      ${repKpi({ icon:'🧾', label:'Faturamento', value:fmtBRL(mkAtual.revenue),
+        delta: mkAnterior ? repDeltaChip(repPct(mkAtual.revenue, mkAnterior.revenue), false, '') : '',
+        foot:`${mkAtual.orders} pedido(s)` })}
+      ${repKpi({ icon:'🎯', label:'ROAS', value:mkAtual.roas.toFixed(1)+'x',
+        delta: mkAnterior ? repDeltaChip(repPct(mkAtual.roas, mkAnterior.roas), false, '') : '',
+        foot:`Meta: ${metas.roas}x`, kind: mkAtual.roas >= metas.roas ? 'good' : 'danger' })}
+      ${repKpi({ icon:'💰', label:'Custo por pedido', value:fmtBRL(mkAtual.cpa),
+        delta: mkAnterior ? repDeltaChip(repPct(mkAtual.cpa, mkAnterior.cpa), true, '') : '',
+        foot:`Meta: abaixo de ${fmtBRL(metas.cpa)}`, kind: mkAtual.cpa < metas.cpa ? 'good' : 'danger' })}
+    </div>
+
+    <div class="kpi-row" style="grid-template-columns:repeat(4,1fr);">
+      ${repKpi({ icon:'🛒', label:'Ticket médio', value:fmtBRL(ticket),
+        delta: ticketAnt !== null ? repDeltaChip(repPct(ticket, ticketAnt), false, '') : '',
+        foot:'Faturamento ÷ pedidos' })}
+      ${repKpi({ icon:'📣', label:'Mídia por par vendido', value: midiaPorPar !== null ? fmtBRL(midiaPorPar) : '—',
+        foot:`Investimento da semana ÷ ${ult7.totalPares} pares dos últimos 7 dias` })}
+      ${repKpi({ icon:'📈', label:'Margem bruta estimada', value:fmtBRL(margem),
+        foot:'Faturamento − mídia − custo do fornecedor (7 dias)', kind: margem >= 0 ? 'good' : 'danger' })}
+      ${repKpi({ icon:'🚀', label:'Impulsionamento', value:fmtBRL(boostSemana),
+        foot:`Ads de TikTok nesta semana · ${fmtBRL(rtComputeBoostAllTimeTotal())} no total` })}
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-head">
+        <div>
+          <div class="card-title">ROAS por semana</div>
+          <div class="card-desc">Consolidado de todas as lojas. Linha tracejada = meta de ${metas.roas}x; pontos vermelhos ficaram abaixo dela.</div>
+        </div>
+        ${rtStatusBadge(st.kind, st.label)}
+      </div>
+      <div class="card-body">${repWeekLineChart(semanas, { key:'roas', target:metas.roas, invert:false, fmt:v=>v.toFixed(1)+'x' })}</div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Investimento × faturamento</div>
+          <div class="card-desc">Laranja: investido em mídia. Azul: faturamento gerado. A distância entre as duas barras é a alavancagem da semana.</div>
+        </div>
+      </div>
+      <div class="card-body">${repInvestRevenueChart(semanas)}</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Ranking de lojas${breakdown.label ? ` — semana ${breakdown.label}` : ''}</div>
+          <div class="card-desc">Onde a mídia está rendendo e onde está queimando caixa.</div>
+        </div>
+      </div>
+      <div class="card-body" style="overflow-x:auto;">
+        <table class="alias-table">
+          <thead><tr><th>Loja</th><th>Investido</th><th>Faturado</th><th>ROAS</th><th>CPA</th><th>Pedidos</th><th>Ticket médio</th><th>Status</th></tr></thead>
+          <tbody>${linhasLojas}</tbody>
+        </table>
+        <div class="rep-note">O marketing é lançado por semana (texto livre) na aba Rotina, então ele não acompanha o filtro de período acima — mostra sempre as semanas registradas. "Mídia por par" e "margem estimada" cruzam a última semana de mídia com os últimos 7 dias de separação: são aproximações para leitura de tendência.</div>
+      </div>
+    </div>`;
+  }
+
+  el.innerHTML = `
+    <div class="rep-sec-title">Vendas — ${cur.label}</div>
+    ${kpisVendas}
+    ${cardEvolucao}
+    ${cardInsights}
+    <div class="rep-grid-2" style="margin-bottom:16px;">${cardAbc}${cardSemana}</div>
+    ${cardTabela}
+    <div class="rep-sec-title">Marketing</div>
+    ${blocoMarketing}
+  `;
+}
+
+function repRefreshIfActive(){
+  const v = document.getElementById('view-relatorios');
+  if(v && v.classList.contains('active')) repRender();
+}
+
+document.getElementById('repTabs').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.ptab');
+  if(!btn) return;
+  repPeriod = btn.dataset.rep;
+  document.querySelectorAll('#repTabs .ptab').forEach(b => b.classList.toggle('active', b === btn));
+  repRender();
+});
 
 /* ---------- Autenticação (Supabase Auth) ---------- */
 let appInitialized = false;
