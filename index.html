@@ -592,6 +592,8 @@
   .rt-cat-name{font-weight:700; font-size:14px;}
   .rt-cat-progress{flex:1; min-width:100px;}
   .rt-cat-count{font-size:11.5px; color:var(--muted); font-weight:600; white-space:nowrap;}
+  .rt-cat-assign{display:flex; align-items:center; gap:8px; padding:10px 18px; font-size:12px; color:var(--muted); font-weight:600; border-bottom:1px dashed var(--border);}
+  .rt-cat-assign .rt-select{width:auto; padding:6px 10px; font-size:12px;}
   .rt-cat-body{padding:4px 18px 14px;}
   .rt-item-row{display:flex; align-items:center; gap:11px; padding:9px 0; border-top:1px dashed var(--border); font-size:13px;}
   .rt-item-row:first-child{border-top:none;}
@@ -2481,24 +2483,23 @@ const rtCategoryStyles = [
   { color:'#4a3aa7', icon:'🔄' },
 ];
 
+const rtPeople = ['Breno','Murilo'];
+
 function rtDefaultCategories(){
   const raw = [
     { name:"Estoque & Operações", items:[
       "Conferir produtos com estoque baixo ou zerado",
-      "Verificar pedidos pendentes de envio/expedição",
       "Checar prazos de entrega em atraso",
-      "Confirmar reposição com fornecedores",
+      "Confirmar reposição com fornecedor se tiver algum produto com atraso recorrente",
     ]},
     { name:"Atendimento ao Cliente", items:[
       "Responder mensagens e comentários pendentes",
       "Verificar reclamações e avaliações negativas recentes",
-      "Revisar tempo médio de resposta ao cliente",
       "Verificar solicitações de troca/devolução em aberto",
     ]},
     { name:"Financeiro", items:[
       "Conferir fluxo de caixa da semana",
       "Conciliar vendas recebidas com repasses das plataformas",
-      "Revisar custo de frete médio",
       "Revisar margem de contribuição dos produtos mais vendidos",
     ]},
     { name:"Vendas & Catálogo", items:[
@@ -2506,6 +2507,8 @@ function rtDefaultCategories(){
       "Atualizar fotos, descrições ou preços de produtos",
       "Verificar se há produtos sem estoque ainda anunciados",
       "Avaliar oportunidades de novos produtos/fornecedores",
+      { text:"Estruturar campanhas relâmpago TikTok e semanal da Shopee", intervalDays:15 },
+      "Configurar mais uma ferramenta de desconto ou cupom para cliente",
     ]},
     { name:"Análise de Dados", items:[
       "Revisar taxa de conversão da semana",
@@ -2518,6 +2521,9 @@ function rtDefaultCategories(){
       "Pausar ou ajustar anúncios abaixo da meta",
       "Planejar pautas de conteúdo/postagens da semana",
       "Revisar concorrência (preços, promoções, novidades)",
+      "Conferir valor de saldo",
+      "Gravação de vídeos de produtos",
+      "Estratégia de impulsionamento dos vídeos",
     ]},
     { name:"Melhoria Contínua", items:[
       "Reunião semanal de revisão dos indicadores",
@@ -2525,7 +2531,32 @@ function rtDefaultCategories(){
       "Revisar se ações da semana anterior foram implementadas",
     ]},
   ];
-  return raw.map((c, ci) => ({ ...c, items: c.items.map((text,i) => ({ id:`r-${ci}-${i}`, text, done:false })) }));
+  return raw.map((c, ci) => ({
+    ...c,
+    responsavel: null,
+    items: c.items.map((it,i) => {
+      const text = typeof it === 'string' ? it : it.text;
+      const base = { id:`r-${ci}-${i}`, text, done:false };
+      if(typeof it === 'object' && it.intervalDays){ base.intervalDays = it.intervalDays; base.lastDone = null; }
+      return base;
+    })
+  }));
+}
+
+function rtIsIntervalDue(item){
+  if(!item.intervalDays) return false;
+  if(!item.lastDone) return true;
+  const days = Math.floor((Date.now() - new Date(item.lastDone+'T00:00:00').getTime()) / 86400000);
+  return days >= item.intervalDays;
+}
+function rtItemEffectiveDone(item){
+  return item.intervalDays ? !rtIsIntervalDue(item) : item.done;
+}
+function rtIntervalNextDueLabel(item){
+  if(!item.lastDone) return null;
+  const last = new Date(item.lastDone+'T00:00:00');
+  const next = new Date(last); next.setDate(next.getDate() + item.intervalDays);
+  return next.toLocaleDateString('pt-BR');
 }
 
 function rtDefaultState(){
@@ -2608,7 +2639,7 @@ function rtComputeLastWeekMarketing(){
 }
 function rtComputeRoutineCompletion(){
   const items = rtState.routine.categories.flatMap(c=>c.items);
-  const done = items.filter(i=>i.done).length;
+  const done = items.filter(i=>rtItemEffectiveDone(i)).length;
   return { done, total: items.length, pct: items.length? Math.round(done/items.length*100):0 };
 }
 function rtComputeTasksCompletion(){
@@ -2738,7 +2769,7 @@ function rtRenderRoutine(){
 function rtAttachRoutineHandlers(){
   const wrap = document.getElementById('rtCategories');
   wrap.innerHTML = rtState.routine.categories.map((cat, ci) => {
-    const done = cat.items.filter(i=>i.done).length;
+    const done = cat.items.filter(i=>rtItemEffectiveDone(i)).length;
     const pct = cat.items.length ? Math.round(done/cat.items.length*100) : 0;
     const style = rtCategoryStyles[ci % rtCategoryStyles.length];
     return `
@@ -2751,12 +2782,25 @@ function rtAttachRoutineHandlers(){
         </div>
         <div class="rt-cat-count">${done}/${cat.items.length}</div>
       </div>
+      <div class="rt-cat-assign">
+        <span>Responsável:</span>
+        <select class="rt-select rt-cat-resp" data-cat="${ci}">
+          <option value="">— selecionar —</option>
+          ${rtPeople.map(p=>`<option value="${p}" ${cat.responsavel===p?'selected':''}>${p}</option>`).join('')}
+        </select>
+      </div>
       <div class="rt-cat-body">
-        ${cat.items.map(item => `
+        ${cat.items.map(item => {
+          const effDone = rtItemEffectiveDone(item);
+          const intervalBadge = item.intervalDays
+            ? `<span class="badge badge-neutral" style="margin-left:8px;">🔁 a cada ${item.intervalDays}d${effDone ? ' · próxima ' + rtIntervalNextDueLabel(item) : ''}</span>`
+            : '';
+          return `
           <div class="rt-item-row">
-            <input type="checkbox" class="rt-cb rt-routine-check" data-cat="${ci}" data-id="${item.id}" ${item.done?'checked':''} style="accent-color:${style.color};">
-            <span class="${item.done ? 'done-text' : ''}">${item.text}</span>
-          </div>`).join('')}
+            <input type="checkbox" class="rt-cb rt-routine-check" data-cat="${ci}" data-id="${item.id}" ${effDone?'checked':''} style="accent-color:${style.color};">
+            <span class="${effDone ? 'done-text' : ''}">${item.text}${intervalBadge}</span>
+          </div>`;
+        }).join('')}
         <form class="rt-add-item-form rt-add-row" data-cat="${ci}">
           <input type="text" class="rt-input" placeholder="Adicionar item a esta categoria..." style="font-size:13px;">
           <button type="submit" class="btn btn-soft btn-sm">+ Adicionar</button>
@@ -2765,11 +2809,23 @@ function rtAttachRoutineHandlers(){
     </div>`;
   }).join('');
 
+  wrap.querySelectorAll('.rt-cat-resp').forEach(sel => {
+    sel.addEventListener('change', (e)=>{
+      const ci = e.target.dataset.cat;
+      rtState.routine.categories[ci].responsavel = e.target.value || null;
+      rtSave();
+      rtRenderActive();
+    });
+  });
   wrap.querySelectorAll('.rt-routine-check').forEach(cb => {
     cb.addEventListener('change', (e)=>{
       const ci = e.target.dataset.cat, id = e.target.dataset.id;
       const item = rtState.routine.categories[ci].items.find(i=>i.id===id);
-      item.done = e.target.checked;
+      if(item.intervalDays){
+        item.lastDone = e.target.checked ? todayKey() : null;
+      }else{
+        item.done = e.target.checked;
+      }
       rtSave();
       rtRenderActive();
     });
@@ -2791,7 +2847,7 @@ function rtAttachRoutineHandlers(){
     const c = rtComputeRoutineCompletion();
     const ok = await confirmDialog('Fechar a semana?', `A semana está ${c.pct}% concluída. Isso reinicia todos os itens da rotina e do TikTok como pendentes.`, 'Fechar semana');
     if(!ok) return;
-    rtState.routine.categories.forEach(cat => cat.items.forEach(i => i.done = false));
+    rtState.routine.categories.forEach(cat => cat.items.forEach(i => { if(!i.intervalDays) i.done = false; }));
     Object.keys(rtState.tiktok.week).forEach(acc => rtState.tiktok.week[acc] = rtState.tiktok.week[acc].map(()=>false));
     rtSave();
     rtRenderActive();
