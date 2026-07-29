@@ -6,46 +6,69 @@
 <title>Central de Operações · 2M</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --canvas:#ECEFF4;
+    /* ===== Marca — cores extraídas da logo 2M ===== */
+    --brand:#4F97AB;          /* o "2" — azul-petróleo */
+    --brand-d:#3B7C8F;        /* texto/hover sobre claro */
+    --brand-soft:#EDF4F7;     /* fundo suave */
+    --brand-line:#D3E4EA;
+    --brand-glow:rgba(79,151,171,.22);
+    --orange:#E87A45;         /* o "M" e a sacola */
+    --orange-d:#C25F2E;
+    --orange-soft:#FDF1EA;
+    --orange-line:#F5DCCB;
+
+    /* Aliases: o accent do sistema agora é a cor da marca */
+    --accent:var(--brand);
+    --accent-d:var(--brand-d);
+    --accent-soft:var(--brand-soft);
+    --accent-glow:var(--brand-glow);
+    --amber:var(--orange-d);
+    --amber-soft:var(--orange-soft);
+    --amber-line:var(--orange-line);
+
+    /* ===== Neutros ===== */
+    --canvas:#FBFBFD;
     --surface:#FFFFFF;
-    --surface-2:#F6F8FB;
-    --border:#E3E8F0;
-    --border-strong:#D4DBE6;
-    --ink:#161A22;
-    --muted:#69727F;
-    --faint:#9AA3B2;
-    --sb-1:#15171E;
-    --sb-2:#1D212B;
-    --sb-ink:#C9CFDA;
-    --sb-faint:#79808F;
-    --sb-line:#2A2F3A;
-    --accent:#0E9F85;
-    --accent-d:#0B7E6B;
-    --accent-soft:#E1F4EF;
-    --accent-glow:rgba(14,159,133,.25);
-    --amber:#B45309;
-    --amber-soft:#FBEEDC;
-    --amber-line:#F0D6AE;
+    --surface-2:#F5F5F7;
+    --border:rgba(0,0,0,.07);
+    --border-strong:rgba(0,0,0,.13);
+    --ink:#1D1D1F;
+    --muted:#6E6E73;
+    --faint:#A1A1A6;
     --danger:#D14343;
-    --r-sm:8px; --r-md:12px; --r-lg:16px;
-    --sh-sm:0 1px 2px rgba(20,28,45,.06), 0 1px 3px rgba(20,28,45,.04);
-    --sh-md:0 4px 12px rgba(20,28,45,.07), 0 2px 4px rgba(20,28,45,.04);
-    --sh-lg:0 12px 32px rgba(20,28,45,.10);
+
+    /* Sidebar clara, alinhada ao círculo branco da logo */
+    --sb-1:#F5F5F7;
+    --sb-2:#FBFBFD;
+    --sb-ink:#1D1D1F;
+    --sb-faint:#86868B;
+    --sb-line:rgba(0,0,0,.08);
+
+    /* ===== Forma e movimento ===== */
+    --r-sm:10px; --r-md:14px; --r-lg:20px;
+    --sh-sm:0 1px 2px rgba(0,0,0,.04);
+    --sh-md:0 4px 16px rgba(0,0,0,.06);
+    --sh-lg:0 20px 48px rgba(0,0,0,.13);
+    --ease:cubic-bezier(.4,0,.2,1);
+    --ease-out:cubic-bezier(.16,1,.3,1);
   }
   *{box-sizing:border-box;}
   html,body{margin:0; padding:0;}
   body{
     background:var(--canvas);
     color:var(--ink);
-    font-family:'Plus Jakarta Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',system-ui,sans-serif;
     font-size:14px;
-    line-height:1.5;
+    line-height:1.55;
+    letter-spacing:-.01em;
     -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
   }
-  .mono{font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;}
+  .mono{font-family:'JetBrains Mono',ui-monospace,Menlo,monospace; letter-spacing:0;}
+  h1,h2,h3{letter-spacing:-.021em;}
 
   /* ---------- App shell ---------- */
   .app{
