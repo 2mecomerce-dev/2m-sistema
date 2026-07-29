@@ -660,6 +660,14 @@
   @media (max-width:880px){ .rt-form-row{grid-template-columns:1fr !important;} }
   .rt-link-danger{background:none; border:none; color:var(--danger); font-size:12px; font-weight:600; cursor:pointer; padding:5px 4px;}
 
+  /* ---------- Precificação ---------- */
+  .pp-config-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px;}
+  @media (max-width:1040px){ .pp-config-grid{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:640px){ .pp-config-grid{grid-template-columns:1fr;} }
+  .pp-config-group{grid-column:1 / -1; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--faint); margin-top:10px; padding-top:12px; border-top:1px dashed var(--border);}
+  .pp-config-group:first-child{margin-top:0; padding-top:0; border-top:none;}
+  .pp-price-best{font-weight:800; color:var(--accent-d);}
+
   /* ---------- Auth ---------- */
   .app.hidden{display:none;}
   .auth-screen{
@@ -738,6 +746,10 @@
       <div class="nav-item" data-view="rotina" data-title="Rotina & Melhoria Contínua" data-eyebrow="Operações">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
         Rotina
+      </div>
+      <div class="nav-item" data-view="precificacao" data-title="Precificação de Produtos" data-eyebrow="Financeiro">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M14.8 9a2 2 0 0 0-1.8-1H11a1.5 1.5 0 0 0 0 3h2a1.5 1.5 0 0 1 0 3h-2a2 2 0 0 1-1.8-1M12 7v1.5M12 15.5V17"/></svg>
+        Precificação
       </div>
       <div class="nav-item soon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
@@ -1046,6 +1058,43 @@
           </div>
         </div>
         <div id="rtContent"></div>
+      </section>
+
+      <!-- ===== VIEW: PRECIFICAÇÃO ===== -->
+      <section class="view" id="view-precificacao">
+        <div class="kpi-row" id="ppKpiRow"></div>
+
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Configurações de precificação</div>
+              <div class="card-desc">Esses valores alimentam o cálculo de preço de todos os produtos, nos 3 canais. Mesma lógica da planilha de precificação.</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div id="ppConfigForm"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Produtos</div>
+              <div class="card-desc">Cadastre o custo do produto e a taxa fixa por pedido — o preço de venda em cada canal é calculado na hora.</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="alias-toolbar">
+              <input class="name-in" id="ppNewNome" placeholder="Nome do produto">
+              <input class="sku-in" id="ppNewCusto" type="number" step="0.01" placeholder="Custo produto (R$)">
+              <input class="sku-in" id="ppNewTaxa" type="number" step="0.01" placeholder="Taxa fixa (R$)">
+              <button class="btn btn-accent" id="ppBtnAdd">Adicionar produto</button>
+            </div>
+            <div style="overflow-x:auto;">
+              <table class="alias-table" id="ppTable"></table>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- ===== VIEW: CONFIGURAÇÕES ===== -->
@@ -2471,6 +2520,7 @@ document.querySelectorAll('.nav-item[data-view]').forEach(item => {
     if(v === 'fornecedor') refreshFornecedorView();
     if(v === 'produtos') renderAliasTable();
     if(v === 'rotina') rtInit();
+    if(v === 'precificacao') ppInit();
   });
 });
 
@@ -3288,6 +3338,299 @@ async function rtInit(){
   await rtLoad();
   rtSetupRealtime();
   rtRenderActive();
+}
+
+/* ═══════════════════════════════════════════════════════
+   PRECIFICAÇÃO DE PRODUTOS
+   ═══════════════════════════════════════════════════════ */
+
+const ppPlatformOrder = ['shopee','tiktok','mercadoLivre'];
+const ppPercentFields = ['simplesNacional','ads','risco','margemDesejada','comissao','frete'];
+
+function ppDefaultConfig(){
+  return {
+    simplesNacional: 0.06,
+    ads: 0.05,
+    risco: 0.03,
+    margemDesejada: 0.1,
+    embalagem: 1.0,
+    brinde: 0.0,
+    plataformas: {
+      shopee: { nome:'Shopee', comissao:0.14, frete:0.06 },
+      tiktok: { nome:'TikTok Shop', comissao:0.12, frete:0.065 },
+      mercadoLivre: { nome:'Mercado Livre', comissao:0.14, frete:0.06 }
+    }
+  };
+}
+
+let ppConfig = ppDefaultConfig();
+let ppProdutos = [];
+let ppInitialized = false;
+let ppConfigSaveTimer = null;
+
+function ppCalc(produto, platformKey){
+  const custo = Number(produto.custo_produto);
+  if(!custo || custo <= 0) return null;
+  const custoBase = custo + (Number(produto.taxa_fixa)||0);
+  const plat = ppConfig.plataformas[platformKey];
+  const fixos = Number(ppConfig.embalagem||0) + Number(ppConfig.brinde||0);
+  const totalVar = Number(ppConfig.simplesNacional||0) + Number(plat.comissao||0) + Number(plat.frete||0) + Number(ppConfig.ads||0) + Number(ppConfig.risco||0) + Number(ppConfig.margemDesejada||0);
+  const divisor = 1 - totalVar;
+  if(divisor <= 0) return { custoBase, preco:null, lucro:null, margemReal:null, markup:null, totalVar };
+  const preco = (custoBase + fixos) / divisor;
+  const lucro = preco * Number(ppConfig.margemDesejada||0);
+  const margemReal = preco ? lucro/preco : null;
+  const markup = custoBase ? preco/custoBase : null;
+  return { custoBase, preco, lucro, margemReal, markup, totalVar };
+}
+
+function ppMelhorPlataforma(results){
+  let best = null, bestKey = null;
+  ppPlatformOrder.forEach(key => {
+    const r = results[key];
+    if(r && r.preco != null){
+      if(best === null || r.preco < best){ best = r.preco; bestKey = key; }
+    }
+  });
+  return bestKey;
+}
+
+function ppRenderConfigForm(){
+  const c = ppConfig;
+  const wrap = document.getElementById('ppConfigForm');
+  const pct = v => (Number(v||0)*100).toFixed(2);
+  wrap.innerHTML = `
+  <div class="pp-config-grid">
+    <div class="pp-config-group">Impostos e custos gerais</div>
+    <label class="rt-label">Simples Nacional (%)<input type="number" step="0.1" class="rt-input pp-cfg" data-path="simplesNacional" value="${pct(c.simplesNacional)}"></label>
+    <label class="rt-label">Ads sobre venda (%)<input type="number" step="0.1" class="rt-input pp-cfg" data-path="ads" value="${pct(c.ads)}"></label>
+    <label class="rt-label">Provisão de risco (%)<input type="number" step="0.1" class="rt-input pp-cfg" data-path="risco" value="${pct(c.risco)}"></label>
+    <label class="rt-label">Margem de lucro desejada (%)<input type="number" step="0.1" class="rt-input pp-cfg" data-path="margemDesejada" value="${pct(c.margemDesejada)}"></label>
+    <label class="rt-label">Custo de embalagem (R$)<input type="number" step="0.01" class="rt-input pp-cfg" data-path="embalagem" value="${c.embalagem}"></label>
+    <label class="rt-label">Custo de brinde (R$)<input type="number" step="0.01" class="rt-input pp-cfg" data-path="brinde" value="${c.brinde}"></label>
+
+    <div class="pp-config-group">🟠 Shopee</div>
+    <label class="rt-label">Comissão (%)<input type="number" step="0.1" class="rt-input pp-cfg" data-path="plataformas.shopee.comissao" value="${pct(c.plataformas.shopee.comissao)}"></label>
+    <label class="rt-label">Frete / Subsídio (%)<input type="number" step="0.1" class="rt-input pp-cfg" data-path="plataformas.shopee.frete" value="${pct(c.plataformas.shopee.frete)}"></label>
+
+    <div class="pp-config-group">⬛ TikTok Shop</div>
+    <label class="rt-label">Comissão (%)<input type="number" step="0.1" class="rt-input pp-cfg" data-path="plataformas.tiktok.comissao" value="${pct(c.plataformas.tiktok.comissao)}"></label>
+    <label class="rt-label">Frete / Logística (%)<input type="number" step="0.1" class="rt-input pp-cfg" data-path="plataformas.tiktok.frete" value="${pct(c.plataformas.tiktok.frete)}"></label>
+
+    <div class="pp-config-group">🟡 Mercado Livre</div>
+    <label class="rt-label">Comissão (%)<input type="number" step="0.1" class="rt-input pp-cfg" data-path="plataformas.mercadoLivre.comissao" value="${pct(c.plataformas.mercadoLivre.comissao)}"></label>
+    <label class="rt-label">Frete grátis (%)<input type="number" step="0.1" class="rt-input pp-cfg" data-path="plataformas.mercadoLivre.frete" value="${pct(c.plataformas.mercadoLivre.frete)}"></label>
+  </div>`;
+
+  wrap.querySelectorAll('.pp-cfg').forEach(inp => {
+    inp.addEventListener('change', (e)=>{
+      const path = e.target.dataset.path.split('.');
+      let val = parseFloat(e.target.value);
+      if(isNaN(val)) val = 0;
+      const field = path[path.length-1];
+      const stored = ppPercentFields.includes(field) ? val/100 : val;
+      let obj = ppConfig;
+      for(let i=0;i<path.length-1;i++) obj = obj[path[i]];
+      obj[field] = stored;
+      ppSaveConfig();
+      ppRenderConfigForm();
+      ppRenderAll();
+      showToast('Configuração atualizada');
+    });
+  });
+}
+
+function ppRenderKpis(){
+  const wrap = document.getElementById('ppKpiRow');
+  const rows = ppProdutos.map(p => {
+    const results = {};
+    ppPlatformOrder.forEach(k => results[k] = ppCalc(p, k));
+    const bestKey = ppMelhorPlataforma(results);
+    return { p, results, bestKey };
+  }).filter(r => r.bestKey);
+
+  const totalCustoBase = rows.reduce((s,r)=> s + r.results[r.bestKey].custoBase, 0);
+  const totalPrecoBest = rows.reduce((s,r)=> s + r.results[r.bestKey].preco, 0);
+  const totalLucroBest = rows.reduce((s,r)=> s + r.results[r.bestKey].lucro, 0);
+  const markupMedio = totalCustoBase ? totalPrecoBest/totalCustoBase : 0;
+
+  wrap.innerHTML = `
+    <div class="kpi">
+      <div class="kpi-top"><span class="kpi-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 11 22 2 13V2h11l7.59 7.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5"/></svg></span><span class="kpi-label">Produtos cadastrados</span></div>
+      <div class="kpi-num mono">${ppProdutos.length}</div>
+      <div class="kpi-foot">${rows.length} com preço calculado</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-top"><span class="kpi-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span><span class="kpi-label">Custo base total</span></div>
+      <div class="kpi-num mono">${fmtBRL(totalCustoBase)}</div>
+      <div class="kpi-foot">Soma de custo + taxa fixa</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-top"><span class="kpi-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v4H3zM5 7v14h14V7M9 11h6"/></svg></span><span class="kpi-label">Preço total (melhor canal)</span></div>
+      <div class="kpi-num mono">${fmtBRL(totalPrecoBest)}</div>
+      <div class="kpi-foot">Somando o canal mais barato de cada produto</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-top"><span class="kpi-ic amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg></span><span class="kpi-label">Markup médio</span></div>
+      <div class="kpi-num mono">${markupMedio.toFixed(2)}x</div>
+      <div class="kpi-foot">Lucro total: ${fmtBRL(totalLucroBest)}</div>
+    </div>`;
+}
+
+function ppRenderTable(){
+  const table = document.getElementById('ppTable');
+  if(ppProdutos.length === 0){
+    table.innerHTML = `<tr><td style="color:var(--faint); font-style:italic; padding:16px 10px;">Nenhum produto cadastrado ainda.</td></tr>`;
+    return;
+  }
+  const sorted = [...ppProdutos].sort((a,b)=> a.nome.localeCompare(b.nome));
+  table.innerHTML = `
+    <thead><tr>
+      <th>Produto</th><th style="width:110px;">Custo (R$)</th><th style="width:110px;">Taxa fixa (R$)</th>
+      <th style="width:100px;">Custo base</th>
+      <th style="width:110px;">🟠 Shopee</th><th style="width:110px;">⬛ TikTok</th><th style="width:110px;">🟡 Mercado L.</th>
+      <th style="width:130px;">Melhor canal</th><th style="width:50px;"></th>
+    </tr></thead>
+    <tbody>
+      ${sorted.map(p => {
+        const results = {};
+        ppPlatformOrder.forEach(k => results[k] = ppCalc(p, k));
+        const bestKey = ppMelhorPlataforma(results);
+        const custoBase = (Number(p.custo_produto)||0) + (Number(p.taxa_fixa)||0);
+        const cellFor = (key) => {
+          const r = results[key];
+          if(!r || r.preco == null) return '<span style="color:var(--faint);">—</span>';
+          const cls = key === bestKey ? 'pp-price-best' : '';
+          return `<span class="${cls}">${fmtBRL(r.preco)}</span>`;
+        };
+        return `<tr>
+          <td style="font-weight:700;">${p.nome}</td>
+          <td><input type="number" step="0.01" class="pp-edit-custo" data-id="${p.id}" value="${p.custo_produto}" style="width:90px; font-family:'JetBrains Mono',monospace; font-size:13px; padding:6px 8px; border:1px solid var(--border); border-radius:var(--r-sm); background:var(--surface-2);"></td>
+          <td><input type="number" step="0.01" class="pp-edit-taxa" data-id="${p.id}" value="${p.taxa_fixa}" style="width:90px; font-family:'JetBrains Mono',monospace; font-size:13px; padding:6px 8px; border:1px solid var(--border); border-radius:var(--r-sm); background:var(--surface-2);"></td>
+          <td class="mono">${fmtBRL(custoBase)}</td>
+          <td class="mono">${cellFor('shopee')}</td>
+          <td class="mono">${cellFor('tiktok')}</td>
+          <td class="mono">${cellFor('mercadoLivre')}</td>
+          <td>${bestKey ? `<span class="badge badge-good">${ppConfig.plataformas[bestKey].nome}</span>` : '<span class="badge badge-neutral">—</span>'}</td>
+          <td><button class="del-x pp-delete" data-id="${p.id}" title="Remover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16zM10 11v6M14 11v6"/></svg></button></td>
+        </tr>`;
+      }).join('')}
+    </tbody>`;
+
+  table.querySelectorAll('.pp-edit-custo').forEach(inp => {
+    inp.addEventListener('change', (e)=>{
+      const p = ppProdutos.find(x=>x.id===e.target.dataset.id);
+      p.custo_produto = parseFloat(e.target.value)||0;
+      ppSaveProduto(p);
+      ppRenderAll();
+    });
+  });
+  table.querySelectorAll('.pp-edit-taxa').forEach(inp => {
+    inp.addEventListener('change', (e)=>{
+      const p = ppProdutos.find(x=>x.id===e.target.dataset.id);
+      p.taxa_fixa = parseFloat(e.target.value)||0;
+      ppSaveProduto(p);
+      ppRenderAll();
+    });
+  });
+  table.querySelectorAll('.pp-delete').forEach(btn => {
+    btn.addEventListener('click', async (e)=>{
+      const id = e.currentTarget.dataset.id;
+      const p = ppProdutos.find(x=>x.id===id);
+      const ok = await confirmDialog('Remover produto?', `Remover "${p.nome}" da precificação?`, 'Remover');
+      if(!ok) return;
+      ppProdutos = ppProdutos.filter(x=>x.id!==id);
+      ppDeleteProduto(id);
+      ppRenderAll();
+      showToast('Produto removido');
+    });
+  });
+}
+
+function ppRenderAll(){
+  ppRenderKpis();
+  ppRenderTable();
+}
+
+document.getElementById('ppBtnAdd').addEventListener('click', ()=>{
+  const nomeIn = document.getElementById('ppNewNome');
+  const custoIn = document.getElementById('ppNewCusto');
+  const taxaIn = document.getElementById('ppNewTaxa');
+  const nome = nomeIn.value.trim();
+  const custo = parseFloat(custoIn.value);
+  const taxa = parseFloat(taxaIn.value) || 0;
+  if(!nome || isNaN(custo)){ showToast('Preencha nome e custo do produto'); return; }
+  const novo = { id: 'pp-' + Date.now(), nome, custo_produto: custo, taxa_fixa: taxa };
+  ppProdutos.push(novo);
+  ppSaveProduto(novo);
+  nomeIn.value=''; custoIn.value=''; taxaIn.value='';
+  ppRenderAll();
+  showToast('Produto cadastrado');
+});
+
+async function ppLoadConfig(){
+  if(!sb) return;
+  const { data, error } = await sb.from('precificacao_config').select('dados').eq('id','principal').maybeSingle();
+  if(!error && data && data.dados && Object.keys(data.dados).length){
+    ppConfig = data.dados;
+  }else{
+    await sb.from('precificacao_config').upsert({ id:'principal', dados: ppConfig });
+  }
+}
+function ppSaveConfig(){
+  if(!sb) return;
+  if(ppConfigSaveTimer) clearTimeout(ppConfigSaveTimer);
+  ppConfigSaveTimer = setTimeout(async () => {
+    await sb.from('precificacao_config').upsert({ id:'principal', dados: ppConfig, updated_at: new Date().toISOString() });
+  }, 600);
+}
+async function ppLoadProdutos(){
+  if(!sb) return;
+  const { data, error } = await sb.from('precificacao_produtos').select('id,nome,custo_produto,taxa_fixa');
+  if(!error && data) ppProdutos = data;
+}
+async function ppSaveProduto(p){
+  if(!sb) return;
+  await sb.from('precificacao_produtos').upsert({ id:p.id, nome:p.nome, custo_produto:p.custo_produto, taxa_fixa:p.taxa_fixa, updated_at:new Date().toISOString() });
+}
+async function ppDeleteProduto(id){
+  if(!sb) return;
+  await sb.from('precificacao_produtos').delete().eq('id', id);
+}
+
+function ppSetupRealtime(){
+  sb.channel('public:precificacao_config')
+    .on('postgres_changes', { event:'*', schema:'public', table:'precificacao_config', filter:'id=eq.principal' }, (payload) => {
+      if(payload.new && payload.new.dados){
+        ppConfig = payload.new.dados;
+        ppRenderConfigForm();
+        ppRenderAll();
+      }
+    })
+    .subscribe();
+
+  sb.channel('public:precificacao_produtos')
+    .on('postgres_changes', { event:'*', schema:'public', table:'precificacao_produtos' }, (payload) => {
+      if(payload.eventType === 'DELETE'){
+        ppProdutos = ppProdutos.filter(p => p.id !== payload.old.id);
+      }else{
+        const idx = ppProdutos.findIndex(p => p.id === payload.new.id);
+        if(idx >= 0) ppProdutos[idx] = payload.new; else ppProdutos.push(payload.new);
+      }
+      ppRenderAll();
+    })
+    .subscribe();
+}
+
+async function ppInit(){
+  if(ppInitialized) return;
+  ppInitialized = true;
+  document.getElementById('ppTable').innerHTML = '<tr><td style="padding:16px 10px; color:var(--faint);">Carregando…</td></tr>';
+  await ppLoadConfig();
+  await ppLoadProdutos();
+  ppRenderConfigForm();
+  ppRenderAll();
+  ppSetupRealtime();
 }
 
 /* ---------- Autenticação (Supabase Auth) ---------- */
