@@ -1,297 +1,2326 @@
-# Central de Operações 2M Commerce
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Central de Operações · 2M</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --canvas:#ECEFF4;
+    --surface:#FFFFFF;
+    --surface-2:#F6F8FB;
+    --border:#E3E8F0;
+    --border-strong:#D4DBE6;
+    --ink:#161A22;
+    --muted:#69727F;
+    --faint:#9AA3B2;
+    --sb-1:#15171E;
+    --sb-2:#1D212B;
+    --sb-ink:#C9CFDA;
+    --sb-faint:#79808F;
+    --sb-line:#2A2F3A;
+    --accent:#0E9F85;
+    --accent-d:#0B7E6B;
+    --accent-soft:#E1F4EF;
+    --accent-glow:rgba(14,159,133,.25);
+    --amber:#B45309;
+    --amber-soft:#FBEEDC;
+    --amber-line:#F0D6AE;
+    --danger:#D14343;
+    --r-sm:8px; --r-md:12px; --r-lg:16px;
+    --sh-sm:0 1px 2px rgba(20,28,45,.06), 0 1px 3px rgba(20,28,45,.04);
+    --sh-md:0 4px 12px rgba(20,28,45,.07), 0 2px 4px rgba(20,28,45,.04);
+    --sh-lg:0 12px 32px rgba(20,28,45,.10);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0; padding:0;}
+  body{
+    background:var(--canvas);
+    color:var(--ink);
+    font-family:'Plus Jakarta Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    font-size:14px;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;}
 
-Sistema interno de operações para e-commerce de dropshipping de calçados de couro. Usado por 3 pessoas em computadores diferentes. Todos acessam o mesmo link e os mesmos dados.
+  /* ---------- App shell ---------- */
+  .app{
+    display:grid;
+    grid-template-columns:264px 1fr;
+    min-height:100vh;
+  }
 
-## ARQUITETURA
+  /* ---------- Sidebar ---------- */
+  .sidebar{
+    background:linear-gradient(180deg,var(--sb-2),var(--sb-1));
+    color:var(--sb-ink);
+    display:flex;
+    flex-direction:column;
+    padding:20px 16px;
+    position:sticky;
+    top:0;
+    height:100vh;
+    z-index:40;
+  }
+  .brand{
+    display:flex; align-items:center; gap:12px;
+    padding:6px 8px 20px;
+    margin-bottom:14px;
+    border-bottom:1px solid var(--sb-line);
+  }
+  .brand-mark{
+    width:40px; height:40px; border-radius:11px;
+    background:linear-gradient(135deg,var(--accent),#13c39f);
+    display:grid; place-items:center;
+    font-weight:800; font-size:16px; color:#04241d;
+    box-shadow:0 4px 14px var(--accent-glow);
+    flex-shrink:0;
+  }
+  .brand-name{font-weight:700; font-size:15px; color:#fff; letter-spacing:.2px; line-height:1.15;}
+  .brand-sub{font-size:11px; color:var(--sb-faint); letter-spacing:.4px;}
 
-- Frontend: React + TypeScript + Tailwind CSS
-- Banco de dados: Google Sheets (via Google Apps Script)
-- Comunicação: JSONP (script tag injection) — NÃO usar fetch() pois Google Apps Script bloqueia por CORS
-- Hospedagem: Lovable
+  .nav-group{margin-bottom:18px;}
+  .nav-title{
+    font-size:10.5px; text-transform:uppercase; letter-spacing:1.4px;
+    color:var(--sb-faint); padding:0 10px 8px; font-weight:600;
+  }
+  .nav-item{
+    display:flex; align-items:center; gap:11px;
+    padding:9px 10px; border-radius:var(--r-sm);
+    color:var(--sb-ink); font-weight:500; font-size:13.5px;
+    cursor:pointer; position:relative;
+    transition:background .15s, color .15s;
+    user-select:none;
+  }
+  .nav-item svg{width:18px; height:18px; flex-shrink:0; opacity:.85;}
+  .nav-item:hover{background:rgba(255,255,255,.05); color:#fff;}
+  .nav-item.active{
+    background:rgba(14,159,133,.14);
+    color:#fff;
+  }
+  .nav-item.active::before{
+    content:''; position:absolute; left:-16px; top:8px; bottom:8px;
+    width:3px; border-radius:0 3px 3px 0; background:var(--accent);
+  }
+  .nav-item.active svg{opacity:1; color:var(--accent);}
+  .nav-item.soon{cursor:default; color:var(--sb-faint);}
+  .nav-item.soon:hover{background:transparent; color:var(--sb-faint);}
+  .soon-tag{
+    margin-left:auto; font-size:9px; text-transform:uppercase; letter-spacing:.6px;
+    background:var(--sb-line); color:var(--sb-faint);
+    padding:2px 6px; border-radius:20px; font-weight:600;
+  }
+  .sidebar-foot{margin-top:auto; padding-top:16px;}
+  .foot-card{
+    background:rgba(255,255,255,.04);
+    border:1px solid var(--sb-line);
+    border-radius:var(--r-md);
+    padding:13px 14px;
+    font-size:12px; color:var(--sb-faint);
+  }
+  .foot-card b{color:var(--sb-ink); font-weight:600;}
 
-## CONEXÃO COM GOOGLE SHEETS (CRÍTICO)
+  /* ---------- Main ---------- */
+  .main{display:flex; flex-direction:column; min-width:0;}
+  .topbar{
+    position:sticky; top:0; z-index:30;
+    background:rgba(236,239,244,.82);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border);
+    padding:16px 30px;
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+  }
+  .top-left{display:flex; align-items:center; gap:14px; min-width:0;}
+  .menu-btn{
+    display:none; background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--r-sm); width:38px; height:38px; cursor:pointer;
+    align-items:center; justify-content:center; color:var(--ink);
+  }
+  .top-eyebrow{font-size:11px; text-transform:uppercase; letter-spacing:1.2px; color:var(--faint); font-weight:600;}
+  .top-title{font-size:19px; font-weight:700; letter-spacing:-.2px; line-height:1.2;}
+  .top-right{display:flex; align-items:center; gap:10px; flex-shrink:0;}
+  .pill{
+    display:inline-flex; align-items:center; gap:7px;
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:30px; padding:7px 14px; font-size:12.5px; color:var(--muted);
+    font-weight:500;
+  }
+  .pill .dot{width:7px; height:7px; border-radius:50%; background:var(--accent);}
+  .pill b{color:var(--ink); font-weight:700;}
 
-A comunicação com o Google Sheets usa JSONP (injeção de tag script). Isso é OBRIGATÓRIO porque fetch() não funciona com Google Apps Script devido a redirecionamentos CORS.
+  .content{padding:26px 30px 60px; max-width:1280px; width:100%;}
 
-### URL da API:
-```
-https://script.google.com/macros/s/AKfycbxgRtUg4VusLeP3HMuyRbnkItiFJVXAEvyUXZJrzrlTd0MuvqHgrFyZU1FGBu7KE6rrbQ/exec
-```
+  .view{display:none; animation:fadeUp .4s ease both;}
+  .view.active{display:block;}
 
-### Função de comunicação (usar exatamente isso):
+  /* ---------- KPI ---------- */
+  .kpi-row{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:20px;
+  }
+  .kpi{
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--r-lg); padding:18px;
+    box-shadow:var(--sh-sm);
+    animation:fadeUp .5s ease both;
+    transition:transform .18s, box-shadow .18s;
+  }
+  .kpi:hover{transform:translateY(-2px); box-shadow:var(--sh-md);}
+  .kpi-top{display:flex; align-items:center; gap:9px; margin-bottom:14px;}
+  .kpi-ic{
+    width:32px; height:32px; border-radius:9px; display:grid; place-items:center;
+    background:var(--accent-soft); color:var(--accent-d);
+  }
+  .kpi-ic svg{width:17px; height:17px;}
+  .kpi-ic.amber{background:var(--amber-soft); color:var(--amber);}
+  .kpi-label{font-size:12.5px; color:var(--muted); font-weight:600;}
+  .kpi-num{font-size:32px; font-weight:700; letter-spacing:-1px; line-height:1;}
+  .kpi-foot{font-size:11.5px; color:var(--faint); margin-top:6px;}
 
-```typescript
-const GS_URL = 'https://script.google.com/macros/s/AKfycbxgRtUg4VusLeP3HMuyRbnkItiFJVXAEvyUXZJrzrlTd0MuvqHgrFyZU1FGBu7KE6rrbQ/exec';
+  /* ---------- Cards / grid ---------- */
+  .grid-2{display:grid; grid-template-columns:1.5fr 1fr; gap:20px; align-items:start;}
+  .stack{display:flex; flex-direction:column; gap:20px;}
+  .card{
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--r-lg); box-shadow:var(--sh-sm);
+    animation:fadeUp .55s ease both;
+  }
+  .card-head{
+    padding:18px 20px 0; display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+  }
+  .card-title{font-size:15px; font-weight:700; letter-spacing:-.2px;}
+  .card-desc{font-size:12.5px; color:var(--muted); margin-top:2px;}
+  .card-body{padding:18px 20px 20px;}
 
-function gsCall(action: string, payload?: any): Promise<any> {
-  return new Promise((resolve) => {
-    const cbName = '_gs_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
-    const params = new URLSearchParams({ action, callback: cbName });
-    if (payload) params.set('body', JSON.stringify(payload));
+  /* ---------- Dropzone ---------- */
+  .drop{
+    border:1.5px dashed var(--border-strong); border-radius:var(--r-md);
+    padding:30px 18px; text-align:center; cursor:pointer;
+    transition:background .15s, border-color .15s, transform .15s;
+    background:var(--surface-2);
+  }
+  .drop:hover,.drop.drag{background:var(--accent-soft); border-color:var(--accent);}
+  .drop.drag{transform:scale(1.005);}
+  .drop input{display:none;}
+  .drop-ic{
+    width:48px; height:48px; border-radius:13px; margin:0 auto 12px;
+    background:var(--surface); border:1px solid var(--border);
+    display:grid; place-items:center; color:var(--accent-d);
+    box-shadow:var(--sh-sm);
+  }
+  .drop-ic svg{width:24px; height:24px;}
+  .drop-t1{font-weight:700; font-size:14.5px;}
+  .drop-t2{font-size:12.5px; color:var(--muted); margin-top:3px;}
+  .status{font-size:12.5px; color:var(--muted); margin-top:12px; min-height:16px;}
+  .status.ok{color:var(--accent-d); font-weight:600;}
 
-    const script = document.createElement('script');
-    const timeout = setTimeout(() => {
-      cleanup();
-      resolve({ ok: false, error: 'timeout' });
-    }, 20000);
+  #diagBox{margin-top:14px;}
+  #diagText{
+    width:100%; height:120px; font-family:'JetBrains Mono',monospace; font-size:11px;
+    border:1px solid var(--border); border-radius:var(--r-sm); padding:10px;
+    background:var(--surface-2); color:var(--ink); resize:vertical;
+  }
 
-    function cleanup() {
-      clearTimeout(timeout);
-      delete (window as any)[cbName];
-      if (script.parentNode) script.parentNode.removeChild(script);
+  /* ---------- Buttons ---------- */
+  .btn{
+    font-family:inherit; cursor:pointer; border:none; border-radius:var(--r-sm);
+    padding:11px 18px; font-size:13.5px; font-weight:600; letter-spacing:.1px;
+    transition:transform .12s, box-shadow .15s, background .15s, border-color .15s;
+    display:inline-flex; align-items:center; gap:8px;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn svg{width:16px; height:16px;}
+  .btn-accent{background:var(--accent); color:#fff; box-shadow:0 2px 10px var(--accent-glow);}
+  .btn-accent:hover{background:var(--accent-d);}
+  .btn-soft{background:var(--surface-2); color:var(--ink); border:1px solid var(--border-strong);}
+  .btn-soft:hover{border-color:var(--accent); color:var(--accent-d);}
+  .btn-ghost{background:transparent; color:var(--muted); padding:11px 12px;}
+  .btn-ghost:hover{color:var(--danger);}
+  .btn:disabled{opacity:.45; cursor:not-allowed; transform:none; box-shadow:none;}
+  .btn-sm{padding:8px 12px; font-size:12.5px;}
+
+  /* ---------- Ticket (signature) ---------- */
+  .ticket-card{
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--r-lg); box-shadow:var(--sh-sm); overflow:hidden;
+    animation:fadeUp .6s ease both;
+  }
+  .ticket-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 22px; background:linear-gradient(180deg,#1b1f29,#14171e); color:#fff;
+  }
+  .ticket-eyebrow{font-size:10.5px; text-transform:uppercase; letter-spacing:2px; color:#7f93b0;}
+  .ticket-date{font-size:16px; font-weight:700; font-family:'JetBrains Mono',monospace; margin-top:2px;}
+  .ticket-total{
+    text-align:right; font-size:12px; color:#8a94a6;
+  }
+  .ticket-total b{display:block; font-size:26px; color:#fff; font-family:'JetBrains Mono',monospace; line-height:1;}
+  .ticket-perf{
+    height:14px; background:
+      radial-gradient(circle at 7px 14px, var(--canvas) 6px, transparent 6.5px) repeat-x;
+    background-size:18px 14px; background-color:#14171e;
+  }
+  .ticket{
+    font-family:'JetBrains Mono',monospace; font-size:14px; line-height:1.85;
+    padding:18px 22px; max-height:440px; overflow-y:auto;
+    counter-reset:none;
+  }
+  .ticket .row{display:block; padding:2px 8px; border-radius:5px;}
+  .ticket .row-bold{font-weight:700; color:var(--ink);}
+  .ticket .row:nth-child(odd){background:var(--surface-2);}
+  .ticket .empty-hint{color:var(--faint); font-style:italic; text-align:center; padding:34px 10px; font-family:'Plus Jakarta Sans',sans-serif;}
+  .ticket-actions{
+    display:flex; gap:10px; padding:16px 22px; border-top:1px solid var(--border); flex-wrap:wrap;
+    background:var(--surface-2);
+  }
+
+  .backdate-row{
+    padding:0 22px 16px; background:var(--surface-2);
+  }
+  .backdate-link{
+    background:none; border:none; cursor:pointer; font-family:inherit;
+    font-size:12px; color:var(--faint); text-decoration:underline; text-underline-offset:2px;
+    padding:0;
+  }
+  .backdate-link:hover{color:var(--accent-d);}
+  .backdate-panel{
+    display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap;
+    margin-top:12px; padding:14px; background:var(--surface);
+    border:1px solid var(--border-strong); border-radius:var(--r-md);
+  }
+  .backdate-panel label{
+    font-size:11.5px; color:var(--muted); font-weight:600;
+    display:flex; flex-direction:column; gap:5px;
+  }
+  .backdate-panel input[type=date]{
+    font-family:inherit; font-size:13px; padding:8px 10px;
+    border:1px solid var(--border-strong); border-radius:var(--r-sm); background:var(--surface-2);
+  }
+  .backdate-panel input[type=date]:focus{outline:none; border-color:var(--accent);}
+
+  /* ---------- Pending ---------- */
+  .pending-card{
+    background:var(--amber-soft); border:1px solid var(--amber-line);
+    border-radius:var(--r-lg); padding:18px 20px; margin-bottom:20px;
+    animation:fadeUp .4s ease both;
+  }
+  .pending-card h3{margin:0 0 4px; font-size:14.5px; color:var(--amber); display:flex; align-items:center; gap:8px;}
+  .pending-card h3 svg{width:18px;height:18px;}
+  .pending-card .sub{font-size:12.5px; color:#8a6320; margin-bottom:12px;}
+  .pending-row{
+    display:flex; align-items:center; gap:10px; padding:9px 0;
+    border-top:1px solid var(--amber-line); font-size:13px; flex-wrap:wrap;
+  }
+  .pending-row .sku{font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#8a6320; min-width:96px;}
+  .pending-row .desc{flex:1; color:#7a5a1e; font-size:12px; min-width:80px;}
+  .pending-row input{
+    width:150px; font-family:inherit; font-size:12.5px; padding:7px 9px;
+    border:1px solid var(--amber-line); border-radius:var(--r-sm); background:#fff; text-transform:uppercase;
+  }
+  .pending-row input:focus{outline:none; border-color:var(--amber);}
+
+  /* ---------- Chart ---------- */
+  .chart{display:flex; align-items:flex-end; gap:7px; height:150px; padding-top:6px;}
+  .bar-col{flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; min-width:0; cursor:default;}
+  .bar-val{font-size:11px; font-weight:700; font-family:'JetBrains Mono',monospace; color:var(--muted);}
+  .bar-track{width:100%; max-width:30px; height:100px; background:var(--surface-2); border-radius:6px 6px 0 0; display:flex; align-items:flex-end; overflow:hidden;}
+  .bar-fill{
+    width:100%; background:linear-gradient(180deg,#16b698,var(--accent));
+    border-radius:6px 6px 0 0; transform-origin:bottom; animation:barGrow .55s cubic-bezier(.22,1,.36,1);
+    transition:filter .15s;
+  }
+  .bar-col:hover .bar-fill{filter:brightness(1.12);}
+  .bar-col:hover .bar-val{color:var(--accent-d);}
+  .bar-lab{font-size:10px; color:var(--faint); font-family:'JetBrains Mono',monospace; white-space:nowrap;}
+
+  /* ---------- History ---------- */
+  .history-row{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    padding:11px 0; border-top:1px solid var(--border); font-size:13px;
+  }
+  .history-row:first-child{border-top:none;}
+  .history-row .d{font-family:'JetBrains Mono',monospace; color:var(--muted); flex-shrink:0;}
+  .history-row .d small{color:var(--faint);}
+  .back-tag{
+    display:inline-block; margin-left:8px; font-size:9.5px; text-transform:uppercase;
+    letter-spacing:.5px; font-weight:700; color:var(--amber); background:var(--amber-soft);
+    border:1px solid var(--amber-line); padding:2px 6px; border-radius:20px; font-family:'Plus Jakarta Sans',sans-serif;
+  }
+  .history-row .n{font-weight:700; font-family:'JetBrains Mono',monospace; color:var(--accent-d); margin-left:auto;}
+  .history-row .n small{font-weight:500; color:var(--faint); font-size:11px;}
+  .empty-hint{color:var(--faint); font-size:12.5px; text-align:center; padding:24px 10px; font-style:italic;}
+
+  /* ---------- Alias table (Produtos) ---------- */
+  /* ---------- Period tabs (Fornecedor) ---------- */
+  .period-tabs{display:flex; gap:8px; flex-wrap:wrap;}
+  .ptab{
+    font-family:inherit; cursor:pointer; border:1px solid var(--border-strong);
+    background:var(--surface-2); color:var(--muted); font-weight:600; font-size:12.5px;
+    padding:9px 15px; border-radius:30px; transition:all .15s;
+  }
+  .ptab:hover{border-color:var(--accent); color:var(--accent-d);}
+  .ptab.active{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .period-custom{
+    display:flex; gap:14px; align-items:center; margin-top:14px; flex-wrap:wrap;
+    padding-top:14px; border-top:1px solid var(--border);
+  }
+  .period-custom label{font-size:12px; color:var(--muted); display:flex; flex-direction:column; gap:5px; font-weight:600;}
+  .period-custom input[type=date]{
+    font-family:inherit; font-size:13px; padding:8px 10px;
+    border:1px solid var(--border-strong); border-radius:var(--r-sm); background:var(--surface);
+  }
+  .period-custom input[type=date]:focus{outline:none; border-color:var(--accent);}
+
+  .alias-toolbar{display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;}
+
+  .fornecedor-warn{
+    display:flex; align-items:center; gap:8px;
+    background:var(--amber-soft); border:1px solid var(--amber-line); color:var(--amber);
+    border-radius:var(--r-sm); padding:10px 14px; font-size:12.5px; font-weight:600;
+    margin-bottom:14px;
+  }
+  .alias-toolbar input{
+    font-family:'JetBrains Mono',monospace; font-size:13px; padding:10px 12px;
+    border:1px solid var(--border-strong); border-radius:var(--r-sm); background:var(--surface);
+  }
+  .alias-toolbar input:focus{outline:none; border-color:var(--accent);}
+  .alias-toolbar .sku-in{width:170px;}
+  .alias-toolbar .name-in{flex:1; min-width:160px; text-transform:uppercase;}
+  table.alias-table{width:100%; border-collapse:collapse; font-size:13px;}
+  table.alias-table th{
+    text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.8px;
+    color:var(--faint); padding:0 10px 10px; border-bottom:1px solid var(--border); font-weight:700;
+  }
+  table.alias-table td{padding:9px 10px; border-bottom:1px solid var(--border); vertical-align:middle;}
+  table.alias-table td.sku{font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--muted);}
+  table.alias-table input{
+    width:100%; font-family:'JetBrains Mono',monospace; font-size:13px; text-transform:uppercase;
+    padding:6px 9px; border:1px solid var(--border); border-radius:var(--r-sm); background:var(--surface-2);
+  }
+  table.alias-table input:focus{outline:none; border-color:var(--accent); background:#fff;}
+  .del-x{
+    background:none; border:none; color:var(--faint); padding:6px; cursor:pointer;
+    border-radius:7px; display:inline-flex; align-items:center; justify-content:center;
+    transition:background .15s, color .15s; flex-shrink:0;
+  }
+  .del-x svg{width:16px; height:16px;}
+  .del-x:hover{color:var(--danger); background:#FBEAEA;}
+
+  .soon-panel{
+    text-align:center; padding:70px 24px; color:var(--muted);
+  }
+  .soon-panel .big{width:60px;height:60px;margin:0 auto 16px;border-radius:16px;background:var(--accent-soft);display:grid;place-items:center;color:var(--accent-d);}
+  .soon-panel .big svg{width:30px;height:30px;}
+  .soon-panel h2{font-size:19px; color:var(--ink); margin:0 0 6px;}
+
+  /* ---------- Financeiro ---------- */
+  .seg{display:inline-flex; background:var(--surface-2); border:1px solid var(--border); border-radius:9px; padding:3px;}
+  .seg-btn{
+    border:none; background:transparent; cursor:pointer; font-family:inherit;
+    font-size:12.5px; font-weight:600; color:var(--muted); padding:6px 14px; border-radius:7px;
+    transition:background .15s, color .15s;
+  }
+  .seg-btn:hover{color:var(--ink);}
+  .seg-btn.active{background:var(--surface); color:var(--accent-d); box-shadow:var(--sh-sm);}
+
+  table.fin-table{width:100%; border-collapse:collapse; font-size:13px;}
+  table.fin-table th{
+    text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.8px;
+    color:var(--faint); padding:0 10px 10px; border-bottom:1px solid var(--border); font-weight:700;
+  }
+  table.fin-table th.right, table.fin-table td.right{text-align:right;}
+  table.fin-table td{padding:11px 10px; border-bottom:1px solid var(--border); vertical-align:middle;}
+  table.fin-table td.modelo{font-weight:700; letter-spacing:.2px;}
+  table.fin-table tr:last-child td{border-bottom:none;}
+  .fin-total-row{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-top:14px; padding:16px 14px; border-radius:var(--r-md);
+    background:linear-gradient(135deg,#11332b,#0d2722); color:#fff;
+  }
+  .fin-total-row .lab{font-size:12px; text-transform:uppercase; letter-spacing:1px; color:#8fc9bb;}
+  .fin-total-row .val{font-size:24px; font-weight:800; font-family:'JetBrains Mono',monospace;}
+  .missing{color:var(--amber); font-weight:600; font-size:12px;}
+  .cost-wrap{display:inline-flex; align-items:center; gap:6px; background:var(--surface-2); border:1px solid var(--border-strong); border-radius:var(--r-sm); padding:0 10px; max-width:150px;}
+  .cost-wrap span{color:var(--muted); font-size:12.5px; font-weight:600;}
+  .cost-wrap input{
+    border:none; background:transparent; font-family:'JetBrains Mono',monospace; font-size:13px;
+    padding:8px 0; width:100%; color:var(--ink);
+  }
+  .cost-wrap input:focus{outline:none;}
+  .cost-wrap:focus-within{border-color:var(--accent);}
+  .fin-note{font-size:12px; color:var(--amber); background:var(--amber-soft); border:1px solid var(--amber-line); border-radius:var(--r-sm); padding:10px 12px; margin-top:14px;}
+  .kpi-num.money{font-size:25px;}
+
+  .row-del{
+    background:none; border:none; color:var(--faint); font-size:17px; line-height:1;
+    padding:3px 8px; cursor:pointer; border-radius:6px; transition:background .12s, color .12s;
+  }
+  .row-del:hover{color:var(--danger); background:#FBEAEA;}
+  .history-row .right-group{display:flex; align-items:center; gap:10px;}
+
+  /* ---------- Toast ---------- */
+  .toast{
+    position:fixed; bottom:26px; left:50%;
+    transform:translateX(-50%) translateY(12px);
+    background:var(--ink); color:#fff; padding:12px 22px; border-radius:30px;
+    font-size:13px; font-weight:500; opacity:0; transition:opacity .22s, transform .22s;
+    pointer-events:none; z-index:100; box-shadow:var(--sh-lg);
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  .btn-danger{background:var(--danger); color:#fff;}
+  .btn-danger:hover{background:#B83434;}
+
+  .confirm-overlay{
+    display:none; position:fixed; inset:0; z-index:200;
+    background:rgba(15,18,26,.55); backdrop-filter:blur(2px);
+    align-items:center; justify-content:center; padding:20px;
+  }
+  .confirm-overlay.show{display:flex;}
+  .confirm-box{
+    background:var(--surface); border-radius:var(--r-lg); box-shadow:var(--sh-lg);
+    padding:26px 26px 22px; max-width:340px; width:100%; text-align:center;
+    animation:popIn .18s ease both;
+  }
+  .confirm-ic{
+    width:48px; height:48px; border-radius:13px; margin:0 auto 14px;
+    background:var(--amber-soft); color:var(--amber); display:grid; place-items:center;
+  }
+  .confirm-ic svg{width:24px; height:24px;}
+  .confirm-title{font-size:16px; font-weight:700; margin-bottom:6px;}
+  .confirm-msg{font-size:13px; color:var(--muted); margin-bottom:20px; line-height:1.5;}
+  .confirm-actions{display:flex; gap:10px; justify-content:center;}
+  .confirm-actions .btn{flex:1;}
+  @keyframes popIn{from{opacity:0; transform:scale(.94);} to{opacity:1; transform:scale(1);}}
+
+  .scrim{display:none;}
+
+  /* ---------- Sincronia ---------- */
+  .sync-status{
+    display:inline-flex; align-items:center; gap:7px;
+    padding:5px 12px; border-radius:20px;
+    font-size:11.5px; font-weight:600; letter-spacing:.2px;
+  }
+  .sync-status .dot{width:7px; height:7px; border-radius:50%;}
+  .sync-status.offline{background:#F3F4F6; color:#69727F;}
+  .sync-status.offline .dot{background:#9AA3B2;}
+  .sync-status.online{background:var(--accent-soft); color:var(--accent-d);}
+  .sync-status.online .dot{background:var(--accent);}
+  .sync-status.syncing{background:#EFF6FF; color:#1E40AF;}
+  .sync-status.syncing .dot{background:#3B82F6; animation:pulse 1s infinite;}
+  .sync-status.error{background:#FEEBEB; color:var(--danger);}
+  .sync-status.error .dot{background:var(--danger);}
+  @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:.3;}}
+
+  .sync-config{
+    display:flex; flex-direction:column; gap:12px;
+  }
+  .sync-config input[type=text]{
+    font-family:'JetBrains Mono',monospace; font-size:12.5px; padding:11px 13px;
+    border:1px solid var(--border-strong); border-radius:var(--r-sm); background:var(--surface);
+    width:100%;
+  }
+  .sync-config input[type=text]:focus{outline:none; border-color:var(--accent);}
+  .sync-log{
+    font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--muted);
+    background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-sm);
+    padding:10px 12px; max-height:180px; overflow-y:auto; margin-top:8px;
+  }
+  .sync-log .line{padding:2px 0; border-bottom:1px dashed var(--border);}
+  .sync-log .line:last-child{border-bottom:none;}
+  .sync-log .ok{color:var(--accent-d);}
+  .sync-log .err{color:var(--danger);}
+  .sync-log .info{color:var(--muted);}
+  .sync-log .time{color:var(--faint); margin-right:8px;}
+
+  @keyframes fadeUp{from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);}}
+  @keyframes barGrow{from{transform:scaleY(0);} to{transform:scaleY(1);}}
+
+  /* stagger */
+  .kpi:nth-child(1){animation-delay:.02s;}
+  .kpi:nth-child(2){animation-delay:.07s;}
+  .kpi:nth-child(3){animation-delay:.12s;}
+  .kpi:nth-child(4){animation-delay:.17s;}
+
+  /* ---------- Responsive ---------- */
+  @media (max-width:1040px){
+    .grid-2{grid-template-columns:1fr;}
+    .kpi-row{grid-template-columns:repeat(2,1fr);}
+  }
+  @media (max-width:880px){
+    .app{grid-template-columns:1fr;}
+    .sidebar{
+      position:fixed; left:0; top:0; bottom:0; width:264px;
+      transform:translateX(-100%); transition:transform .25s ease;
     }
+    .app.nav-open .sidebar{transform:translateX(0);}
+    .app.nav-open .scrim{display:block; position:fixed; inset:0; background:rgba(10,12,18,.5); z-index:35;}
+    .menu-btn{display:flex;}
+    .topbar{padding:14px 18px;}
+    .content{padding:20px 18px 50px;}
+  }
+  @media (max-width:520px){
+    .kpi-row{grid-template-columns:repeat(2,1fr); gap:12px;}
+    .kpi-num{font-size:26px;}
+    .top-title{font-size:17px;}
+    .pill.hide-sm{display:none;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+</style>
+</head>
+<body>
 
-    (window as any)[cbName] = function (data: any) {
-      cleanup();
-      resolve(data || { ok: false, error: 'resposta vazia' });
-    };
+<div class="app" id="app">
+  <div class="scrim" id="scrim"></div>
 
-    script.src = GS_URL + '?' + params.toString();
-    script.onerror = function () {
-      cleanup();
-      resolve({ ok: false, error: 'falha na conexão' });
-    };
-    document.head.appendChild(script);
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">2M</div>
+      <div>
+        <div class="brand-name">2M Commerce</div>
+        <div class="brand-sub">Central de Operações</div>
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-title">Ferramentas</div>
+      <div class="nav-item active" data-view="separador" data-title="Separador de Pedidos" data-eyebrow="Operações">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05M12 22.08V12"/></svg>
+        Separador de Pedidos
+      </div>
+      <div class="nav-item" data-view="fornecedor" data-title="Pagamento ao Fornecedor" data-eyebrow="Financeiro">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Fornecedor
+      </div>
+      <div class="nav-item soon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
+        Controle de Estoque <span class="soon-tag">em breve</span>
+      </div>
+      <div class="nav-item soon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6M3 13a9 9 0 1 0 3-7.7L3 8"/></svg>
+        Devoluções <span class="soon-tag">em breve</span>
+      </div>
+      <div class="nav-item soon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M7 16l4-5 3 3 5-6"/></svg>
+        Relatórios <span class="soon-tag">em breve</span>
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-title">Cadastros</div>
+      <div class="nav-item" data-view="produtos" data-title="Produtos cadastrados" data-eyebrow="Cadastros">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 11 22 2 13V2h11l7.59 7.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5"/></svg>
+        Produtos
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-title">Dados</div>
+      <div class="nav-item" id="btnExportExcel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        Exportar Excel
+      </div>
+      <div class="nav-item" data-view="config" data-title="Sincronização com Google Sheets" data-eyebrow="Sistema">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-9 9m9-9a9 9 0 0 0-9-9m9 9H3m9 9a9 9 0 0 1-9-9m9 9c1.657 0 3-4 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4-3-9s1.343-9 3-9m0 0a9 9 0 0 0-9 9"/></svg>
+        Sincronia
+      </div>
+    </div>
+
+    <div class="sidebar-foot">
+      <div class="foot-card">
+        <b>Plataforma em expansão.</b><br>
+        Novas ferramentas para estoque, devoluções e relatórios chegam em breve.
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="topbar">
+      <div class="top-left">
+        <button class="menu-btn" id="menuBtn" aria-label="Menu">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
+        <div>
+          <div class="top-eyebrow" id="topEyebrow">Operações</div>
+          <div class="top-title" id="topTitle">Separador de Pedidos</div>
+        </div>
+      </div>
+      <div class="top-right">
+        <span class="sync-status offline hide-sm" id="syncTopBadge" title="Clique para configurar" style="cursor:pointer;">
+          <span class="dot"></span><span id="syncTopText">offline</span>
+        </span>
+        <span class="pill hide-sm"><span class="dot"></span><span id="hoje-label">—</span></span>
+        <span class="pill"><b id="hoje-total">0 pedidos hoje</b></span>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ===== VIEW: SEPARADOR ===== -->
+      <section class="view active" id="view-separador">
+
+        <div class="kpi-row">
+          <div class="kpi">
+            <div class="kpi-top"><span class="kpi-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v4H3zM5 7v14h14V7M9 11h6"/></svg></span><span class="kpi-label">Pedidos hoje</span></div>
+            <div class="kpi-num mono" id="mHoje">0</div>
+            <div class="kpi-foot">Lotes registrados no dia</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-top"><span class="kpi-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg></span><span class="kpi-label">No lote atual</span></div>
+            <div class="kpi-num mono" id="mTotal">0</div>
+            <div class="kpi-foot">Pares a separar agora</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-top"><span class="kpi-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 11 22 2 13V2h11l7.59 7.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5"/></svg></span><span class="kpi-label">Modelos distintos</span></div>
+            <div class="kpi-num mono" id="mModelos">0</div>
+            <div class="kpi-foot">Variações no lote</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-top"><span class="kpi-ic amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg></span><span class="kpi-label">SKUs pendentes</span></div>
+            <div class="kpi-num mono" id="mPend">0</div>
+            <div class="kpi-foot">Aguardando apelido</div>
+          </div>
+        </div>
+
+        <!-- Pending alert -->
+        <div class="pending-card" id="pendingPanel" style="display:none;">
+          <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg> Produtos sem apelido</h3>
+          <div class="sub">Estes itens vieram no PDF mas ainda não têm um nome curto. Defina o apelido e eles entram na lista na hora.</div>
+          <div id="pendingList"></div>
+        </div>
+
+        <div class="grid-2">
+          <!-- Left -->
+          <div class="stack">
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <div class="card-title">Etiquetas do dia</div>
+                  <div class="card-desc">Solte o PDF da Upseller para gerar a separação.</div>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="drop" id="dropzone">
+                  <input type="file" id="fileInput" accept="application/pdf" multiple>
+                  <div class="drop-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg></div>
+                  <div class="drop-t1">Solte o PDF de etiquetas aqui</div>
+                  <div class="drop-t2">ou clique para escolher — aceita um ou vários arquivos</div>
+                </div>
+                <div class="status" id="uploadStatus"></div>
+                <div id="diagBox" style="display:none;">
+                  <div style="font-size:12px; color:var(--muted); margin-bottom:6px;">O leitor abriu o PDF mas não reconheceu os pedidos. Copie o texto abaixo e me envie para ajustar:</div>
+                  <textarea id="diagText" readonly></textarea>
+                  <button class="btn btn-soft btn-sm" id="btnCopyDiag" style="margin-top:8px;">Copiar texto de diagnóstico</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Ticket signature -->
+            <div class="ticket-card">
+              <div class="ticket-head">
+                <div>
+                  <div class="ticket-eyebrow">Lista de separação</div>
+                  <div class="ticket-date" id="ticketDate">—</div>
+                </div>
+                <div class="ticket-total">pares no lote<b id="ticketTotalNum">0</b></div>
+              </div>
+              <div class="ticket-perf"></div>
+              <div class="ticket" id="ticketOutput">
+                <div class="empty-hint">A lista numerada aparece aqui, na mesma ordem das páginas do PDF.</div>
+              </div>
+              <div class="ticket-actions">
+                <button class="btn btn-accent" id="btnCopy">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                  Copiar lista pro WhatsApp
+                </button>
+                <button class="btn btn-soft" id="btnConfirm" disabled>Registrar lote do dia</button>
+                <button class="btn btn-ghost" id="btnClear">Limpar</button>
+              </div>
+              <div class="backdate-row">
+                <button class="backdate-link" id="btnToggleBackdate" type="button">Registrar para outro dia</button>
+                <div class="backdate-panel" id="backdatePanel" style="display:none;">
+                  <label>Data do lote
+                    <input type="date" id="backdateInput">
+                  </label>
+                  <button class="btn btn-soft btn-sm" id="btnConfirmBackdate" disabled>Registrar nessa data</button>
+                  <button class="btn btn-ghost btn-sm" id="btnCancelBackdate">Cancelar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right -->
+          <div class="stack">
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <div class="card-title">Volume por dia</div>
+                  <div class="card-desc">Pares separados nos últimos dias.</div>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="chart" id="volChart"><div class="empty-hint">Registre um lote para ver o volume diário.</div></div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <div class="card-title">Lotes registrados</div>
+                  <div class="card-desc">Histórico de envios confirmados.</div>
+                </div>
+              </div>
+              <div class="card-body">
+                <div id="historyList" style="max-height:300px; overflow-y:auto;">
+                  <div class="empty-hint">Nenhum lote confirmado ainda.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== VIEW: FORNECEDOR ===== -->
+      <section class="view" id="view-fornecedor">
+
+        <div class="kpi-row" id="fornecedorKpiRow">
+          <div class="kpi">
+            <div class="kpi-top"><span class="kpi-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span><span class="kpi-label">Total a pagar</span></div>
+            <div class="kpi-num mono" id="fTotalValor">R$ 0</div>
+            <div class="kpi-foot" id="fPeriodoLabel">Todo o período</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-top"><span class="kpi-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg></span><span class="kpi-label">Pares no período</span></div>
+            <div class="kpi-num mono" id="fTotalPares">0</div>
+            <div class="kpi-foot">Soma de todos os modelos</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-top"><span class="kpi-ic amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg></span><span class="kpi-label">Sem custo definido</span></div>
+            <div class="kpi-num mono" id="fSemCusto">0</div>
+            <div class="kpi-foot">Modelos a precificar</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Período</div>
+              <div class="card-desc">Escolha o intervalo para calcular o valor devido ao fornecedor.</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="period-tabs" id="periodTabs">
+              <button class="ptab active" data-period="hoje">Hoje</button>
+              <button class="ptab" data-period="semana">Esta semana</button>
+              <button class="ptab" data-period="mes">Este mês</button>
+              <button class="ptab" data-period="tudo">Tudo</button>
+              <button class="ptab" data-period="custom">Período personalizado</button>
+            </div>
+            <div class="period-custom" id="periodCustom" style="display:none;">
+              <label>De <input type="date" id="dateFrom"></label>
+              <label>Até <input type="date" id="dateTo"></label>
+              <button class="btn btn-soft btn-sm" id="btnApplyCustom">Aplicar</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">Valor por modelo</div>
+                <div class="card-desc">Quantidade separada e valor devido no período selecionado.</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="fornecedor-warn" id="fornecedorWarn" style="display:none;"></div>
+              <table class="alias-table" id="fornecedorTable">
+                <thead><tr><th>Modelo</th><th style="width:90px;">Pares</th><th style="width:110px;">Custo unit.</th><th style="width:120px;">Subtotal</th></tr></thead>
+                <tbody id="fornecedorTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">Custo por modelo</div>
+                <div class="card-desc">Defina quanto cada modelo custa. Pode preencher aos poucos.</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <table class="alias-table" id="custoTable">
+                <thead><tr><th>Modelo</th><th style="width:130px;">Custo (R$)</th></tr></thead>
+                <tbody id="custoTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== VIEW: PRODUTOS ===== -->
+      <section class="view" id="view-produtos">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Produtos cadastrados</div>
+              <div class="card-desc">Defina o nome curto (apelido) que cada SKU recebe na lista — ex.: 070, CRAZY HORSE, NKIT.</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="alias-toolbar">
+              <input class="sku-in" id="newSkuInput" placeholder="SKU">
+              <input class="name-in" id="newNameInput" placeholder="APELIDO (ex: 070, CRAZY HORSE)">
+              <button class="btn btn-accent" id="btnAddAlias">Adicionar produto</button>
+            </div>
+            <table class="alias-table">
+              <thead><tr><th style="width:200px;">SKU</th><th>Apelido na lista</th><th style="width:50px;"></th></tr></thead>
+              <tbody id="aliasTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== VIEW: CONFIGURAÇÕES ===== -->
+      <section class="view" id="view-config">
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Sincronização com Supabase</div>
+              <div class="card-desc">O sistema conecta automaticamente ao banco de dados. Todos os colaboradores veem os mesmos dados em tempo real.</div>
+            </div>
+            <span class="sync-status offline" id="syncStatusBadge">
+              <span class="dot"></span><span id="syncStatusText">desconectado</span>
+            </span>
+          </div>
+          <div class="card-body">
+            <div class="sync-config">
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button class="btn btn-accent" id="btnPull">Sincronizar agora</button>
+              </div>
+              <div class="sync-log" id="syncLog">
+                <div class="line info"><span class="time">—</span>Aguardando conexão.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Como funciona</div>
+              <div class="card-desc">Não precisa configurar nada.</div>
+            </div>
+          </div>
+          <div class="card-body" style="font-size:13px; color:var(--ink-soft); line-height:1.7;">
+            <ol style="padding-left:20px; margin:0;">
+              <li>O sistema já vem conectado ao banco de dados do Supabase da 2M Commerce.</li>
+              <li>Qualquer alteração (produto, custo, lote) é salva no banco e aparece instantaneamente para os outros colaboradores conectados.</li>
+              <li>Se a internet cair, o sistema continua funcionando com os dados salvos localmente e sincroniza de novo quando a conexão voltar.</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg></div>
+    <div class="confirm-title" id="confirmTitle">Excluir item?</div>
+    <div class="confirm-msg" id="confirmMsg">Essa ação não pode ser desfeita.</div>
+    <div class="confirm-actions">
+      <button class="btn btn-soft" id="confirmCancel">Cancelar</button>
+      <button class="btn btn-danger" id="confirmOk">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+if(typeof pdfjsLib !== 'undefined'){
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+let aliasMap = {};
+let history = [];
+let currentBatch = [];
+let pendingSkus = {};
+
+function prefersReducedMotion(){
+  return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function todayStr(){
+  const d = new Date();
+  return d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' });
+}
+function todayKey(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), 2400);
+}
+
+function confirmDialog(title, msg, okLabel){
+  return new Promise((resolve) => {
+    const overlay = document.getElementById('confirmOverlay');
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmMsg').textContent = msg;
+    const okBtn = document.getElementById('confirmOk');
+    const cancelBtn = document.getElementById('confirmCancel');
+    okBtn.textContent = okLabel || 'Excluir';
+
+    function cleanup(result){
+      overlay.classList.remove('show');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      overlay.removeEventListener('click', onOverlay);
+      resolve(result);
+    }
+    function onOk(){ cleanup(true); }
+    function onCancel(){ cleanup(false); }
+    function onOverlay(e){ if(e.target === overlay) cleanup(false); }
+
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    overlay.addEventListener('click', onOverlay);
+    overlay.classList.add('show');
   });
 }
-```
 
-### Ações disponíveis na API:
+function animateNumber(el, to){
+  if(!el) return;
+  to = to || 0;
+  const from = parseInt((el.textContent||'').replace(/\D/g,'')) || 0;
+  if(prefersReducedMotion() || from === to){ el.textContent = to; return; }
+  const dur = 520, start = performance.now();
+  function step(now){
+    const p = Math.min(1, (now - start) / dur);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(from + (to - from) * eased);
+    if(p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
 
-| Ação | Payload | Descrição |
-|------|---------|-----------|
-| `ping` | nenhum | Testa conexão. Retorna `{ ok: true }` |
-| `pullAll` | nenhum | Retorna todos os dados: `{ ok: true, data: { apelidos: [...], custos: [...], lotes: [...] } }` |
-| `setAlias` | `{ sku: string, apelido: string }` | Salva/atualiza um produto |
-| `delAlias` | `{ sku: string }` | Remove um produto |
-| `setCusto` | `{ modelo: string, custo: number }` | Salva/atualiza custo de um modelo |
-| `setLote` | `{ id, data, itens, total, custoTotal }` | Registra um lote |
-| `delLote` | `{ id: string }` | Exclui um lote |
+const store = {
+  async get(key){
+    if(typeof window !== 'undefined' && window.storage && window.storage.get){
+      try{
+        const r = await window.storage.get(key, false);
+        return r && r.value ? r.value : null;
+      }catch(e){}
+    }
+    try{ return localStorage.getItem(key); }catch(e){ return null; }
+  },
+  async set(key, value){
+    let okCloud = false;
+    if(typeof window !== 'undefined' && window.storage && window.storage.set){
+      try{ await window.storage.set(key, value, false); okCloud = true; }catch(e){}
+    }
+    try{ localStorage.setItem(key, value); return true; }catch(e){ return okCloud; }
+  }
+};
 
-### Formato dos dados retornados por pullAll:
+const DEFAULT_ALIASES = {
+  "1734428113":"070",
+  "1733803583":"070",
+  "1734428091":"070",
+  "1735858314":"070",
+  "1735858308":"070",
+  "1735858240":"CRAZY HORSE",
+  "2387944176":"NKIT",
+  "1734607569":"MOCASSIM"
+};
 
-```typescript
-interface PullAllResponse {
-  ok: boolean;
-  data: {
-    apelidos: Array<{ sku: string; apelido: string }>;
-    custos: Array<{ modelo: string; custo: number }>;
-    lotes: Array<{
-      id: string;
-      data: string; // "DD/MM/AAAA"
-      itens: Array<{ modelo: string; cor: string; tamanho: string; qty: number }>;
-      total: number;
-      custoTotal: number;
-    }>;
+async function loadData(){
+  // 1. Carregar dados locais primeiro (rápido, funciona offline)
+  let primeiraVez = false;
+  try{
+    const v = await store.get('alias-map');
+    if(v){
+      aliasMap = JSON.parse(v);
+    }else{
+      aliasMap = { ...DEFAULT_ALIASES };
+      primeiraVez = true;
+    }
+  }catch(e){ aliasMap = { ...DEFAULT_ALIASES }; }
+  if(primeiraVez){
+    try{ await store.set('alias-map', JSON.stringify(aliasMap)); }catch(e){}
+  }
+  try{
+    const v = await store.get('history');
+    history = v ? JSON.parse(v) : [];
+  }catch(e){ history = []; }
+  await loadCustoMap();
+
+  // 2. Renderizar com dados locais
+  renderAliasTable();
+  renderHistory();
+  updateTodayLabel();
+  reprocessBatch();
+  refreshFornecedorView();
+
+  // 3. Tentar sincronizar com o Supabase (atualiza por cima se tiver dados mais recentes)
+  await sbConnectAndLoad();
+}
+
+async function saveAliasMap(){
+  const ok = await store.set('alias-map', JSON.stringify(aliasMap));
+  if(!ok) showToast('Não consegui salvar os apelidos neste navegador');
+}
+async function saveHistory(){
+  const ok = await store.set('history', JSON.stringify(history));
+  if(!ok) showToast('Não consegui salvar o histórico neste navegador');
+}
+
+function updateTodayLabel(){
+  document.getElementById('hoje-label').textContent = todayStr();
+  document.getElementById('ticketDate').textContent = todayStr();
+  const tk = todayKey();
+  const total = history.filter(h => h.dateKey === tk).reduce((s,h)=> s + h.count, 0);
+  document.getElementById('hoje-total').textContent = total + (total===1 ? ' pedido hoje' : ' pedidos hoje');
+  animateNumber(document.getElementById('mHoje'), total);
+}
+
+function renderHistory(){
+  const el = document.getElementById('historyList');
+  if(history.length === 0){
+    el.innerHTML = '<div class="empty-hint">Nenhum lote confirmado ainda.</div>';
+  }else{
+    const sorted = [...history].sort((a,b)=> b.timestamp - a.timestamp);
+    el.innerHTML = sorted.map(h => {
+      const d = new Date(h.timestamp);
+      const time = d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+      const hid = h.id || ('legacy_' + h.timestamp);
+      const backTag = h.backdated ? '<span class="back-tag">lançado depois</span>' : '';
+      return `<div class="history-row">
+        <span class="d">${h.dateLabel} <small>${time}</small>${backTag}</span>
+        <span class="n">${h.count} <small>pares</small></span>
+        <button class="del-x history-del" data-id="${hid}" title="Excluir lote">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16zM10 11v6M14 11v6"/></svg>
+        </button>
+      </div>`;
+    }).join('');
+
+    el.querySelectorAll('.history-del').forEach(btn => {
+      btn.addEventListener('click', async (e)=>{
+        const id = e.currentTarget.dataset.id;
+        const item = history.find(h => (h.id || ('legacy_' + h.timestamp)) === id);
+        if(!item) return;
+        const ok = await confirmDialog(
+          'Excluir este lote?',
+          `Lote de ${item.dateLabel} com ${item.count} pares. Essa ação não pode ser desfeita.`,
+          'Excluir lote'
+        );
+        if(!ok) return;
+        history = history.filter(h => (h.id || ('legacy_' + h.timestamp)) !== id);
+        await saveHistory();
+        sbDeleteLote(id);
+        renderHistory();
+        updateTodayLabel();
+        refreshFornecedorView();
+        showToast('Lote excluído');
+      });
+    });
+  }
+  renderChart();
+}
+
+function renderChart(){
+  const el = document.getElementById('volChart');
+  if(!el) return;
+  const byDay = {};
+  history.forEach(h => { byDay[h.dateKey] = (byDay[h.dateKey]||0) + h.count; });
+  const keys = Object.keys(byDay).sort().slice(-14);
+  if(keys.length === 0){
+    el.innerHTML = '<div class="empty-hint">Registre um lote para ver o volume diário.</div>';
+    return;
+  }
+  const max = Math.max(...keys.map(k => byDay[k]));
+  el.innerHTML = keys.map(k => {
+    const v = byDay[k];
+    const h = max > 0 ? Math.max(4, Math.round((v / max) * 100)) : 0;
+    const parts = k.split('-');
+    const dm = `${parts[2]}/${parts[1]}`;
+    return `<div class="bar-col" title="${dm} — ${v} pares">
+      <div class="bar-val">${v}</div>
+      <div class="bar-track"><div class="bar-fill" style="height:${h}%"></div></div>
+      <div class="bar-lab">${dm}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderAliasTable(){
+  const body = document.getElementById('aliasTableBody');
+  const skus = Object.keys(aliasMap).sort();
+  if(skus.length === 0){
+    body.innerHTML = '<tr><td colspan="3" style="color:var(--faint); font-style:italic; padding:16px 10px;">Nenhum produto cadastrado ainda.</td></tr>';
+    return;
+  }
+  body.innerHTML = skus.map(sku => `
+    <tr>
+      <td class="sku">${sku}</td>
+      <td><input value="${aliasMap[sku]}" data-sku="${sku}" class="alias-edit-input"></td>
+      <td><button class="del-x" data-sku="${sku}" title="Remover">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16zM10 11v6M14 11v6"/></svg>
+      </button></td>
+    </tr>
+  `).join('');
+
+  body.querySelectorAll('.alias-edit-input').forEach(inp => {
+    inp.addEventListener('change', async (e)=>{
+      const sku = e.target.dataset.sku;
+      const val = e.target.value.trim().toUpperCase();
+      if(val){
+        aliasMap[sku] = val;
+        await saveAliasMap();
+        sbUpsertAlias(sku, val);
+        reprocessBatch();
+        refreshFornecedorView();
+        showToast('Apelido atualizado');
+      }
+    });
+  });
+  body.querySelectorAll('.del-x').forEach(btn => {
+    btn.addEventListener('click', async (e)=>{
+      const sku = e.currentTarget.dataset.sku;
+      delete aliasMap[sku];
+      await saveAliasMap();
+      sbDeleteAlias(sku);
+      renderAliasTable();
+      reprocessBatch();
+      refreshFornecedorView();
+      showToast('Produto removido');
+    });
+  });
+}
+
+document.getElementById('btnAddAlias').addEventListener('click', async ()=>{
+  const skuIn = document.getElementById('newSkuInput');
+  const nameIn = document.getElementById('newNameInput');
+  const sku = skuIn.value.trim();
+  const name = nameIn.value.trim().toUpperCase();
+  if(!sku || !name){ showToast('Preencha SKU e apelido'); return; }
+  aliasMap[sku] = name;
+  await saveAliasMap();
+  sbUpsertAlias(sku, name);
+  skuIn.value = ''; nameIn.value = '';
+  renderAliasTable();
+  reprocessBatch();
+  refreshFornecedorView();
+  showToast('Produto cadastrado');
+});
+
+const CORES_BASE = ['MARROM','PRETO','AZUL','BRANCO','VERDE','VERMELHO','AMARELO','CINZA',
+  'BEGE','CARAMELO','CAQUI','VINHO','LARANJA','ROSA','DOURADO','PRATA','NUDE'];
+
+function splitConcat(s){
+  return s.replace(/([a-zà-ÿ])([A-ZÀ-Ý])/g, '$1 $2');
+}
+
+function extrairCorTamanho(raw){
+  if(!raw) return { cor: null, tamanho: '?' };
+  const tamMatch = raw.match(/(\d{2,3})(?!\d)/);
+  const tamanho = tamMatch ? tamMatch[1] : '?';
+  const palavras = (raw.match(/[A-Za-zÀ-ÿ]+/g) || []).map(p => p.toUpperCase());
+  let cor = null;
+  for(const p of palavras){
+    if(CORES_BASE.includes(p)){ cor = p; break; }
+  }
+  return { cor, tamanho };
+}
+
+function normTxt(s){
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim();
+}
+
+async function extractOrderFromPage(page){
+  const tc = await page.getTextContent();
+  const items = tc.items.map(it => ({
+    text: it.str,
+    x0: it.transform[4],
+    top: it.transform[5]
+  })).filter(it => it.text.trim().length > 0);
+
+  const skuHeader = items.find(it => normTxt(it.text) === 'SKU' || normTxt(it.text).startsWith('SKU'));
+  const varHeader = items.find(it => normTxt(it.text).includes('VARIA'));
+  const qtdHeader = items.find(it => normTxt(it.text) === 'QTD' || normTxt(it.text).includes('QTD'));
+  if(!skuHeader || !varHeader) return null;
+
+  const headerX = skuHeader.x0;
+  const skuTop  = skuHeader.top;
+  const varTop  = varHeader.top;
+  const qtdTop  = qtdHeader ? qtdHeader.top : varTop - 100;
+
+  const bandLo = Math.min(skuTop, varTop) - 80;
+  const bandHi = Math.max(skuTop, varTop) + 80;
+  const cand   = items.filter(it => it.top >= bandLo && it.top <= bandHi);
+
+  // ── Capturar texto da Descrição (entre SKU e Variação na tabela) ──
+  const descHeader = items.find(it => normTxt(it.text).includes('DESCRI'));
+  let descricaoRaw = '';
+  if(descHeader){
+    const descCells = cand.filter(it =>
+      it.x0 < headerX - 3 &&
+      it.top <= skuTop + 5 && it.top >= varTop - 5 &&
+      !normTxt(it.text).includes('DESCRI') &&
+      !normTxt(it.text).includes('VARIA') &&
+      normTxt(it.text) !== 'SKU' &&
+      normTxt(it.text) !== 'QTD' &&
+      !/^\d{8,14}$/.test(it.text.trim()) &&
+      !it.text.match(/^\d{8,14}[A-Za-zÀ-ÿ]/)
+    );
+    descricaoRaw = descCells.map(it => splitConcat(it.text)).join(' ');
+  }
+
+  // ── Coletar TODOS os SKUs (pode haver mais de 1 na mesma etiqueta) ──
+  const allSkuItems = [];
+  cand.forEach(it => {
+    // Método 1: SKU colado com texto (ex: "1734428091Botina")
+    const m1 = it.text.match(/(\d{10})[A-Za-zÀ-ÿ]/);
+    if(m1){
+      if(!allSkuItems.some(s => s.sku === m1[1] && Math.abs(s.x0 - it.x0) < 5)){
+        allSkuItems.push({ sku: m1[1], x0: it.x0, top: it.top });
+      }
+      return;
+    }
+    // Método 2: SKU como número solto de 10 dígitos na coluna da tabela
+    if(/^\d{10}$/.test(it.text.trim()) && it.x0 < headerX - 2){
+      const skuVal = it.text.trim();
+      if(!allSkuItems.some(s => s.sku === skuVal && Math.abs(s.x0 - it.x0) < 5)){
+        allSkuItems.push({ sku: skuVal, x0: it.x0, top: it.top });
+      }
+    }
+  });
+  if(allSkuItems.length === 0) return null;
+
+  // Células da variação (faixa Variação→QTD)
+  const varCells = cand.filter(it =>
+    it.x0 < headerX - 3 &&
+    it.top <= varTop + 5 && it.top >= qtdTop - 5 &&
+    !normTxt(it.text).includes('VARIA') &&
+    normTxt(it.text) !== 'QTD'
+  );
+
+  // QTD total
+  let qty = 1;
+  if(qtdHeader){
+    const qi = cand.filter(it => it.x0 < headerX - 3 && Math.abs(it.top - qtdHeader.top) <= 20);
+    const qm = qi.map(it => it.text).join(' ').match(/(\d+)/);
+    if(qm) qty = parseInt(qm[1], 10) || 1;
+  }
+
+  // Helpers
+  const isCor = text => {
+    const words = text.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').split(/\W+/);
+    return words.some(w => CORES_BASE.includes(w));
+  };
+  const getCorNome = text => {
+    const ws = text.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').match(/[A-Z]+/g) || [];
+    return ws.find(w => CORES_BASE.includes(w)) || null;
+  };
+
+  // ── CASO 1: Múltiplos SKUs diferentes → cada variação vai pro SKU mais próximo ──
+  if(allSkuItems.length > 1){
+    // Para cada célula de variação, atribuir ao SKU mais próximo por x0
+    const skuVarMap = {};
+    allSkuItems.forEach(s => { skuVarMap[s.sku + '_' + s.x0] = { ...s, vars: [] }; });
+    const skuEntries = Object.values(skuVarMap);
+
+    varCells.forEach(v => {
+      let closest = null, closestDist = Infinity;
+      skuEntries.forEach(s => {
+        const d = Math.abs(v.x0 - s.x0);
+        if(d < closestDist){ closestDist = d; closest = s; }
+      });
+      if(closest && closestDist < 25) closest.vars.push(v);
+    });
+
+    const resultados = allSkuItems.map(si => {
+      const entry = skuVarMap[si.sku + '_' + si.x0];
+      const raw = entry.vars.map(it => splitConcat(it.text)).join(' ');
+      const { cor, tamanho } = extrairCorTamanho(raw);
+      return { sku: si.sku, cor, tamanho, qty: 1, descricao: descricaoRaw };
+    });
+    return resultados;
+  }
+
+  // ── CASO 2: SKU único ──
+  const sku = allSkuItems[0].sku;
+  const corCells = varCells.filter(it => isCor(it.text));
+  const tamCells = varCells.filter(it => /\b\d{2,3}\b/.test(it.text) && !isCor(it.text));
+
+  // 2a: Uma cor ou nenhuma → item simples
+  if(corCells.length <= 1){
+    const raw = varCells.map(it => splitConcat(it.text)).join(' ');
+    const { cor, tamanho } = extrairCorTamanho(raw);
+    return [{ sku, cor, tamanho, qty, descricao: descricaoRaw }];
+  }
+
+  // 2b: Múltiplas cores (mesmo SKU) → emparelhar cada cor com tamanho mais próximo
+  const usedTam = new Set();
+  const resultados = corCells
+    .sort((a,b) => a.x0 - b.x0)
+    .map(ci => {
+      const corNome = getCorNome(ci.text);
+      let melhor = null, melhorDist = Infinity;
+      tamCells.forEach(ti => {
+        if(usedTam.has(ti)) return;
+        const d = Math.abs(ti.x0 - ci.x0);
+        if(d < melhorDist){ melhorDist = d; melhor = ti; }
+      });
+      const tamVal = melhor ? (melhor.text.match(/(\d{2,3})/) || [])[1] || '?' : '?';
+      if(melhor) usedTam.add(melhor);
+      return { sku, cor: corNome, tamanho: tamVal, qty: 1, descricao: descricaoRaw };
+    });
+
+  return resultados;
+}
+
+async function extractOrdersFromPdf(file){
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({
+    data: buf,
+    cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
+    cMapPacked: true,
+    standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/'
+  }).promise;
+  const orders = [];
+  let firstPageDump = '';
+
+  for(let p = 1; p <= pdf.numPages; p++){
+    const page = await pdf.getPage(p);
+    // Dump da última página com coordenadas (para diagnóstico)
+    if(p === pdf.numPages){
+      try{
+        const tc = await page.getTextContent();
+        firstPageDump = tc.items
+          .filter(it => it.str.trim().length > 0)
+          .map(it => `[x=${Math.round(it.transform[4])},y=${Math.round(it.transform[5])}]${it.str}`)
+          .join(' | ');
+      }catch(e){}
+    }
+    const result = await extractOrderFromPage(page);
+    if(result){
+      // result é sempre um array — 1 item (simples) ou N itens (grupo de variações)
+      const pageItems = result.map(r => ({
+        sku: r.sku,
+        cor: r.cor,
+        tamanho: r.tamanho,
+        qty: r.qty || 1,
+        descricao: r.descricao || ''
+      }));
+      if(pageItems.length > 1){
+        orders.push({ group: pageItems, page: p });
+      }else{
+        orders.push({ ...pageItems[0], page: p });
+      }
+    }
+  }
+  return { orders, firstPageDump, numPages: pdf.numPages };
+}
+
+function sugerirApelido(descricao){
+  if(!descricao) return null;
+  const d = descricao.toUpperCase();
+  // Mapa de palavras-chave na descrição → apelido sugerido
+  const regras = [
+    { palavras: ['070', '- 070'], apelido: '070' },
+    { palavras: ['207', '- 207'], apelido: '207' },
+    { palavras: ['CRAZY HORSE', 'CRAZY'], apelido: 'CRAZY HORSE' },
+    { palavras: ['MOCASSIM', 'MOCASSIN'], apelido: 'MOCASSIM' },
+    { palavras: ['KNIT', 'BAY SHORE'], apelido: 'KNIT' },
+    { palavras: ['CAMURÇA', 'CAMURCA', 'SUEDE'], apelido: 'CAMURÇA' },
+    { palavras: ['CHELSEA'], apelido: '070' },
+    { palavras: ['TEXANA', 'COWBOY'], apelido: '070' },
+    { palavras: ['BLOGUEIRA', 'FEMININA CANO'], apelido: '207' },
+    { palavras: ['COTURNO'], apelido: 'COTURNO' },
+  ];
+  for(const regra of regras){
+    for(const palavra of regra.palavras){
+      if(d.includes(palavra)) return regra.apelido;
+    }
+  }
+  // Tentar extrair código numérico tipo "- 070", "- 207" do final da descrição
+  const codMatch = d.match(/[-–]\s*(\d{3})\b/);
+  if(codMatch) return codMatch[1];
+  return null;
+}
+
+function buildItemLabel(o){
+  const apelido = aliasMap[o.sku];
+  if(!apelido) return null;
+  return o.cor ? `${apelido} ${o.cor} (${o.tamanho})` : `${apelido} (${o.tamanho})`;
+}
+
+function buildOrderedTicket(orders){
+  pendingSkus = {};
+  const lines = [];
+  const distinct = new Set();
+  let totalPares = 0;
+
+  orders.forEach(o => {
+    // ── Entrada de grupo: múltiplas variações na mesma etiqueta ──
+    if(o.group){
+      const parts = [];
+      let groupQty = 0;
+      let allResolved = true;
+      o.group.forEach(item => {
+        const lbl = buildItemLabel(item);
+        if(!lbl){
+          allResolved = false;
+          const sample = `${item.cor || ''} ${item.tamanho || ''}`.trim();
+          if(!pendingSkus[item.sku]){
+            pendingSkus[item.sku] = { samples: [], descricao: item.descricao || '', sugestao: sugerirApelido(item.descricao) };
+          }
+          pendingSkus[item.sku].samples.push(sample);
+        } else {
+          parts.push(lbl);
+          groupQty += (item.qty || 1);
+        }
+      });
+      if(parts.length > 0){
+        const label = parts.join(' + ');
+        lines.push({ label, bold: true }); // grupo sempre em negrito
+        parts.forEach(p => distinct.add(p));
+        totalPares += groupQty;
+      }
+      return;
+    }
+
+    // ── Entrada simples: um único item ──
+    const apelido = aliasMap[o.sku];
+    const qty = o.qty || 1;
+    if(!apelido){
+      const sample = `${o.cor || ''} ${o.tamanho || ''}`.trim();
+      if(!pendingSkus[o.sku]){
+        pendingSkus[o.sku] = { samples: [], descricao: o.descricao || '', sugestao: sugerirApelido(o.descricao) };
+      }
+      for(let k = 0; k < qty; k++) pendingSkus[o.sku].samples.push(sample);
+      return;
+    }
+    const base = o.cor ? `${apelido} ${o.cor} (${o.tamanho})` : `${apelido} (${o.tamanho})`;
+    const label = qty > 1 ? `(${qty}) ${base}` : base;
+    lines.push({ label, bold: qty > 1 });
+    distinct.add(base);
+    totalPares += qty;
+  });
+
+  return { lines, distinct: distinct.size, totalPares };
+}
+
+function buildModelComposition(orders){
+  const comp = {};
+  orders.forEach(o => {
+    if(o.group){
+      o.group.forEach(item => {
+        const apelido = aliasMap[item.sku];
+        if(!apelido) return;
+        comp[apelido] = (comp[apelido] || 0) + (item.qty || 1);
+      });
+      return;
+    }
+    const apelido = aliasMap[o.sku];
+    if(!apelido) return;
+    comp[apelido] = (comp[apelido] || 0) + (o.qty || 1);
+  });
+  return comp;
+}
+
+function renderPending(){
+  const panel = document.getElementById('pendingPanel');
+  const list = document.getElementById('pendingList');
+  const skus = Object.keys(pendingSkus);
+  animateNumber(document.getElementById('mPend'), skus.length);
+
+  if(skus.length === 0){
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = 'block';
+  list.innerHTML = skus.map(sku => {
+    const info = pendingSkus[sku];
+    const sample = info.samples[0] || 'sem variação';
+    const count = info.samples.length;
+    const desc = info.descricao || '';
+    const sug = info.sugestao || '';
+    const descTrunc = desc.length > 80 ? desc.substring(0, 80) + '…' : desc;
+    const sugBadge = sug
+      ? `<span style="display:inline-block;margin-left:6px;background:var(--accent-soft);color:var(--accent-d);font-size:11px;font-weight:700;padding:2px 8px;border-radius:12px;">sugestão: ${sug}</span>`
+      : '';
+
+    return `<div class="pending-row" style="flex-direction:column;align-items:stretch;gap:6px;">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span class="sku">${sku}</span>
+        <span class="desc">${sample}${count > 1 ? ` (+${count-1} no lote)` : ''}</span>
+        ${sugBadge}
+      </div>
+      ${desc ? `<div style="font-size:11.5px;color:#8a6320;font-style:italic;padding:2px 0;">📋 Descrição: "${descTrunc}"</div>` : ''}
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input placeholder="apelido (ex: 070)" data-sku="${sku}" class="pending-input" value="${sug}" style="flex:1;">
+        <button class="btn btn-soft btn-sm pending-save" data-sku="${sku}">salvar</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  list.querySelectorAll('.pending-save').forEach(btn => {
+    btn.addEventListener('click', async (e)=>{
+      const sku = e.currentTarget.dataset.sku;
+      const input = list.querySelector(`.pending-input[data-sku="${sku}"]`);
+      const val = input.value.trim().toUpperCase();
+      if(!val){ showToast('Digite um apelido'); return; }
+      aliasMap[sku] = val;
+      await saveAliasMap();
+      sbUpsertAlias(sku, val);
+      renderAliasTable();
+      reprocessBatch();
+      showToast('Apelido cadastrado, lista atualizada');
+    });
+  });
+}
+
+function renderTicket(data){
+  const lines = data.lines;
+  const total = data.totalPares !== undefined ? data.totalPares : lines.length;
+
+  animateNumber(document.getElementById('mTotal'), total);
+  animateNumber(document.getElementById('mModelos'), data.distinct);
+  animateNumber(document.getElementById('ticketTotalNum'), total);
+
+  const out = document.getElementById('ticketOutput');
+  if(total === 0){
+    out.innerHTML = '<div class="empty-hint">A lista numerada aparece aqui, na mesma ordem das páginas do PDF.</div>';
+    document.getElementById('btnConfirm').disabled = true;
+    return;
+  }
+
+  let html = '';
+  lines.forEach((item, idx) => {
+    const cls = item.bold ? ' class="row row-bold"' : ' class="row"';
+    html += `<div${cls}>${idx+1}. ${item.label}</div>`;
+  });
+  out.innerHTML = html;
+  document.getElementById('btnConfirm').disabled = false;
+}
+
+function getTicketText(){
+  const { lines } = buildOrderedTicket(currentBatch);
+  return lines.map((item, idx) => {
+    const txt = `${idx+1}. ${item.label}`;
+    return item.bold ? `*${txt}*` : txt;
+  }).join('\n');
+}
+
+function reprocessBatch(){
+  const data = buildOrderedTicket(currentBatch);
+  renderTicket(data);
+  renderPending();
+}
+
+async function handleFiles(fileList){
+  const status = document.getElementById('uploadStatus');
+  const diagBox = document.getElementById('diagBox');
+  const diagText = document.getElementById('diagText');
+  diagBox.style.display = 'none';
+  status.classList.remove('ok');
+  if(typeof pdfjsLib === 'undefined'){
+    status.textContent = 'A leitura de PDF não carregou. Conecte-se à internet e recarregue a página.';
+    return;
+  }
+  status.textContent = 'Lendo PDF…';
+  let allOrders = [];
+  let lastDump = '';
+  try{
+    for(const file of fileList){
+      if(file.type !== 'application/pdf'){ continue; }
+      const res = await extractOrdersFromPdf(file);
+      allOrders = allOrders.concat(res.orders);
+      if(res.firstPageDump) lastDump = res.firstPageDump;
+    }
+  }catch(err){
+    status.textContent = 'Não consegui ler esse PDF. Confira se é um arquivo de etiquetas válido.';
+    console.error(err);
+    return;
+  }
+
+  if(allOrders.length === 0){
+    status.textContent = 'O leitor abriu o PDF, mas não reconheceu os pedidos.';
+    if(lastDump){
+      diagText.value = lastDump;
+      diagBox.style.display = 'block';
+    }
+    return;
+  }
+
+  currentBatch = currentBatch.concat(allOrders);
+  status.classList.add('ok');
+  status.textContent = `${allOrders.length} pedido(s) lidos — ${currentBatch.length} no lote atual.`;
+  reprocessBatch();
+}
+
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+dropzone.addEventListener('click', ()=> fileInput.click());
+fileInput.addEventListener('change', (e)=> handleFiles(e.target.files));
+dropzone.addEventListener('dragover', (e)=>{ e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', ()=> dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', (e)=>{
+  e.preventDefault();
+  dropzone.classList.remove('drag');
+  handleFiles(e.dataTransfer.files);
+});
+
+async function copyText(text){
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  }catch(e){}
+  try{
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  }catch(e){ return false; }
+}
+
+document.getElementById('btnCopy').addEventListener('click', async ()=>{
+  const text = getTicketText();
+  if(!text){ showToast('Nada para copiar ainda'); return; }
+  const ok = await copyText(text);
+  showToast(ok ? 'Lista copiada — é só colar no WhatsApp' : 'Não consegui copiar. Selecione a lista e use Ctrl+C');
+});
+
+document.getElementById('btnCopyDiag').addEventListener('click', async ()=>{
+  const t = document.getElementById('diagText').value;
+  if(!t){ return; }
+  const ok = await copyText(t);
+  if(ok){
+    showToast('Texto de diagnóstico copiado');
+  }else{
+    const ta = document.getElementById('diagText');
+    ta.focus(); ta.select();
+    showToast('Selecione e copie o texto (Ctrl+C)');
+  }
+});
+
+document.getElementById('btnClear').addEventListener('click', ()=>{
+  currentBatch = [];
+  pendingSkus = {};
+  document.getElementById('uploadStatus').textContent = '';
+  document.getElementById('uploadStatus').classList.remove('ok');
+  reprocessBatch();
+  showToast('Lote limpo');
+});
+
+function formatDateKeyToLabel(dk){
+  const [y,m,d] = dk.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+async function registrarLote(dateKeyOverride){
+  const { lines, totalPares } = buildOrderedTicket(currentBatch);
+  if(lines.length === 0){ showToast('Nada para registrar'); return false; }
+  const total = totalPares;
+
+  const composicao = buildModelComposition(currentBatch);
+  const isBackdated = !!dateKeyOverride;
+  const dKey = dateKeyOverride || todayKey();
+  const dLabel = dateKeyOverride ? formatDateKeyToLabel(dateKeyOverride) : todayStr();
+
+  history.push({
+    id: 'lote_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+    timestamp: Date.now(),
+    dateKey: dKey,
+    dateLabel: dLabel,
+    count: total,
+    composicao,
+    backdated: isBackdated
+  });
+  await saveHistory();
+  renderHistory();
+  updateTodayLabel();
+  refreshFornecedorView();
+  const novoLote = history[history.length - 1];
+  sbUpsertLote(novoLote);
+  showToast(isBackdated
+    ? `Lote de ${total} pares registrado para ${dLabel}`
+    : `Lote de ${total} pares registrado no controle diário`);
+
+  currentBatch = [];
+  pendingSkus = {};
+  document.getElementById('uploadStatus').textContent = '';
+  document.getElementById('uploadStatus').classList.remove('ok');
+  reprocessBatch();
+  return true;
+}
+
+document.getElementById('btnConfirm').addEventListener('click', async ()=>{
+  await registrarLote(null);
+});
+
+const btnToggleBackdate = document.getElementById('btnToggleBackdate');
+const backdatePanel = document.getElementById('backdatePanel');
+const backdateInput = document.getElementById('backdateInput');
+const btnConfirmBackdate = document.getElementById('btnConfirmBackdate');
+
+btnToggleBackdate.addEventListener('click', ()=>{
+  const willShow = backdatePanel.style.display === 'none';
+  backdatePanel.style.display = willShow ? 'flex' : 'none';
+  if(willShow){
+    const max = todayKey();
+    backdateInput.max = max;
+    if(!backdateInput.value) backdateInput.value = max;
+    btnConfirmBackdate.disabled = !backdateInput.value;
+  }
+});
+
+document.getElementById('btnCancelBackdate').addEventListener('click', ()=>{
+  backdatePanel.style.display = 'none';
+});
+
+backdateInput.addEventListener('input', ()=>{
+  btnConfirmBackdate.disabled = !backdateInput.value;
+});
+
+btnConfirmBackdate.addEventListener('click', async ()=>{
+  const dk = backdateInput.value;
+  if(!dk){ showToast('Escolha uma data'); return; }
+  if(dk > todayKey()){ showToast('A data não pode ser no futuro'); return; }
+  const ok = await registrarLote(dk);
+  if(ok) backdatePanel.style.display = 'none';
+});
+
+/* ---------- Fornecedor: custos e cálculo por período ---------- */
+let custoMap = {};
+let currentPeriod = 'hoje';
+let customRange = { from: null, to: null };
+
+async function loadCustoMap(){
+  try{
+    const v = await store.get('custo-map');
+    custoMap = v ? JSON.parse(v) : {};
+  }catch(e){ custoMap = {}; }
+}
+async function saveCustoMap(){
+  const ok = await store.set('custo-map', JSON.stringify(custoMap));
+  if(!ok) showToast('Não consegui salvar os custos neste navegador');
+  autoSync();
+}
+
+function startOfWeek(d){
+  const r = new Date(d);
+  const day = r.getDay();
+  const diff = (day === 0 ? -6 : 1) - day; // semana começando na segunda
+  r.setDate(r.getDate() + diff);
+  r.setHours(0,0,0,0);
+  return r;
+}
+function dateKeyOf(d){ return d.toISOString().slice(0,10); }
+
+function getPeriodRange(){
+  const now = new Date();
+  const todayK = todayKey();
+  if(currentPeriod === 'hoje'){
+    return { from: todayK, to: todayK, label: 'Hoje · ' + todayStr() };
+  }
+  if(currentPeriod === 'semana'){
+    const sow = startOfWeek(now);
+    return { from: dateKeyOf(sow), to: todayK, label: 'Esta semana' };
+  }
+  if(currentPeriod === 'mes'){
+    const som = new Date(now.getFullYear(), now.getMonth(), 1);
+    return { from: dateKeyOf(som), to: todayK, label: 'Este mês' };
+  }
+  if(currentPeriod === 'tudo'){
+    return { from: null, to: null, label: 'Todo o período' };
+  }
+  if(currentPeriod === 'custom' && customRange.from && customRange.to){
+    const lab = `${formatDateKeyToLabel(customRange.from)} a ${formatDateKeyToLabel(customRange.to)}`;
+    return { from: customRange.from, to: customRange.to, label: lab };
+  }
+  return { from: todayK, to: todayK, label: 'Hoje · ' + todayStr() };
+}
+
+function computeFornecedorData(){
+  const { from, to, label } = getPeriodRange();
+  const comp = {};
+  let totalPares = 0;
+  let lotesLegados = 0;
+  let loteEncontrado = false;
+
+  history.forEach(h => {
+    if(from && h.dateKey < from) return;
+    if(to && h.dateKey > to) return;
+    loteEncontrado = true;
+    const c = h.composicao;
+    if(!c || Object.keys(c).length === 0){
+      lotesLegados++;
+      return;
+    }
+    Object.keys(c).forEach(modelo => {
+      comp[modelo] = (comp[modelo] || 0) + c[modelo];
+      totalPares += c[modelo];
+    });
+  });
+
+  let totalValor = 0;
+  let semCusto = 0;
+  const rows = Object.keys(comp).sort().map(modelo => {
+    const qtd = comp[modelo];
+    const custo = custoMap[modelo];
+    const temCusto = typeof custo === 'number' && !isNaN(custo);
+    const subtotal = temCusto ? custo * qtd : 0;
+    if(temCusto) totalValor += subtotal; else semCusto++;
+    return { modelo, qtd, custo: temCusto ? custo : null, subtotal };
+  });
+
+  return { rows, totalPares, totalValor, semCusto, label, lotesLegados, loteEncontrado };
+}
+
+function fmtBRL(v){
+  return v.toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+}
+
+function renderFornecedorTable(){
+  const data = computeFornecedorData();
+  const body = document.getElementById('fornecedorTableBody');
+  const warnBox = document.getElementById('fornecedorWarn');
+
+  if(data.rows.length === 0){
+    const msg = data.loteEncontrado
+      ? 'Há lote(s) nesse período, mas sem detalhe por modelo (registrados antes da composição ser salva).'
+      : 'Nenhum lote registrado nesse período.';
+    body.innerHTML = `<tr><td colspan="4" style="color:var(--faint); font-style:italic; padding:18px 10px; text-align:center;">${msg}</td></tr>`;
+  }else{
+    body.innerHTML = data.rows.map(r => `
+      <tr>
+        <td class="sku" style="font-weight:700; color:var(--ink);">${r.modelo}</td>
+        <td class="mono">${r.qtd}</td>
+        <td class="mono" style="color:${r.custo===null ? 'var(--amber)' : 'var(--muted)'};">${r.custo===null ? 'definir' : fmtBRL(r.custo)}</td>
+        <td class="mono" style="font-weight:700;">${r.custo===null ? '—' : fmtBRL(r.subtotal)}</td>
+      </tr>
+    `).join('');
+  }
+
+  if(warnBox){
+    if(data.lotesLegados > 0){
+      warnBox.style.display = 'flex';
+      warnBox.textContent = `⚠ ${data.lotesLegados} lote(s) desse período foram registrados antes do detalhe por modelo existir, e não entram nesta conta.`;
+    }else{
+      warnBox.style.display = 'none';
+    }
+  }
+
+  animateNumber(document.getElementById('fTotalPares'), data.totalPares);
+  document.getElementById('fTotalValor').textContent = fmtBRL(data.totalValor);
+  animateNumber(document.getElementById('fSemCusto'), data.semCusto);
+  document.getElementById('fPeriodoLabel').textContent = data.label;
+}
+
+function renderCustoTable(){
+  const body = document.getElementById('custoTableBody');
+  const modelos = new Set(Object.values(aliasMap));
+  Object.keys(custoMap).forEach(m => modelos.add(m));
+  const list = [...modelos].sort();
+
+  if(list.length === 0){
+    body.innerHTML = '<tr><td colspan="2" style="color:var(--faint); font-style:italic; padding:16px 10px;">Cadastre produtos na aba Produtos para definir os custos aqui.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = list.map(m => `
+    <tr>
+      <td style="font-weight:700;">${m}</td>
+      <td><input type="number" step="0.01" min="0" inputmode="decimal" class="custo-input" data-modelo="${m}" placeholder="0,00" value="${custoMap[m] !== undefined ? custoMap[m] : ''}"></td>
+    </tr>
+  `).join('');
+
+  body.querySelectorAll('.custo-input').forEach(inp => {
+    inp.addEventListener('change', async (e)=>{
+      const modelo = e.target.dataset.modelo;
+      const val = parseFloat(e.target.value.replace(',', '.'));
+      if(isNaN(val) || val < 0){
+        delete custoMap[modelo];
+        await saveCustoMap();
+        sbDeleteCusto(modelo);
+      }else{
+        custoMap[modelo] = val;
+        await saveCustoMap();
+        sbUpsertCusto(modelo, val);
+      }
+      renderFornecedorTable();
+      showToast('Custo atualizado');
+    });
+  });
+}
+
+function refreshFornecedorView(){
+  renderFornecedorTable();
+  renderCustoTable();
+}
+
+document.getElementById('periodTabs').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.ptab');
+  if(!btn) return;
+  document.querySelectorAll('.ptab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentPeriod = btn.dataset.period;
+  document.getElementById('periodCustom').style.display = currentPeriod === 'custom' ? 'flex' : 'none';
+  if(currentPeriod !== 'custom') renderFornecedorTable();
+});
+
+document.getElementById('btnApplyCustom').addEventListener('click', ()=>{
+  const from = document.getElementById('dateFrom').value;
+  const to = document.getElementById('dateTo').value;
+  if(!from || !to){ showToast('Escolha as duas datas'); return; }
+  if(from > to){ showToast('A data inicial deve vir antes da final'); return; }
+  customRange = { from, to };
+  renderFornecedorTable();
+});
+
+/* ═══════════════════════════════════════════════════════
+   SINCRONIZAÇÃO COM SUPABASE (banco de dados + realtime)
+   ═══════════════════════════════════════════════════════ */
+
+const SUPABASE_URL = 'https://loocfbljngxrcoilcbmk.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxvb2NmYmxqbmd4cmNvaWxjYm1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyNTYxNzksImV4cCI6MjEwMDgzMjE3OX0.0wfs-F5SjrzZo12BcWysGoB4s2tRkZBZ0Enb1uvmpYc';
+const sb = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+let sbConnected = false;
+
+function setSyncStatus(state){
+  const badge = document.getElementById('syncStatusBadge');
+  const top = document.getElementById('syncTopBadge');
+  const txt = { offline:'desconectado', online:'conectado', syncing:'sincronizando…', error:'erro' }[state] || state;
+  const shortTxt = { offline:'offline', online:'online', syncing:'sync…', error:'erro' }[state] || state;
+  [badge, top].forEach(el => {
+    if(!el) return;
+    el.classList.remove('offline','online','syncing','error');
+    el.classList.add(state);
+  });
+  const t = document.getElementById('syncStatusText'); if(t) t.textContent = txt;
+  const tt = document.getElementById('syncTopText'); if(tt) tt.textContent = shortTxt;
+}
+
+function syncLog(msg, kind){
+  const box = document.getElementById('syncLog');
+  if(!box) return;
+  const now = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const cls = kind || 'info';
+  const first = box.querySelector('.line.info');
+  if(first && first.textContent.includes('Aguardando conexão')) first.remove();
+  box.insertAdjacentHTML('afterbegin', `<div class="line ${cls}"><span class="time">${now}</span>${msg}</div>`);
+  const lines = box.querySelectorAll('.line');
+  if(lines.length > 40) lines[lines.length-1].remove();
+}
+
+function loteRowToHistoryItem(r){
+  return {
+    id: r.id,
+    dateKey: r.date_key,
+    dateLabel: r.date_label,
+    count: r.total,
+    composicao: r.composicao || {},
+    timestamp: Number(r.timestamp_ms),
+    backdated: !!r.backdated
   };
 }
-```
 
-### Comportamento de sincronização:
-
-1. **Ao abrir o sistema**: chamar `pullAll` e carregar todos os dados. Mostrar tela de carregamento até completar.
-2. **Após QUALQUER alteração de dados** (salvar produto, alterar custo, registrar lote, excluir lote): disparar auto-sync com debounce de 2 segundos que envia TUDO para a planilha (todos apelidos + todos custos + todos lotes).
-3. Se o sync falhar, manter os dados locais e tentar novamente na próxima alteração.
-4. Guardar dados também no localStorage como cache para carregamento rápido.
-
-### Código do auto-sync:
-
-```typescript
-let autoSyncTimer: NodeJS.Timeout | null = null;
-
-function autoSync(aliasMap: Record<string,string>, custoMap: Record<string,number>, history: Lote[]) {
-  if (autoSyncTimer) clearTimeout(autoSyncTimer);
-  autoSyncTimer = setTimeout(async () => {
-    for (const sku of Object.keys(aliasMap)) {
-      await gsCall('setAlias', { sku, apelido: aliasMap[sku] });
-    }
-    for (const modelo of Object.keys(custoMap)) {
-      await gsCall('setCusto', { modelo, custo: custoMap[modelo] });
-    }
-    for (const h of history) {
-      await gsCall('setLote', h);
-    }
-  }, 2000);
+async function sbPing(){
+  if(!sb) return false;
+  const { error } = await sb.from('apelidos').select('sku', { count: 'exact', head: true });
+  return !error;
 }
-```
 
-Chamar `autoSync()` dentro de toda função que modifica dados (salvar produto, salvar custo, registrar lote, excluir lote).
+async function sbPullAll(){
+  const [aliasesRes, custosRes, lotesRes] = await Promise.all([
+    sb.from('apelidos').select('sku,apelido'),
+    sb.from('custos').select('modelo,custo'),
+    sb.from('lotes').select('id,date_key,date_label,total,composicao,timestamp_ms,backdated')
+  ]);
+  if(aliasesRes.error || custosRes.error || lotesRes.error){
+    syncLog('Falha ao puxar dados do Supabase.','err');
+    return false;
+  }
+  if(aliasesRes.data.length){
+    aliasMap = {};
+    aliasesRes.data.forEach(r => { aliasMap[r.sku] = r.apelido; });
+    await store.set('alias-map', JSON.stringify(aliasMap));
+  }
+  custoMap = {};
+  custosRes.data.forEach(r => { custoMap[r.modelo] = Number(r.custo); });
+  await store.set('custo-map', JSON.stringify(custoMap));
 
----
+  history = lotesRes.data.map(loteRowToHistoryItem);
+  await store.set('history', JSON.stringify(history));
 
-## PÁGINAS DO SISTEMA
+  renderAliasTable();
+  renderHistory();
+  updateTodayLabel();
+  reprocessBatch();
+  refreshFornecedorView();
+  return true;
+}
 
-### Layout geral:
-- Sidebar escura à esquerda (grafite #15171E) com logo "2M Commerce - Central de Operações" e menu
-- Barra superior com título da página, badge de status de conexão (online/offline/erro), data de hoje
-- Área de conteúdo com fundo cinza claro (#ECEFF4)
-- Responsivo: em mobile, sidebar vira menu hambúrguer
+async function sbUpsertAlias(sku, apelido){
+  if(!sbConnected) return;
+  const { error } = await sb.from('apelidos').upsert({ sku, apelido, updated_at: new Date().toISOString() });
+  syncLog(error ? `Falha ao gravar apelido: ${error.message}` : `Apelido gravado: ${sku} → ${apelido}`, error ? 'err' : 'ok');
+}
+async function sbDeleteAlias(sku){
+  if(!sbConnected) return;
+  const { error } = await sb.from('apelidos').delete().eq('sku', sku);
+  syncLog(error ? `Falha ao remover apelido: ${error.message}` : `Apelido removido: ${sku}`, error ? 'err' : 'ok');
+}
+async function sbUpsertCusto(modelo, custo){
+  if(!sbConnected) return;
+  const { error } = await sb.from('custos').upsert({ modelo, custo, updated_at: new Date().toISOString() });
+  syncLog(error ? `Falha ao gravar custo: ${error.message}` : `Custo gravado: ${modelo} → R$ ${custo}`, error ? 'err' : 'ok');
+}
+async function sbDeleteCusto(modelo){
+  if(!sbConnected) return;
+  const { error } = await sb.from('custos').delete().eq('modelo', modelo);
+  syncLog(error ? `Falha ao remover custo: ${error.message}` : `Custo removido: ${modelo}`, error ? 'err' : 'ok');
+}
+async function sbUpsertLote(h){
+  if(!sbConnected || !h) return;
+  const { error } = await sb.from('lotes').upsert({
+    id: h.id,
+    date_key: h.dateKey,
+    date_label: h.dateLabel,
+    total: h.count,
+    composicao: h.composicao || {},
+    timestamp_ms: h.timestamp,
+    backdated: !!h.backdated
+  });
+  syncLog(error ? `Falha ao gravar lote: ${error.message}` : `Lote gravado: ${h.id}`, error ? 'err' : 'ok');
+}
+async function sbDeleteLote(id){
+  if(!sbConnected) return;
+  const { error } = await sb.from('lotes').delete().eq('id', id);
+  syncLog(error ? `Falha ao remover lote: ${error.message}` : `Lote removido: ${id}`, error ? 'err' : 'ok');
+}
 
-### Menu lateral (sidebar):
-- **Separador de Pedidos** (ícone de caixa)
-- **Fornecedor** (ícone de cifrão)
-- Controle de Estoque (marcado "em breve", desabilitado)
-- Devoluções (marcado "em breve", desabilitado)
-- Relatórios (marcado "em breve", desabilitado)
-- **Produtos** (ícone de etiqueta, seção "Cadastros")
-- **Sincronia** (ícone de globo, seção "Sistema")
+function setupRealtime(){
+  sb.channel('public:apelidos')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'apelidos' }, (payload) => {
+      if(payload.eventType === 'DELETE'){ delete aliasMap[payload.old.sku]; }
+      else { aliasMap[payload.new.sku] = payload.new.apelido; }
+      store.set('alias-map', JSON.stringify(aliasMap));
+      renderAliasTable();
+      reprocessBatch();
+      refreshFornecedorView();
+    })
+    .subscribe();
 
----
+  sb.channel('public:custos')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'custos' }, (payload) => {
+      if(payload.eventType === 'DELETE'){ delete custoMap[payload.old.modelo]; }
+      else { custoMap[payload.new.modelo] = Number(payload.new.custo); }
+      store.set('custo-map', JSON.stringify(custoMap));
+      refreshFornecedorView();
+    })
+    .subscribe();
 
-## PÁGINA 1: SEPARADOR DE PEDIDOS
+  sb.channel('public:lotes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'lotes' }, (payload) => {
+      if(payload.eventType === 'DELETE'){
+        history = history.filter(h => h.id !== payload.old.id);
+      }else{
+        const item = loteRowToHistoryItem(payload.new);
+        const idx = history.findIndex(h => h.id === item.id);
+        if(idx >= 0) history[idx] = item; else history.push(item);
+      }
+      store.set('history', JSON.stringify(history));
+      renderHistory();
+      updateTodayLabel();
+      refreshFornecedorView();
+    })
+    .subscribe();
+}
 
-### Descrição:
-O usuário faz upload de um PDF de etiquetas de envio. O sistema extrai automaticamente de cada página o SKU, cor, tamanho e quantidade, e gera uma lista numerada pronta pra copiar e colar no WhatsApp do fornecedor.
+async function sbConnectAndLoad(){
+  if(!sb){
+    setSyncStatus('error');
+    syncLog('Biblioteca do Supabase não carregou. Verifique a internet e recarregue.','err');
+    return;
+  }
+  setSyncStatus('syncing');
+  syncLog('Conectando ao Supabase…','info');
+  const ok = await sbPing();
+  if(!ok){
+    setSyncStatus('error');
+    syncLog('Não foi possível conectar. Usando dados locais.','err');
+    return;
+  }
+  sbConnected = true;
+  setSyncStatus('online');
+  syncLog('Conectado.','ok');
+  syncLog('Puxando dados…','info');
+  const pullOk = await sbPullAll();
+  syncLog(pullOk ? 'Sistema atualizado com dados do Supabase.' : 'Falha ao puxar dados.', pullOk ? 'ok' : 'err');
+  setupRealtime();
+}
 
-### Componentes:
+document.getElementById('btnPull').addEventListener('click', async ()=>{
+  if(!sbConnected){ await sbConnectAndLoad(); return; }
+  setSyncStatus('syncing');
+  syncLog('Sincronizando…','info');
+  const ok = await sbPullAll();
+  setSyncStatus(ok ? 'online' : 'error');
+  if(ok) showToast('Sistema atualizado');
+});
 
-**KPIs no topo (4 cards):**
-- Pedidos hoje (total de pares registrados na data de hoje)
-- No lote atual (pares do PDF carregado)
-- Modelos distintos (variações no lote)
-- SKUs pendentes (sem apelido cadastrado)
+document.getElementById('syncTopBadge').addEventListener('click', ()=>{
+  const item = document.querySelector('.nav-item[data-view="config"]');
+  if(item) item.click();
+});
 
-**Card "Etiquetas do dia":**
-- Área de drag-and-drop para upload de PDF (aceita múltiplos)
-- Status de leitura: "Lendo PDF...", "X pedido(s) lidos", ou erro
-- Usar biblioteca pdf.js via CDN: `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js`
 
-**Card "Lista de separação" (visual de ticket/manifesto):**
-- Cabeçalho escuro com data e total de pares
-- Lista monoespaçada com zebra-striping
-- Formato de cada linha: `{numero}. {APELIDO} {COR} ({TAMANHO})`
-  - Ex: `1. 070 MARROM (42)`
-- QTD > 1 mesma variação: prefixo com quantidade, negrito
-  - Ex: `*(2) 070 MARROM (38)*`
-- 2 variações diferentes na mesma etiqueta: juntar com " + ", negrito
-  - Ex: `*070 MARROM (40) + 070 PRETO (40)*`
-- Botões: "Copiar lista pro WhatsApp" (copia com asteriscos pra negrito), "Registrar lote do dia", "Limpar"
-- Link discreto "Registrar para outro dia" que abre seletor de data (não permite futuro)
+/* ---------- Exportar Excel (banco de dados) ---------- */
+function exportarExcel(){
+  if(typeof XLSX === 'undefined'){
+    showToast('Biblioteca de Excel não carregou. Verifique a internet e recarregue.');
+    return;
+  }
+  const wb = XLSX.utils.book_new();
 
-**Painel de SKUs pendentes (amarelo, só aparece quando há pendentes):**
-- Para cada SKU desconhecido, mostra: SKU, descrição da etiqueta, sugestão automática de apelido
-- Campo pré-preenchido com a sugestão para o usuário confirmar
-- Ao salvar, atualiza a lista imediatamente
+  // ── Lotes ──
+  const lotesAoa = [["ID do Lote","Data","Hora","Total de Pares","Lançado Depois?"]];
+  const sorted = [...history].sort((a,b)=> a.timestamp - b.timestamp);
+  sorted.forEach(h => {
+    const d = new Date(h.timestamp);
+    const hora = d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+    lotesAoa.push([h.id || ('legacy_'+h.timestamp), h.dateLabel, hora, h.count, h.backdated ? 'Sim' : 'Não']);
+  });
+  const wsLotes = XLSX.utils.aoa_to_sheet(lotesAoa);
+  wsLotes['!cols'] = [{wch:24},{wch:13},{wch:9},{wch:15},{wch:16}];
+  XLSX.utils.book_append_sheet(wb, wsLotes, "Lotes");
 
-### Extração do PDF:
+  // ── Composicao ──
+  const compAoa = [["ID do Lote","Data","Modelo","Quantidade"]];
+  sorted.forEach(h => {
+    const c = h.composicao || {};
+    Object.keys(c).sort().forEach(modelo => {
+      compAoa.push([h.id || ('legacy_'+h.timestamp), h.dateLabel, modelo, c[modelo]]);
+    });
+  });
+  const wsComp = XLSX.utils.aoa_to_sheet(compAoa);
+  wsComp['!cols'] = [{wch:24},{wch:13},{wch:20},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, wsComp, "Composicao");
 
-Cada página do PDF contém uma etiqueta com tabela: SKU | Descrição | Variação | QTD.
+  // ── Produtos ──
+  const prodAoa = [["SKU","Apelido (Modelo)"]];
+  Object.keys(aliasMap).sort().forEach(sku => prodAoa.push([sku, aliasMap[sku]]));
+  const wsProd = XLSX.utils.aoa_to_sheet(prodAoa);
+  wsProd['!cols'] = [{wch:18},{wch:22}];
+  XLSX.utils.book_append_sheet(wb, wsProd, "Produtos");
 
-A extração usa coordenadas dos itens de texto via `page.getTextContent()`:
-1. Encontrar headers "SKU", "Variação", "QTD" (busca tolerante a acentos usando normalize NFD)
-2. SKU: número de 8-14 dígitos colado com texto (ex: `1734428113Botina`) — extrair via regex `(\d{8,14})[A-Za-z]`
-3. Cor: identificar na variação usando lista fixa: MARROM, PRETO, AZUL, BRANCO, VERDE, VERMELHO, AMARELO, CINZA, BEGE, CARAMELO, CAQUI, VINHO, LARANJA, ROSA, DOURADO, PRATA, NUDE
-4. Tamanho: número de 2-3 dígitos na variação
-5. Quando há 2 cores diferentes na mesma página: emparelhar cada cor com o tamanho de coordenada X mais próxima
+  // ── Custos ──
+  const modelosSet = new Set(Object.values(aliasMap));
+  Object.keys(custoMap).forEach(m => modelosSet.add(m));
+  const custoAoa = [["Modelo","Custo Unitário (R$)"]];
+  [...modelosSet].sort().forEach(m => custoAoa.push([m, custoMap[m] !== undefined ? custoMap[m] : null]));
+  const wsCusto = XLSX.utils.aoa_to_sheet(custoAoa);
+  wsCusto['!cols'] = [{wch:22},{wch:20}];
+  XLSX.utils.book_append_sheet(wb, wsCusto, "Custos");
 
-### Sugestão de apelido:
+  // ── Resumo_Diario (fórmulas) ──
+  const dias = [...new Set(sorted.map(h => h.dateLabel))];
+  const rdAoa = [["Data","Total de Pares","Valor Devido (R$)"]];
+  dias.forEach(() => rdAoa.push([null, null, null]));
+  const wsRD = XLSX.utils.aoa_to_sheet(rdAoa);
+  const compLast = compAoa.length + 10;
+  dias.forEach((data, i) => {
+    const r = i + 2; // linha 2 em diante
+    wsRD['A'+r] = { t:'s', v: data };
+    wsRD['B'+r] = { t:'n', f: `SUMIF(Composicao!B:B,A${r},Composicao!D:D)` };
+    wsRD['C'+r] = { t:'n', f: `SUMPRODUCT((Composicao!B2:B${compLast}=A${r})*Composicao!D2:D${compLast}*IFERROR(VLOOKUP(Composicao!C2:C${compLast},Custos!A:B,2,0),0))`, z: 'R$ #,##0.00' };
+  });
+  wsRD['!cols'] = [{wch:14},{wch:15},{wch:18}];
+  XLSX.utils.book_append_sheet(wb, wsRD, "Resumo_Diario");
 
-Quando um SKU não tem apelido cadastrado, o sistema lê a Descrição da etiqueta e sugere um apelido baseado em palavras-chave:
-- Contém "070" ou "Chelsea" → sugere "070"
-- Contém "Crazy Horse" → sugere "CRAZY HORSE"
-- Contém "Mocassim" → sugere "MOCASSIM"
-- Contém "Knit" ou "Bay Shore" → sugere "KNIT"
-- Contém "Camurça" → sugere "CAMURÇA"
-- Contém "Blogueira" ou "207" → sugere "207"
-- Contém código tipo "- 207" no final → sugere o código
+  // ── Resumo_Modelo (fórmulas) ──
+  const modelos = [...modelosSet].sort();
+  const rmAoa = [["Modelo","Total de Pares","Custo Unit. (R$)","Valor Total (R$)"]];
+  modelos.forEach(() => rmAoa.push([null,null,null,null]));
+  rmAoa.push([null,null,null,null]); // linha TOTAL
+  const wsRM = XLSX.utils.aoa_to_sheet(rmAoa);
+  modelos.forEach((m, i) => {
+    const r = i + 2;
+    wsRM['A'+r] = { t:'s', v: m };
+    wsRM['B'+r] = { t:'n', f: `SUMIF(Composicao!C:C,A${r},Composicao!D:D)` };
+    wsRM['C'+r] = { t:'n', f: `IFERROR(VLOOKUP(A${r},Custos!A:B,2,0),0)`, z: 'R$ #,##0.00' };
+    wsRM['D'+r] = { t:'n', f: `B${r}*C${r}`, z: 'R$ #,##0.00' };
+  });
+  const rt = modelos.length + 2;
+  wsRM['A'+rt] = { t:'s', v: 'TOTAL' };
+  wsRM['B'+rt] = { t:'n', f: `SUM(B2:B${rt-1})` };
+  wsRM['D'+rt] = { t:'n', f: `SUM(D2:D${rt-1})`, z: 'R$ #,##0.00' };
+  wsRM['!cols'] = [{wch:22},{wch:15},{wch:16},{wch:16}];
+  XLSX.utils.book_append_sheet(wb, wsRM, "Resumo_Modelo");
 
----
+  XLSX.writeFile(wb, `central-2m-dados-${todayKey()}.xlsx`);
+  showToast('Excel exportado com todos os dados');
+}
 
-## PÁGINA 2: FORNECEDOR (Pagamento ao Fornecedor)
+document.getElementById('btnExportExcel').addEventListener('click', exportarExcel);
 
-### Descrição:
-Calcula quanto se deve ao fornecedor com base nos lotes registrados × custo por modelo.
+/* ---------- Navegação entre ferramentas ---------- */
+document.querySelectorAll('.nav-item[data-view]').forEach(item => {
+  item.addEventListener('click', ()=>{
+    const v = item.dataset.view;
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    item.classList.add('active');
+    document.querySelectorAll('.view').forEach(view => view.classList.toggle('active', view.id === 'view-' + v));
+    document.getElementById('topTitle').textContent = item.dataset.title || '';
+    document.getElementById('topEyebrow').textContent = item.dataset.eyebrow || '';
+    document.getElementById('app').classList.remove('nav-open');
+    window.scrollTo({top:0, behavior:'smooth'});
+    if(v === 'fornecedor') refreshFornecedorView();
+    if(v === 'produtos') renderAliasTable();
+  });
+});
 
-### Componentes:
+const menuBtn = document.getElementById('menuBtn');
+const appEl = document.getElementById('app');
+const scrim = document.getElementById('scrim');
+menuBtn.addEventListener('click', ()=> appEl.classList.toggle('nav-open'));
+scrim.addEventListener('click', ()=> appEl.classList.remove('nav-open'));
 
-**KPIs (3 cards):**
-- Total a pagar (R$)
-- Pares no período
-- Sem custo definido (modelos sem custo)
+loadData();
+</script>
 
-**Filtro de período (tabs/pills):**
-- Hoje | Esta semana | Este mês | Tudo | Período personalizado (dois date inputs)
-
-**Tabela "Valor por modelo":**
-| Modelo | Pares | Custo unit. | Subtotal |
-
-**Tabela "Custo por modelo":**
-Lista de modelos com input numérico para custo unitário (R$). Ao alterar, recalcula e sincroniza.
-
----
-
-## PÁGINA 3: PRODUTOS (Cadastros)
-
-### Descrição:
-Tabela de mapeamento SKU → Apelido.
-
-- Tabela: SKU | Apelido | Botão excluir (ícone lixeira)
-- Formulário pra adicionar: input SKU + input Apelido + botão Adicionar
-- Edição inline do apelido
-- Exclusão com modal de confirmação (NÃO usar window.confirm, criar modal próprio)
-
-### Produtos pré-cadastrados (dados iniciais):
-| SKU | Apelido |
-|-----|---------|
-| 1734428113 | 070 |
-| 1733803583 | 070 |
-| 1734428091 | 070 |
-| 1735858314 | 070 |
-| 1735858308 | 070 |
-| 1735858240 | CRAZY HORSE |
-| 2387944176 | NKIT |
-| 1734607569 | MOCASSIM |
-
----
-
-## PÁGINA 4: SINCRONIA
-
-### Descrição:
-Mostra status da conexão com Google Sheets e permite ações manuais.
-
-- Badge de status: offline (cinza) / conectado (verde) / sincronizando (azul pulsante) / erro (vermelho)
-- Campo de URL do Apps Script (pré-preenchido)
-- Botões: Conectar, Sincronizar (puxar da planilha), Enviar tudo à planilha, Desconectar
-- Log de sincronização: lista com timestamp, mensagem e status (ok/erro/info)
-- Passo a passo de configuração
-
----
-
-## DESIGN
-
-### Cores:
-- Sidebar: `#15171E` → `#1D212B`
-- Canvas: `#ECEFF4`
-- Cards: `#FFFFFF`
-- Acento: `#0E9F85` (verde-teal)
-- Alerta: `#B45309` / `#FBEEDC` (âmbar)
-- Perigo: `#D14343`
-- Bordas: `#E3E8F0`
-
-### Tipografia:
-- Interface: Plus Jakarta Sans (Google Fonts)
-- Números/código/lista: JetBrains Mono (Google Fonts)
-
-### Componentes:
-- Toast: notificação arredondada no rodapé, some após 2.4s
-- Modal de confirmação: overlay + card centralizado (nunca usar window.confirm)
-- Cards com sombras suaves e hover com elevação
-- KPIs com ícones e números grandes animados
-
----
-
-## COMPORTAMENTO AO ABRIR
-
-1. Mostrar tela de carregamento "Conectando à planilha..."
-2. Chamar gsCall('ping') para verificar conexão
-3. Se conectar: chamar gsCall('pullAll'), carregar dados, mostrar sistema
-4. Se falhar: tentar carregar do localStorage como fallback, mostrar badge "offline"
-5. Toda alteração subsequente salva no localStorage E sincroniza com a planilha via autoSync
-
-## IMPORTANTE
-
-- NUNCA usar fetch() para comunicar com Google Sheets — usar APENAS a função gsCall via JSONP (script tag injection)
-- NUNCA usar window.confirm() ou window.alert() — criar componentes React próprios
-- O sistema deve funcionar em Chrome desktop E Chrome mobile
-- localStorage é cache, Google Sheets é a fonte da verdade
-- Usar pdf.js via CDN para extração de PDF, não instalar via npm
+</body>
+</html>
