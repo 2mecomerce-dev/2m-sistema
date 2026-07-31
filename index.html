@@ -3811,6 +3811,8 @@ async function ppLoadProdutos(){
 async function ppSaveProduto(p){
   if(!sb) return;
   await sb.from('precificacao_produtos').upsert({ id:p.id, nome:p.nome, custo_produto:p.custo_produto, taxa_fixa:p.taxa_fixa, updated_at:new Date().toISOString() });
+  // mantém o custo do fornecedor (aba Fornecedor) sincronizado com o custo do produto cadastrado aqui
+  await sb.from('custos').upsert({ modelo: p.nome.toUpperCase(), custo: p.custo_produto, updated_at: new Date().toISOString() });
 }
 async function ppDeleteProduto(id){
   if(!sb) return;
