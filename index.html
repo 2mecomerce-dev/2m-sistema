@@ -1710,6 +1710,17 @@ async function extractOrderFromPage(page){
       return { sku, cor: corNome, tamanho: tamVal, qty: 1, descricao: descricaoRaw };
     });
 
+  // Se alguma cor não teve tamanho próprio, não são peças diferentes de verdade —
+  // é uma variação bicolor única (ex.: "Preto e Branco") que o PDF quebrou em
+  // pedaços de texto separados. Junta tudo numa linha só em vez de duplicar.
+  const semTamanhoProprio = resultados.some(r => r.tamanho === '?');
+  if(semTamanhoProprio){
+    const coresUnicas = [...new Set(resultados.map(r => r.cor).filter(Boolean))];
+    const comTamanho = resultados.find(r => r.tamanho !== '?');
+    const tamanhoUnico = comTamanho ? comTamanho.tamanho : extrairCorTamanho(varCells.map(it => splitConcat(it.text)).join(' ')).tamanho;
+    return [{ sku, cor: coresUnicas.join('/'), tamanho: tamanhoUnico, qty, descricao: descricaoRaw }];
+  }
+
   return resultados;
 }
 
