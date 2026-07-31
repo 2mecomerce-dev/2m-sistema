@@ -3556,6 +3556,7 @@ function rtSetupRealtime(){
         if(marketing) rtState.marketing = marketing;
         rtRenderActive();
         repRefreshIfActive();
+        mtRefreshIfActive();
       }
     })
     .subscribe();
@@ -4567,8 +4568,19 @@ function mtMonthMetrics(year, month){
     const d = new Date(f.fechado_em);
     return d.getFullYear() === year && d.getMonth() === month;
   });
-  const atividadesPct = fechamentosMes.length
-    ? fechamentosMes.reduce((s,f)=>s+Number(f.pct_concluido),0) / fechamentosMes.length
+  const pctPoints = fechamentosMes.map(f => Number(f.pct_concluido));
+
+  // No mês corrente, soma o checklist em andamento (ainda não fechado) —
+  // não precisa esperar "Fechar semana" pra ver o número mexer.
+  const now = new Date();
+  const isMesAtual = year === now.getFullYear() && month === now.getMonth();
+  if(isMesAtual && rtState.routine && rtState.routine.categories){
+    const live = rtComputeRoutineCompletion();
+    if(live.total > 0) pctPoints.push(live.pct);
+  }
+
+  const atividadesPct = pctPoints.length
+    ? pctPoints.reduce((s,p)=>s+p,0) / pctPoints.length
     : null;
 
   return { faturamento, cpa, atividadesPct };
@@ -4742,6 +4754,10 @@ function mtSetupRealtime(){
 async function mtInit(){
   const wrap = document.getElementById('mtContent');
   if(!mtInitialized && wrap) wrap.innerHTML = '<div class="empty-hint">Carregando…</div>';
+  // garante rtState.routine (checklist) e rtState.marketing atualizados — e
+  // liga o realtime da Rotina/Marketing, caso o usuário chegue direto aqui
+  // sem passar pela aba Rotina antes. Não faz nada se já estava carregado.
+  await rtInit();
   await mkLoad();
   await mtLoadFechamentos();
   if(!mtInitialized){ mtInitialized = true; mtSetupRealtime(); }
