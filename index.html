@@ -4710,9 +4710,19 @@ function mtRender(){
   const faixaIdx = MT_BONUS_FAIXAS.indexOf(faixa);
   const proximaFaixa = MT_BONUS_FAIXAS[faixaIdx+1];
 
-  const atual = monthsData.find(m => m.isCurrent) || monthsData.find(m => !m.isFuture) || monthsData[0];
+  const atual = monthsData.find(m => m.isCurrent);
+  const cicloNaoComecou = monthsData.every(m => m.isFuture);
+  const mesAtualHtml = atual ? mtRenderMesAtual(atual) : mtRenderSemMesAtual(cicloNaoComecou);
 
-  wrap.innerHTML = mtRenderMesAtual(atual) + mtRenderTimeline(monthsData) + mtRenderBonus(totalPontos, faixa, proximaFaixa);
+  wrap.innerHTML = mesAtualHtml + mtRenderTimeline(monthsData) + mtRenderBonus(totalPontos, faixa, proximaFaixa);
+}
+
+function mtRenderSemMesAtual(cicloNaoComecou){
+  return `
+  <div class="card" style="margin-bottom:20px; padding:28px 24px; text-align:center;">
+    <div style="font-size:15px; font-weight:700;">${cicloNaoComecou ? '🚀 O ciclo de metas começa em agosto de ' + MT_MESES_CICLO[0].year : '🏁 Ciclo encerrado'}</div>
+    <div class="card-desc" style="margin-top:6px;">${cicloNaoComecou ? 'Assim que agosto começar, o progresso do mês aparece aqui automaticamente.' : 'Confira o resultado final na linha do tempo abaixo.'}</div>
+  </div>`;
 }
 
 function mtRefreshIfActive(){
