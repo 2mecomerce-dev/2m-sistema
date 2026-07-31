@@ -17,9 +17,15 @@ rodar as migrations não vai ter o mesmo banco.
 | Checklist da rotina, tarefas, TikTok e lista de lojas | `rotina_estado` (documento JSON, `id = 'principal'`) | aba **Rotina** |
 | Alíquotas, comissão/frete por canal e custos fixos de precificação | `precificacao_config` (documento JSON, `id = 'principal'`) | aba **Precificação** |
 | Produtos cadastrados para precificação (custo + taxa fixa) | `precificacao_produtos` | aba **Precificação** |
+| Histórico de fechamento semanal da rotina (% concluído, itens feitos/total) | `rotina_fechamentos` | aba **Rotina** (botão "Fechar semana e reiniciar") |
 
 O dashboard da aba **Relatórios** não tem tabela própria: ele deriva tudo de
 `lotes`, `custos` e `marketing_semanal`.
+
+A aba **Metas** também não tem tabela própria: deriva o faturamento e CPA do
+mês de `marketing_semanal.data_fim`, e o % de atividades do mês de
+`rotina_fechamentos`. Os níveis e faixas de bônus ficam hardcoded no
+`index.html` (não são dado do usuário, são regra de negócio).
 
 ## Views de leitura
 
@@ -60,6 +66,7 @@ ordem, um de cada vez:
 2. `0002_marketing_semanal.sql`
 3. `0003_views_dashboard.sql`
 4. `0004_precificacao.sql`
+5. `0005_metas.sql`
 
 Todos são idempotentes — rodar de novo num banco que já tem dados não apaga
 nada. A `0002` copia os lançamentos de marketing que hoje estão dentro do JSON

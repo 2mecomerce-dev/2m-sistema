@@ -699,6 +699,12 @@
   .pp-config-group{grid-column:1 / -1; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--faint); margin-top:10px; padding-top:12px; border-top:1px dashed var(--border);}
   .pp-config-group:first-child{margin-top:0; padding-top:0; border-top:none;}
   .pp-price-best{font-weight:800; color:var(--accent-d);}
+
+  /* ---------- Metas ---------- */
+  .mt-progress-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:20px;}
+  @media (max-width:880px){ .mt-progress-grid{grid-template-columns:1fr;} }
+  .mt-progress-label{display:flex; align-items:center; justify-content:space-between; font-size:12.5px; color:var(--muted); font-weight:600; margin-bottom:6px;}
+  .mt-progress-label span:last-child{font-family:'JetBrains Mono',monospace; color:var(--ink); font-weight:700;}
   /* ---------- Relatórios ---------- */
   .rep-sec-title{font-size:11px; text-transform:uppercase; letter-spacing:1.3px; color:var(--faint); font-weight:700; margin:28px 0 12px;}
   .rep-sec-title:first-child{margin-top:0;}
@@ -837,6 +843,10 @@
       <div class="nav-item" data-view="precificacao" data-title="Precificação de Produtos" data-eyebrow="Financeiro">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M14.8 9a2 2 0 0 0-1.8-1H11a1.5 1.5 0 0 0 0 3h2a1.5 1.5 0 0 1 0 3h-2a2 2 0 0 1-1.8-1M12 7v1.5M12 15.5V17"/></svg>
         Precificação
+      </div>
+      <div class="nav-item" data-view="metas" data-title="Metas & Bônus" data-eyebrow="Financeiro">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        Metas
       </div>
       <div class="nav-item soon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
@@ -1198,6 +1208,11 @@
           </div>
         </div>
         <div id="repContent"></div>
+      </section>
+
+      <!-- ===== VIEW: METAS ===== -->
+      <section class="view" id="view-metas">
+        <div id="mtContent"></div>
       </section>
 
       <!-- ===== VIEW: CONFIGURAÇÕES ===== -->
@@ -2643,6 +2658,7 @@ document.querySelectorAll('.nav-item[data-view]').forEach(item => {
     if(v === 'rotina') rtInit();
     if(v === 'precificacao') ppInit();
     if(v === 'relatorios'){ repRender(); rtInit().then(repRender); }
+    if(v === 'metas') mtInit();
   });
 });
 
@@ -3050,6 +3066,7 @@ function rtAttachRoutineHandlers(){
     const c = rtComputeRoutineCompletion();
     const ok = await confirmDialog('Fechar a semana?', `A semana está ${c.pct}% concluída. Isso reinicia todos os itens da rotina e do TikTok como pendentes.`, 'Fechar semana');
     if(!ok) return;
+    await mtLogFechamento(c);
     rtState.routine.categories.forEach(cat => cat.items.forEach(i => { if(!i.intervalDays) i.done = false; }));
     Object.keys(rtState.tiktok.week).forEach(acc => rtState.tiktok.week[acc] = rtState.tiktok.week[acc].map(()=>false));
     rtSave();
@@ -3288,7 +3305,7 @@ function rtAttachMarketingHandlers(){
     if(dateFrom > dateTo){ showToast('A data inicial deve vir antes da final'); return; }
     const label = rtFormatWeekLabel(dateFrom, dateTo);
 
-    const entry = { store, label, invest, revenue, orders, roas: revenue/invest, cpa: invest/orders };
+    const entry = { store, label, invest, revenue, orders, dateFrom, dateTo, roas: revenue/invest, cpa: invest/orders };
     /* (loja, semana) é chave: relançar a mesma semana corrige, não duplica */
     const i = rtState.marketing.entries.findIndex(x => x.store === store && x.label === label);
     const jaExistia = i >= 0;
@@ -3491,6 +3508,7 @@ function mkApplyRows(rows){
     const orders  = Number(r.pedidos)      || 0;
     return {
       store: r.loja, label: r.semana, invest, revenue, orders,
+      dateFrom: r.data_inicio || null, dateTo: r.data_fim || null,
       roas: invest ? revenue/invest : 0,
       cpa:  orders ? invest/orders  : 0
     };
@@ -3503,7 +3521,7 @@ function mkApplyRows(rows){
 async function mkLoad(){
   if(!sb) return false;
   const { data, error } = await sb.from('marketing_semanal')
-    .select('loja,semana,investimento,faturamento,pedidos,criado_em')
+    .select('loja,semana,investimento,faturamento,pedidos,data_inicio,data_fim,criado_em')
     .order('criado_em', { ascending: true });
   if(error){
     syncLog('Marketing: ' + error.message, 'err');
@@ -3520,7 +3538,9 @@ async function mkUpsert(entry){
     semana: entry.label,
     investimento: entry.invest,
     faturamento: entry.revenue,
-    pedidos: entry.orders
+    pedidos: entry.orders,
+    data_inicio: entry.dateFrom || null,
+    data_fim: entry.dateTo || null
   }, { onConflict: 'loja,semana' });
   if(error) syncLog('Marketing: ' + error.message, 'err');
   return { error };
@@ -3545,6 +3565,7 @@ function rtSetupRealtime(){
       await mkLoad();
       rtRenderActive();
       repRefreshIfActive();
+      mtRefreshIfActive();
     })
     .subscribe();
 }
@@ -4478,6 +4499,244 @@ document.getElementById('repTabs').addEventListener('click', (e)=>{
   document.querySelectorAll('#repTabs .ptab').forEach(b => b.classList.toggle('active', b === btn));
   repRender();
 });
+
+/* ═══════════════════════════════════════════════════════
+   METAS & BÔNUS
+   ═══════════════════════════════════════════════════════ */
+
+const MT_NIVEIS = [
+  { nivel: 1, faturamento: 80000,  proLabore: 500  },
+  { nivel: 2, faturamento: 110000, proLabore: 750  },
+  { nivel: 3, faturamento: 150000, proLabore: 1000 },
+  { nivel: 4, faturamento: 200000, proLabore: 1500 },
+];
+const MT_ATIVIDADES_MIN = 80; // % de atividades da rotina no mês
+const MT_CPA_MAX = 15;        // R$ — custo por pedido dos anúncios
+
+const MT_BONUS_FAIXAS = [
+  { min: 0,  max: 1,        valor: 0    },
+  { min: 2,  max: 4,        valor: 800  },
+  { min: 5,  max: 7,        valor: 1500 },
+  { min: 8,  max: 11,       valor: 2500 },
+  { min: 12, max: Infinity, valor: 4000 },
+];
+
+// Ciclo do primeiro ano (parcial): agosto a dezembro de 2026.
+// A partir de 2027 isso vira um ciclo cheio de 12 meses.
+const MT_MESES_CICLO = [
+  { year:2026, month:7,  nome:'Agosto'    },
+  { year:2026, month:8,  nome:'Setembro'  },
+  { year:2026, month:9,  nome:'Outubro'   },
+  { year:2026, month:10, nome:'Novembro'  },
+  { year:2026, month:11, nome:'Dezembro'  },
+];
+
+let mtFechamentos = [];
+let mtInitialized = false;
+
+async function mtLoadFechamentos(){
+  if(!sb) return;
+  const { data, error } = await sb.from('rotina_fechamentos')
+    .select('fechado_em,pct_concluido,itens_feitos,itens_total')
+    .order('fechado_em', { ascending: true });
+  if(!error && data) mtFechamentos = data;
+}
+
+async function mtLogFechamento(c){
+  if(!sb) return;
+  const row = { id: 'rf-'+Date.now(), fechado_em: new Date().toISOString(), pct_concluido: c.pct, itens_feitos: c.done, itens_total: c.total };
+  const { error } = await sb.from('rotina_fechamentos').insert(row);
+  if(!error) mtFechamentos.push(row);
+  else syncLog('Metas: ' + error.message, 'err');
+}
+
+function mtMonthMetrics(year, month){
+  const entries = (rtState.marketing && rtState.marketing.entries) ? rtState.marketing.entries : [];
+  const emMes = entries.filter(e => {
+    const ref = e.dateTo || e.dateFrom;
+    if(!ref) return false;
+    const d = new Date(ref+'T12:00:00');
+    return d.getFullYear() === year && d.getMonth() === month;
+  });
+  const faturamento = emMes.reduce((s,e)=>s+e.revenue,0);
+  const investimento = emMes.reduce((s,e)=>s+e.invest,0);
+  const pedidos = emMes.reduce((s,e)=>s+e.orders,0);
+  const cpa = pedidos ? investimento/pedidos : null;
+
+  const fechamentosMes = mtFechamentos.filter(f => {
+    const d = new Date(f.fechado_em);
+    return d.getFullYear() === year && d.getMonth() === month;
+  });
+  const atividadesPct = fechamentosMes.length
+    ? fechamentosMes.reduce((s,f)=>s+Number(f.pct_concluido),0) / fechamentosMes.length
+    : null;
+
+  return { faturamento, cpa, atividadesPct };
+}
+
+function mtNivelAtingido(metrics){
+  if(metrics.atividadesPct === null || metrics.atividadesPct < MT_ATIVIDADES_MIN) return null;
+  if(metrics.cpa === null || metrics.cpa >= MT_CPA_MAX) return null;
+  let nivel = null;
+  for(const n of MT_NIVEIS){
+    if(metrics.faturamento >= n.faturamento) nivel = n;
+  }
+  return nivel;
+}
+
+function mtFaixaBonus(pontosTotais){
+  return MT_BONUS_FAIXAS.find(f => pontosTotais >= f.min && pontosTotais <= f.max) || MT_BONUS_FAIXAS[0];
+}
+
+function mtRenderMesAtual(m){
+  if(!m) return '';
+  const { metrics, nivelObj } = m;
+  const proximoNivel = MT_NIVEIS.find(n => !nivelObj || n.nivel > nivelObj.nivel) || MT_NIVEIS[MT_NIVEIS.length-1];
+  const faturamentoAlvo = proximoNivel.faturamento;
+  const pctFaturamento = Math.min(100, Math.round((metrics.faturamento / faturamentoAlvo) * 100));
+
+  const atividadesPct = metrics.atividadesPct;
+  const atividadesOk = atividadesPct !== null && atividadesPct >= MT_ATIVIDADES_MIN;
+  const cpaOk = metrics.cpa !== null && metrics.cpa < MT_CPA_MAX;
+  const cpaPct = metrics.cpa === null ? 0 : Math.min(100, Math.round((metrics.cpa / MT_CPA_MAX) * 100));
+
+  return `
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-head">
+      <div>
+        <div class="card-title">📅 ${m.nome}/${m.year} — mês atual</div>
+        <div class="card-desc">Nível exige: faturamento na meta, atividades ≥ ${MT_ATIVIDADES_MIN}% e CPA menor que ${fmtBRL(MT_CPA_MAX)}, juntos.</div>
+      </div>
+      ${nivelObj
+        ? `<span class="badge badge-good">🏆 Nível ${nivelObj.nivel} batido — ${fmtBRL(nivelObj.proLabore)}/pessoa</span>`
+        : `<span class="badge badge-neutral">Nenhum nível ainda</span>`}
+    </div>
+    <div class="card-body">
+      <div class="mt-progress-grid">
+        <div>
+          <div class="mt-progress-label"><span>Faturamento (meta: nível ${proximoNivel.nivel})</span><span>${fmtBRL(metrics.faturamento)} / ${fmtBRL(faturamentoAlvo)}</span></div>
+          ${rtProgressBar(pctFaturamento, pctFaturamento>=100?'var(--accent)':'var(--amber)')}
+        </div>
+        <div>
+          <div class="mt-progress-label"><span>Atividades da Rotina</span><span>${atividadesPct===null?'sem fechamento ainda':atividadesPct.toFixed(0)+'%'}</span></div>
+          ${rtProgressBar(atividadesPct||0, atividadesOk?'var(--accent)':'var(--danger)')}
+        </div>
+        <div>
+          <div class="mt-progress-label"><span>CPA dos anúncios (teto ${fmtBRL(MT_CPA_MAX)})</span><span>${metrics.cpa===null?'sem dados':fmtBRL(metrics.cpa)}</span></div>
+          ${rtProgressBar(cpaPct, cpaOk?'var(--accent)':'var(--danger)')}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function mtRenderTimeline(monthsData){
+  return `
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-head">
+      <div>
+        <div class="card-title">🗓️ Linha do tempo — Ago a Dez ${MT_MESES_CICLO[0].year}</div>
+        <div class="card-desc">Cada mês que bate um nível soma pontos pro bônus de fim de ano.</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div style="overflow-x:auto;">
+        <table class="alias-table">
+          <thead><tr><th>Mês</th><th>Faturamento</th><th>Atividades</th><th>CPA</th><th>Nível</th><th style="text-align:right;">Pontos</th></tr></thead>
+          <tbody>
+            ${monthsData.map(m => {
+              if(m.isFuture){
+                return `<tr><td style="font-weight:700; color:var(--faint);">${m.nome}</td><td colspan="4" style="color:var(--faint); font-style:italic;">ainda não chegou</td><td class="mono" style="text-align:right; color:var(--faint);">—</td></tr>`;
+              }
+              const { metrics, nivelObj, pontos, isCurrent } = m;
+              return `<tr style="${isCurrent?'background:var(--accent-soft);':''}">
+                <td style="font-weight:700;">${m.nome}${isCurrent?' <span class="badge badge-neutral" style="margin-left:6px;">atual</span>':''}</td>
+                <td class="mono">${fmtBRL(metrics.faturamento)}</td>
+                <td class="mono">${metrics.atividadesPct===null?'—':metrics.atividadesPct.toFixed(0)+'%'}</td>
+                <td class="mono">${metrics.cpa===null?'—':fmtBRL(metrics.cpa)}</td>
+                <td>${nivelObj ? rtStatusBadge('good','Nível '+nivelObj.nivel) : rtStatusBadge('critical','nenhum')}</td>
+                <td class="mono" style="text-align:right; font-weight:800;">${pontos}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
+}
+
+function mtRenderBonus(totalPontos, faixa, proximaFaixa){
+  const progressoPct = proximaFaixa ? Math.min(100, Math.round(((totalPontos - faixa.min) / (proximaFaixa.min - faixa.min)) * 100)) : 100;
+  return `
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <div class="card-title">🎁 Bônus de fim de ano</div>
+        <div class="card-desc">Soma dos pontos de todos os meses já fechados do ciclo.</div>
+      </div>
+      <span class="badge badge-good">${totalPontos} ponto${totalPontos===1?'':'s'}</span>
+    </div>
+    <div class="card-body">
+      <div class="fin-total-row">
+        <div class="lab">Bônus garantido hoje (cada um)</div>
+        <div class="val">${fmtBRL(faixa.valor)}</div>
+      </div>
+      ${proximaFaixa
+        ? `<div style="margin-top:16px;">
+            <div class="mt-progress-label"><span>Faltam ${Math.max(0, proximaFaixa.min - totalPontos)} ponto(s) pra faixa de ${fmtBRL(proximaFaixa.valor)}</span></div>
+            ${rtProgressBar(progressoPct, 'var(--accent)')}
+          </div>`
+        : `<div class="fin-note">Vocês já estão na faixa máxima 🎉</div>`}
+    </div>
+  </div>`;
+}
+
+function mtRender(){
+  const wrap = document.getElementById('mtContent');
+  if(!wrap) return;
+  const now = new Date();
+
+  const monthsData = MT_MESES_CICLO.map(m => {
+    const metrics = mtMonthMetrics(m.year, m.month);
+    const nivelObj = mtNivelAtingido(metrics);
+    const pontos = nivelObj ? nivelObj.nivel : 0;
+    const isFuture = (m.year > now.getFullYear()) || (m.year === now.getFullYear() && m.month > now.getMonth());
+    const isCurrent = m.year === now.getFullYear() && m.month === now.getMonth();
+    return { ...m, metrics, nivelObj, pontos, isFuture, isCurrent };
+  });
+
+  const totalPontos = monthsData.filter(m => !m.isFuture).reduce((s,m)=>s+m.pontos, 0);
+  const faixa = mtFaixaBonus(totalPontos);
+  const faixaIdx = MT_BONUS_FAIXAS.indexOf(faixa);
+  const proximaFaixa = MT_BONUS_FAIXAS[faixaIdx+1];
+
+  const atual = monthsData.find(m => m.isCurrent) || monthsData.find(m => !m.isFuture) || monthsData[0];
+
+  wrap.innerHTML = mtRenderMesAtual(atual) + mtRenderTimeline(monthsData) + mtRenderBonus(totalPontos, faixa, proximaFaixa);
+}
+
+function mtRefreshIfActive(){
+  const v = document.getElementById('view-metas');
+  if(v && v.classList.contains('active') && mtInitialized) mtRender();
+}
+
+function mtSetupRealtime(){
+  sb.channel('public:rotina_fechamentos')
+    .on('postgres_changes', { event:'*', schema:'public', table:'rotina_fechamentos' }, async () => {
+      await mtLoadFechamentos();
+      mtRefreshIfActive();
+    })
+    .subscribe();
+}
+
+async function mtInit(){
+  const wrap = document.getElementById('mtContent');
+  if(!mtInitialized && wrap) wrap.innerHTML = '<div class="empty-hint">Carregando…</div>';
+  await mkLoad();
+  await mtLoadFechamentos();
+  if(!mtInitialized){ mtInitialized = true; mtSetupRealtime(); }
+  mtRender();
+}
 
 /* ---------- Autenticação (Supabase Auth) ---------- */
 let appInitialized = false;
