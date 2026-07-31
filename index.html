@@ -2801,6 +2801,11 @@ function rtStatCard({icon, label, value, sub, kind}){
 }
 
 /* ---------- computed ---------- */
+function rtFormatWeekLabel(dateFrom, dateTo){
+  const f = (dk) => { const [,m,d] = dk.split('-'); return `${d}/${m}`; };
+  return dateFrom === dateTo ? f(dateFrom) : `${f(dateFrom)} a ${f(dateTo)}`;
+}
+
 function rtEnsureWeekOrder(label){
   if(!rtState.marketing.weekOrder.includes(label)) rtState.marketing.weekOrder.push(label);
 }
@@ -3189,11 +3194,12 @@ function rtRenderMarketing(){
       </form>
     </div>
 
-    <form id="rtMarketingForm" class="rt-form-row" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr auto;">
+    <form id="rtMarketingForm" class="rt-form-row" style="grid-template-columns:1fr .85fr .85fr 1fr 1fr 1fr auto;">
       <label class="rt-label">Loja
         <select id="rtMkStore" class="rt-select">${rtState.stores.map(s=>`<option ${(!isAll && s===rtMarketingStoreFilter)?'selected':''}>${s}</option>`).join('')}</select>
       </label>
-      <label class="rt-label">Semana<input type="text" id="rtMkLabel" class="rt-input" placeholder="Ex: 20-26/07" required></label>
+      <label class="rt-label">De<input type="date" id="rtMkDateFrom" class="rt-input" required></label>
+      <label class="rt-label">Até<input type="date" id="rtMkDateTo" class="rt-input" required></label>
       <label class="rt-label">Investimento (R$)<input type="number" step="0.01" id="rtMkInvest" class="rt-input" placeholder="0,00" required></label>
       <label class="rt-label">Faturamento (R$)<input type="number" step="0.01" id="rtMkRevenue" class="rt-input" placeholder="0,00" required></label>
       <label class="rt-label">Nº de pedidos<input type="number" id="rtMkOrders" class="rt-input" placeholder="0" required></label>
@@ -3273,11 +3279,14 @@ function rtAttachMarketingHandlers(){
   document.getElementById('rtMarketingForm').addEventListener('submit', async (e)=>{
     e.preventDefault();
     const store = document.getElementById('rtMkStore').value;
-    const label = document.getElementById('rtMkLabel').value.trim();
+    const dateFrom = document.getElementById('rtMkDateFrom').value;
+    const dateTo = document.getElementById('rtMkDateTo').value;
     const invest = parseFloat(document.getElementById('rtMkInvest').value);
     const revenue = parseFloat(document.getElementById('rtMkRevenue').value);
     const orders = parseInt(document.getElementById('rtMkOrders').value);
-    if(!store || !label || !invest || !revenue || !orders) return;
+    if(!store || !dateFrom || !dateTo || !invest || !revenue || !orders) return;
+    if(dateFrom > dateTo){ showToast('A data inicial deve vir antes da final'); return; }
+    const label = rtFormatWeekLabel(dateFrom, dateTo);
 
     const entry = { store, label, invest, revenue, orders, roas: revenue/invest, cpa: invest/orders };
     /* (loja, semana) é chave: relançar a mesma semana corrige, não duplica */
