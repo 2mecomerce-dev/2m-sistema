@@ -840,6 +840,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
         Rotina
       </div>
+      <div class="nav-item" data-view="marketing" data-title="Marketing & TikTok" data-eyebrow="Operações">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 7 13.5 15.5 8.5 10.5 2 17"/><path d="M16 7h6v6"/></svg>
+        Marketing & TikTok
+      </div>
       <div class="nav-item" data-view="precificacao" data-title="Precificação de Produtos" data-eyebrow="Financeiro">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M14.8 9a2 2 0 0 0-1.8-1H11a1.5 1.5 0 0 0 0 3h2a1.5 1.5 0 0 1 0 3h-2a2 2 0 0 1-1.8-1M12 7v1.5M12 15.5V17"/></svg>
         Precificação
@@ -1150,11 +1154,15 @@
               <button class="ptab active" data-subtab="overview">🏠 Visão Geral</button>
               <button class="ptab" data-subtab="routine">✅ Rotina Semanal</button>
               <button class="ptab" data-subtab="tasks">🗂️ Tarefas Pontuais</button>
-              <button class="ptab" data-subtab="marketing">📈 Marketing & TikTok</button>
             </div>
           </div>
         </div>
         <div id="rtContent"></div>
+      </section>
+
+      <!-- ===== VIEW: MARKETING & TIKTOK ===== -->
+      <section class="view" id="view-marketing">
+        <div id="mktContent"></div>
       </section>
 
       <!-- ===== VIEW: PRECIFICAÇÃO ===== -->
@@ -1693,6 +1701,18 @@ async function extractOrderFromPage(page){
       const { cor, tamanho } = extrairCorTamanho(raw);
       return { sku: si.sku, cor, tamanho, qty: 1, descricao: descricaoRaw };
     });
+
+    // Se nenhum dos "SKUs" conseguiu achar um tamanho próprio, não são pares
+    // diferentes de verdade — é uma peça bicolor única (ex.: "Preto" +
+    // "Preto e Branco") cujo texto de variação o PDF quebrou em pedaços
+    // separados que pareceram SKUs distintos. Junta tudo numa linha só,
+    // igual já é feito no caso de SKU único com múltiplas cores.
+    if(resultados.length > 1 && resultados.every(r => r.tamanho === '?')){
+      const coresUnicas = [...new Set(resultados.map(r => r.cor).filter(Boolean))];
+      const tamanhoUnico = extrairCorTamanho(cand.map(it => splitConcat(it.text)).join(' ')).tamanho;
+      return [{ sku: resultados[0].sku, cor: coresUnicas.join(' E '), tamanho: tamanhoUnico, qty, descricao: descricaoRaw }];
+    }
+
     return resultados;
   }
 
@@ -2656,6 +2676,7 @@ document.querySelectorAll('.nav-item[data-view]').forEach(item => {
     if(v === 'fornecedor') refreshFornecedorView();
     if(v === 'produtos') renderAliasTable();
     if(v === 'rotina') rtInit();
+    if(v === 'marketing') mktInit();
     if(v === 'precificacao') ppInit();
     if(v === 'relatorios'){ repRender(); rtInit().then(repRender); }
     if(v === 'metas') mtInit();
@@ -3452,7 +3473,22 @@ function rtRenderActive(){
   if(rtActiveSubtab === 'overview'){ content.innerHTML = rtRenderOverview(); rtAttachOverviewHandlers(); }
   if(rtActiveSubtab === 'routine'){ content.innerHTML = rtRenderRoutine(); rtAttachRoutineHandlers(); }
   if(rtActiveSubtab === 'tasks'){ content.innerHTML = rtRenderTasks(); rtAttachTasksHandlers(); }
-  if(rtActiveSubtab === 'marketing'){ content.innerHTML = rtRenderMarketing(); rtAttachMarketingHandlers(); }
+  mktRenderActive();
+}
+
+/* Marketing & TikTok agora vive na própria aba, fora da Rotina,
+   mas continua usando o mesmo estado/tabela (rtState.tiktok, marketing_semanal). */
+function mktRenderActive(){
+  const el = document.getElementById('mktContent');
+  if(!el) return;
+  el.innerHTML = rtRenderMarketing();
+  rtAttachMarketingHandlers();
+}
+
+async function mktInit(){
+  document.getElementById('mktContent').innerHTML = rtInitialized ? '' : '<div class="empty-hint">Carregando…</div>';
+  await rtInit();
+  mktRenderActive();
 }
 
 document.getElementById('rtSubtabs').addEventListener('click', (e) => {
@@ -4139,7 +4175,7 @@ function repInsights(ctx){
       else if(dr !== null && dr >= 15) out.push({k:'good', ic:'📊', t:'Eficiência de mídia melhorando', d:`O ROAS subiu ${dr.toFixed(0)}% frente à semana ${mkAnterior.label} (${mkAnterior.roas.toFixed(1)}x → ${mkAtual.roas.toFixed(1)}x).`});
     }
   }else{
-    out.push({k:'neutral', ic:'📭', t:'Sem dados de marketing', d:'Nenhuma semana lançada ainda. Registre investimento, faturamento e nº de pedidos na aba Rotina → Marketing & TikTok para liberar as métricas desta página.'});
+    out.push({k:'neutral', ic:'📭', t:'Sem dados de marketing', d:'Nenhuma semana lançada ainda. Registre investimento, faturamento e nº de pedidos na aba Marketing & TikTok para liberar as métricas desta página.'});
   }
 
   return out;
@@ -4370,7 +4406,7 @@ function repRender(){
       <div class="card-body">
         <div class="empty-hint" style="padding:34px 10px;">
           Nenhuma semana de marketing registrada.<br>
-          Lance investimento, faturamento e nº de pedidos em <b>Rotina → Marketing &amp; TikTok</b> para liberar ROAS, CPA, ticket médio e o comparativo entre lojas.
+          Lance investimento, faturamento e nº de pedidos em <b>Marketing &amp; TikTok</b> para liberar ROAS, CPA, ticket médio e o comparativo entre lojas.
         </div>
       </div>
     </div>`;
