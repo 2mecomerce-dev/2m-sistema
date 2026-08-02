@@ -655,6 +655,8 @@
   .rt-tcard.dragging{opacity:.4; box-shadow:none;}
   .rt-tcard-title{font-weight:700; font-size:13.5px; margin-bottom:8px;}
   .rt-tcard-meta{display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-bottom:9px;}
+  .rt-task-desc{font-size:12.5px; padding:7px 9px; min-height:44px; resize:vertical; margin-bottom:9px; cursor:text;}
+  .rt-task-desc::placeholder{color:var(--faint);}
   .rt-tcard-foot{display:flex; align-items:center; justify-content:space-between; gap:8px;}
   .rt-tcard-foot select{font-size:12px; padding:6px 8px; width:auto;}
 
@@ -3174,7 +3176,8 @@ function rtAttachTasksHandlers(){
       category: document.getElementById('rtTaskCategory').value.trim() || 'Geral',
       priority: document.getElementById('rtTaskPriority').value,
       due: document.getElementById('rtTaskDue').value,
-      status: 'A Fazer'
+      status: 'A Fazer',
+      description: ''
     });
     rtSave();
     rtRenderActive();
@@ -3200,6 +3203,7 @@ function rtAttachTasksHandlers(){
             ${prioBadge}
             ${t.due ? `<span class="badge ${overdue?'badge-critical':'badge-neutral'}">${overdue?'⚠ atrasada · ':'📅 '}${new Date(t.due+'T00:00').toLocaleDateString('pt-BR')}</span>` : ''}
           </div>
+          <textarea class="rt-input rt-task-desc" data-id="${t.id}" draggable="false" placeholder="Adicionar descrição..." rows="2">${t.description || ''}</textarea>
           <div class="rt-tcard-foot">
             <select class="rt-select rt-task-status" data-id="${t.id}" style="width:auto;">
               ${rtKanbanColumns.map(s=>`<option ${t.status===s?'selected':''}>${s}</option>`).join('')}
@@ -3224,6 +3228,14 @@ function rtAttachTasksHandlers(){
       rtState.tasks = rtState.tasks.filter(x=>x.id!==e.target.dataset.id);
       rtSave();
       rtRenderActive();
+    });
+  });
+  kanban.querySelectorAll('.rt-task-desc').forEach(ta=>{
+    // não chama rtRenderActive() a cada tecla — perderia o foco/cursor do textarea
+    ta.addEventListener('input', (e)=>{
+      const t = rtState.tasks.find(x=>x.id===e.target.dataset.id);
+      t.description = e.target.value;
+      rtSave();
     });
   });
 
