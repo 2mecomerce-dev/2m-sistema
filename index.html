@@ -3347,7 +3347,7 @@ function rtAttachMarketingHandlers(){
     table.innerHTML = `<tr><td style="color:var(--faint); font-style:italic; padding:16px 10px;">Nenhuma semana registrada ${isAll?'ainda':'para '+rtMarketingStoreFilter+' ainda'}.</td></tr>`;
   }else{
     table.innerHTML = `
-      <thead><tr><th>Semana</th>${isAll?'<th>Lojas</th>':''}<th>Investimento</th><th>Faturamento</th><th>Pedidos</th><th>ROAS</th><th>CPA</th><th>Status</th></tr></thead>
+      <thead><tr><th>Semana</th>${isAll?'<th>Lojas</th>':''}<th>Investimento</th><th>Faturamento</th><th>Pedidos</th><th>ROAS</th><th>CPA</th><th>Status</th>${!isAll?'<th></th>':''}</tr></thead>
       <tbody>
         ${[...rows].reverse().map(w=>{
           const st = rtMarketingStatus(w.roas, w.cpa);
@@ -3355,9 +3355,25 @@ function rtAttachMarketingHandlers(){
             <td>${w.label}</td>${isAll?`<td>${w.storesReported}/${rtState.stores.length}</td>`:''}<td>${fmtBRL(w.invest)}</td><td>${fmtBRL(w.revenue)}</td><td>${w.orders}</td>
             <td style="font-weight:700;">${w.roas.toFixed(1)}x</td><td style="font-weight:700;">${fmtBRL(w.cpa)}</td>
             <td>${rtStatusBadge(st.kind, st.label)}</td>
+            ${!isAll?`<td><button class="rt-link-danger rt-mk-delete" data-store="${w.store}" data-label="${w.label}">Excluir</button></td>`:''}
           </tr>`;
         }).join('')}
       </tbody>`;
+
+    if(!isAll){
+      table.querySelectorAll('.rt-mk-delete').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          const store = btn.dataset.store, label = btn.dataset.label;
+          const ok = await confirmDialog('Excluir lançamento?', `Isso remove o registro de "${label}" de ${store}. Não pode ser desfeito.`, 'Excluir');
+          if(!ok) return;
+          rtState.marketing.entries = rtState.marketing.entries.filter(e => !(e.store === store && e.label === label));
+          rtRenderActive();
+          const { error } = await mkDelete(store, label);
+          if(error) showToast('Não consegui excluir no banco: ' + error.message);
+          else showToast(`Lançamento de "${label}" (${store}) excluído`);
+        });
+      });
+    }
   }
 
   if(isAll){
@@ -3578,6 +3594,13 @@ async function mkUpsert(entry){
     data_inicio: entry.dateFrom || null,
     data_fim: entry.dateTo || null
   }, { onConflict: 'loja,semana' });
+  if(error) syncLog('Marketing: ' + error.message, 'err');
+  return { error };
+}
+
+async function mkDelete(store, label){
+  if(!sb) return { error: { message: 'sem conexão com o banco' } };
+  const { error } = await sb.from('marketing_semanal').delete().eq('loja', store).eq('semana', label);
   if(error) syncLog('Marketing: ' + error.message, 'err');
   return { error };
 }
