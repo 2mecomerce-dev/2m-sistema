@@ -2705,10 +2705,11 @@ const rtCategoryStyles = [
   { color:'#8A7CBF', icon:'🔄' },
 ];
 
-const rtPeople = ['Breno','Murilo'];
+const rtPeople = ['Breno','Murilo','Ambos'];
 const rtPersonColors = {
   'Breno': { ring:'#3B82F6', bg:'rgba(59,130,246,0.14)', fg:'#1D4ED8', initial:'B' },
   'Murilo': { ring:'#8B5CF6', bg:'rgba(139,92,246,0.14)', fg:'#6D28D9', initial:'M' },
+  'Ambos': { ring:'#D97706', bg:'rgba(217,119,6,0.14)', fg:'#B45309', initial:'BM' },
 };
 function rtAvatarFor(person){
   return rtPersonColors[person] || { ring:'var(--border-strong)', bg:'var(--surface-2)', fg:'var(--faint)', initial:'?' };
