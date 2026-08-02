@@ -643,13 +643,16 @@
   .rt-item-row .done-text{text-decoration:line-through; color:var(--faint);}
   .rt-add-row{display:flex; gap:8px; margin-top:10px;}
 
-  .rt-kanban{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
-  @media (max-width:1040px){ .rt-kanban{grid-template-columns:1fr;} }
-  .rt-kcol{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-lg); padding:12px; min-height:80px;}
+  .rt-kanban{display:grid; grid-template-columns:repeat(4,1fr); gap:16px;}
+  @media (max-width:1280px){ .rt-kanban{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:640px){ .rt-kanban{grid-template-columns:1fr;} }
+  .rt-kcol{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-lg); padding:12px; min-height:80px; transition:background .15s, border-color .15s;}
+  .rt-kcol.drag-over{background:var(--accent-soft); border-color:var(--accent); border-style:dashed;}
   .rt-kcol-head{display:flex; align-items:center; justify-content:space-between; padding:4px 6px 12px;}
   .rt-kcol-title{font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.6px;}
   .rt-kcol-count{background:var(--border); border-radius:999px; padding:2px 9px; font-size:11.5px; font-weight:700; color:var(--muted);}
-  .rt-tcard{background:var(--surface); border:1px solid var(--border); border-radius:var(--r-md); padding:12px; margin-bottom:10px; box-shadow:var(--sh-sm);}
+  .rt-tcard{background:var(--surface); border:1px solid var(--border); border-radius:var(--r-md); padding:12px; margin-bottom:10px; box-shadow:var(--sh-sm); cursor:grab; transition:opacity .15s, box-shadow .15s;}
+  .rt-tcard.dragging{opacity:.4; box-shadow:none;}
   .rt-tcard-title{font-weight:700; font-size:13.5px; margin-bottom:8px;}
   .rt-tcard-meta{display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-bottom:9px;}
   .rt-tcard-foot{display:flex; align-items:center; justify-content:space-between; gap:8px;}
@@ -3140,8 +3143,8 @@ function rtAttachRoutineHandlers(){
 }
 
 /* ---------- tarefas pontuais (kanban) ---------- */
-const rtKanbanColumns = ['A Fazer','Em Andamento','Concluído'];
-const rtKanbanIcon = { 'A Fazer':'🕘', 'Em Andamento':'🚧', 'Concluído':'✅' };
+const rtKanbanColumns = ['A Fazer','Em Andamento','Adiada','Concluído'];
+const rtKanbanIcon = { 'A Fazer':'🕘', 'Em Andamento':'🚧', 'Adiada':'⏳', 'Concluído':'✅' };
 
 function rtRenderTasks(){
   return `
@@ -3181,16 +3184,16 @@ function rtAttachTasksHandlers(){
   kanban.innerHTML = rtKanbanColumns.map(col => {
     const items = rtState.tasks.filter(t=>t.status===col);
     return `
-    <div class="rt-kcol">
+    <div class="rt-kcol" data-status="${col}">
       <div class="rt-kcol-head">
         <span class="rt-kcol-title">${rtKanbanIcon[col]} ${col}</span>
         <span class="rt-kcol-count">${items.length}</span>
       </div>
       ${items.length===0 ? `<div class="empty-hint" style="padding:18px 8px;">Nada por aqui</div>` : items.map(t => {
-        const overdue = t.due && t.status!=='Concluído' && new Date(t.due) < new Date(new Date().toDateString());
+        const overdue = t.due && t.status!=='Concluído' && t.status!=='Adiada' && new Date(t.due) < new Date(new Date().toDateString());
         const prioBadge = t.priority==='Alta' ? rtStatusBadge('critical','Alta') : t.priority==='Média' ? rtStatusBadge('warning','Média') : rtStatusBadge('neutral','Baixa');
         return `
-        <div class="rt-tcard">
+        <div class="rt-tcard" draggable="true" data-id="${t.id}">
           <div class="rt-tcard-title">${t.title}</div>
           <div class="rt-tcard-meta">
             <span class="badge badge-neutral">${t.category}</span>
@@ -3219,6 +3222,36 @@ function rtAttachTasksHandlers(){
   kanban.querySelectorAll('.rt-task-delete').forEach(btn=>{
     btn.addEventListener('click', (e)=>{
       rtState.tasks = rtState.tasks.filter(x=>x.id!==e.target.dataset.id);
+      rtSave();
+      rtRenderActive();
+    });
+  });
+
+  /* ---------- arrastar card entre colunas ---------- */
+  kanban.querySelectorAll('.rt-tcard').forEach(card=>{
+    card.addEventListener('dragstart', (e)=>{
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', card.dataset.id);
+      card.classList.add('dragging');
+    });
+    card.addEventListener('dragend', ()=> card.classList.remove('dragging'));
+  });
+
+  kanban.querySelectorAll('.rt-kcol').forEach(colEl=>{
+    colEl.addEventListener('dragover', (e)=>{
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      colEl.classList.add('drag-over');
+    });
+    colEl.addEventListener('dragleave', ()=> colEl.classList.remove('drag-over'));
+    colEl.addEventListener('drop', (e)=>{
+      e.preventDefault();
+      colEl.classList.remove('drag-over');
+      const id = e.dataTransfer.getData('text/plain');
+      const t = rtState.tasks.find(x=>x.id===id);
+      const newStatus = colEl.dataset.status;
+      if(!t || t.status===newStatus) return;
+      t.status = newStatus;
       rtSave();
       rtRenderActive();
     });
