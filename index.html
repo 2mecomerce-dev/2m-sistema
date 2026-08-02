@@ -2808,7 +2808,8 @@ function rtDefaultState(){
 let rtState = rtDefaultState();
 let rtActiveSubtab = 'overview';
 let rtMarketingStoreFilter = 'Todas';
-let rtBreakdownWeekLabel = null; // semana escolhida no comparativo "Todas as lojas"; null = mais recente
+let rtBreakdownWeekLabel = null; // semana (mais recente do período) escolhida no comparativo "Todas as lojas"; null = mais recente
+let rtBreakdownWindow = 1; // quantas semanas somar terminando na semana escolhida (1, 4, 8 ou 'all')
 let rtInitialized = false;
 let rtSaveTimer = null;
 
@@ -2869,13 +2870,44 @@ function rtLatestWeekBreakdown(){
   return { label, rows };
 }
 /* Igual a rtLatestWeekBreakdown, mas para uma semana escolhida pelo usuário
-   (cai pra mais recente se a semana não existir mais, ex.: após excluir). */
-function rtWeekBreakdown(label){
-  const weeks = rtConsolidatedWeeks();
-  if(weeks.length===0) return { label:null, rows:[], invest:0, revenue:0, orders:0, roas:0, cpa:0, storesReported:0 };
-  const target = weeks.find(w=>w.label===label) || weeks[weeks.length-1];
-  const rows = rtState.stores.map(store => ({ store, entry: rtState.marketing.entries.find(e=>e.store===store && e.label===target.label) || null }));
-  return { ...target, rows };
+   (cai pra mais recente se a semana não existir mais, ex.: após excluir), e
+   soma até `weekSpan` semanas terminando nela (1 vira o comportamento antigo;
+   4 dá uma visão de ~1 mês; 'all' soma tudo que já foi registrado). */
+function rtWeekBreakdown(label, weekSpan){
+  weekSpan = weekSpan || 1;
+  const weeks = rtConsolidatedWeeks(); // na ordem em que cada semana foi lançada pela 1ª vez
+  if(weeks.length===0) return { label:null, rangeLabel:null, weekCount:0, rows:[], invest:0, revenue:0, orders:0, roas:0, cpa:0, storesReported:0 };
+  const idx = weeks.findIndex(w=>w.label===label);
+  const endIdx = idx >= 0 ? idx : weeks.length - 1;
+  const span = weekSpan === 'all' ? (endIdx + 1) : Math.min(weekSpan, endIdx + 1);
+  const slice = weeks.slice(endIdx - span + 1, endIdx + 1);
+  const labelsInRange = new Set(slice.map(w => w.label));
+  const es = rtState.marketing.entries.filter(e => labelsInRange.has(e.label));
+
+  const rows = rtState.stores.map(store => {
+    const storeEntries = es.filter(e => e.store === store);
+    if(storeEntries.length === 0) return { store, entry: null };
+    const invest = storeEntries.reduce((s,e)=>s+e.invest,0);
+    const revenue = storeEntries.reduce((s,e)=>s+e.revenue,0);
+    const orders = storeEntries.reduce((s,e)=>s+e.orders,0);
+    return { store, entry: { invest, revenue, orders, roas: invest?revenue/invest:0, cpa: orders?invest/orders:0 } };
+  });
+
+  const invest = es.reduce((s,e)=>s+e.invest,0);
+  const revenue = es.reduce((s,e)=>s+e.revenue,0);
+  const orders = es.reduce((s,e)=>s+e.orders,0);
+  const rangeLabel = slice.length > 1 ? `${slice[0].label} – ${slice[slice.length-1].label}` : (slice[0] ? slice[0].label : null);
+
+  return {
+    label: weeks[endIdx].label,
+    rangeLabel,
+    weekCount: slice.length,
+    rows,
+    invest, revenue, orders,
+    roas: invest ? revenue/invest : 0,
+    cpa: orders ? invest/orders : 0,
+    storesReported: new Set(es.map(e=>e.store)).size
+  };
 }
 function rtComputeLastWeekMarketing(){
   const cw = rtConsolidatedWeeks();
@@ -3226,8 +3258,14 @@ function rtRenderMarketing(){
   const tiktokTotal = rtComputeTiktokWeekTotal();
   const tiktokTarget = rtState.targets.tiktokPerAccount * rtState.tiktok.accounts.length;
   const isAll = rtMarketingStoreFilter === 'Todas';
-  const breakdown = rtWeekBreakdown(rtBreakdownWeekLabel);
+  const breakdown = rtWeekBreakdown(rtBreakdownWeekLabel, rtBreakdownWindow);
   const availableWeeks = rtConsolidatedWeeks();
+  const windowOptions = [
+    { v:'1', label:'1 semana' },
+    { v:'4', label:'4 semanas' },
+    { v:'8', label:'8 semanas' },
+    { v:'all', label:'Tudo' },
+  ];
 
   return `
   <div class="card" style="padding:20px; margin-bottom:20px;">
@@ -3274,20 +3312,25 @@ function rtRenderMarketing(){
     <div style="margin-top:26px; padding-top:18px; border-top:1px solid var(--border);">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;">
         <div>
-          <div class="card-title" style="font-size:14px;">🏪 Visão geral consolidada</div>
-          <div class="card-desc" style="margin-top:4px;">Escolha uma semana pra ver o total de todas as lojas somado e comparar o desempenho lado a lado — use pra decidir onde priorizar investimento.</div>
+          <div class="card-title" style="font-size:14px;">🏪 Visão geral consolidada ${breakdown.rangeLabel ? `— ${breakdown.rangeLabel}` : ''}</div>
+          <div class="card-desc" style="margin-top:4px;">Escolha até onde olhar e quantas semanas somar pra trás (ex.: 4 semanas ≈ 1 mês) — dá o total de todas as lojas e o comparativo lado a lado, pra decidir onde priorizar investimento.</div>
         </div>
         ${availableWeeks.length ? `
-        <label class="rt-label" style="min-width:190px;">Semana
-          <select id="rtBreakdownWeek" class="rt-select">
-            ${[...availableWeeks].reverse().map(w=>`<option value="${w.label}" ${w.label===breakdown.label?'selected':''}>${w.label}</option>`).join('')}
-          </select>
-        </label>` : ''}
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <div class="rt-store-tabs" id="rtBreakdownWindow" style="margin:0;">
+            ${windowOptions.map(o=>`<button class="ptab ${String(rtBreakdownWindow)===o.v?'active':''}" data-window="${o.v}">${o.label}</button>`).join('')}
+          </div>
+          <label class="rt-label" style="min-width:190px;">até a semana
+            <select id="rtBreakdownWeek" class="rt-select">
+              ${[...availableWeeks].reverse().map(w=>`<option value="${w.label}" ${w.label===breakdown.label?'selected':''}>${w.label}</option>`).join('')}
+            </select>
+          </label>
+        </div>` : ''}
       </div>
 
       <div class="kpi-row" style="margin-top:16px;">
-        ${rtStatCard({icon:'💰', label:'Investimento total', value: fmtBRL(breakdown.invest), sub:'Soma de todas as lojas na semana', kind:{k:'neutral', label:`${breakdown.storesReported}/${rtState.stores.length} lojas`}})}
-        ${rtStatCard({icon:'📈', label:'Faturamento total', value: fmtBRL(breakdown.revenue), sub:'Soma de todas as lojas na semana', kind:{k:'neutral', label:`${breakdown.orders} pedidos`}})}
+        ${rtStatCard({icon:'💰', label:'Investimento total', value: fmtBRL(breakdown.invest), sub:`Soma de ${breakdown.weekCount} semana(s)`, kind:{k:'neutral', label:`${breakdown.storesReported}/${rtState.stores.length} lojas`}})}
+        ${rtStatCard({icon:'📈', label:'Faturamento total', value: fmtBRL(breakdown.revenue), sub:`Soma de ${breakdown.weekCount} semana(s)`, kind:{k:'neutral', label:`${breakdown.orders} pedidos`}})}
         ${rtStatCard({icon:'💹', label:'ROAS geral', value: breakdown.invest ? breakdown.roas.toFixed(1)+'x' : '—', sub:'Meta: 15x', kind: breakdown.invest ? (breakdown.roas>=rtState.targets.roas ? {k:'good', label:'meta atingida'} : {k:'critical', label:'abaixo da meta'}) : {k:'neutral', label:'sem dados'}})}
         ${rtStatCard({icon:'💸', label:'Custo por pedido geral', value: breakdown.orders ? fmtBRL(breakdown.cpa) : '—', sub:'Meta: menor que R$10', kind: breakdown.orders ? (breakdown.cpa<rtState.targets.cpa ? {k:'good', label:'dentro da meta'} : {k:'critical', label:'acima da meta'}) : {k:'neutral', label:'sem dados'}})}
       </div>
@@ -3405,6 +3448,16 @@ function rtAttachMarketingHandlers(){
     }
   }
 
+  const breakdownWindowEl = document.getElementById('rtBreakdownWindow');
+  if(breakdownWindowEl){
+    breakdownWindowEl.querySelectorAll('.ptab').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        rtBreakdownWindow = b.dataset.window === 'all' ? 'all' : parseInt(b.dataset.window, 10);
+        rtRenderActive();
+      });
+    });
+  }
+
   const breakdownSelect = document.getElementById('rtBreakdownWeek');
   if(breakdownSelect){
     breakdownSelect.addEventListener('change', ()=>{
@@ -3415,7 +3468,7 @@ function rtAttachMarketingHandlers(){
 
   if(isAll){
     const breakdownTable = document.getElementById('rtStoreBreakdownTable');
-    const { rows: brows } = rtWeekBreakdown(rtBreakdownWeekLabel);
+    const { rows: brows } = rtWeekBreakdown(rtBreakdownWeekLabel, rtBreakdownWindow);
     if(brows.every(r=>!r.entry)){
       breakdownTable.innerHTML = `<tr><td style="color:var(--faint); font-style:italic; padding:16px 10px;">Registre a primeira semana de alguma loja para ver o comparativo.</td></tr>`;
     }else{
