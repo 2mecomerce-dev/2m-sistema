@@ -4734,6 +4734,7 @@ const MT_MESES_CICLO = [
 ];
 
 let mtFechamentos = [];
+let mtFaturamentoMensal = {}; // chave `${ano}-${mes0indexado}` -> valor digitado à mão (fonte: Upseller)
 let mtInitialized = false;
 
 async function mtLoadFechamentos(){
@@ -4752,7 +4753,28 @@ async function mtLogFechamento(c){
   else syncLog('Metas: ' + error.message, 'err');
 }
 
+async function mtLoadFaturamento(){
+  if(!sb) return;
+  const { data, error } = await sb.from('metas_faturamento').select('ano,mes,faturamento');
+  if(!error && data){
+    mtFaturamentoMensal = {};
+    data.forEach(r => { mtFaturamentoMensal[r.ano+'-'+(r.mes-1)] = Number(r.faturamento); });
+  }
+}
+
+async function mtSaveFaturamento(year, month, valor){
+  mtFaturamentoMensal[year+'-'+month] = valor;
+  if(!sb) return;
+  const { error } = await sb.from('metas_faturamento').upsert({ ano: year, mes: month+1, faturamento: valor });
+  if(error) syncLog('Metas: ' + error.message, 'err');
+}
+
 function mtMonthMetrics(year, month){
+  // Faturamento é digitado à mão (fonte: Upseller) — não é somado das
+  // entradas semanais de Marketing, que medem investimento em mídia,
+  // não faturamento real da operação.
+  const faturamento = mtFaturamentoMensal[year+'-'+month] || 0;
+
   const entries = (rtState.marketing && rtState.marketing.entries) ? rtState.marketing.entries : [];
   const emMes = entries.filter(e => {
     const ref = e.dateTo || e.dateFrom;
@@ -4760,7 +4782,6 @@ function mtMonthMetrics(year, month){
     const d = new Date(ref+'T12:00:00');
     return d.getFullYear() === year && d.getMonth() === month;
   });
-  const faturamento = emMes.reduce((s,e)=>s+e.revenue,0);
   const investimento = emMes.reduce((s,e)=>s+e.invest,0);
   const pedidos = emMes.reduce((s,e)=>s+e.orders,0);
   const cpa = pedidos ? investimento/pedidos : null;
@@ -4804,9 +4825,6 @@ function mtFaixaBonus(pontosTotais){
 function mtRenderMesAtual(m){
   if(!m) return '';
   const { metrics, nivelObj } = m;
-  const proximoNivel = MT_NIVEIS.find(n => !nivelObj || n.nivel > nivelObj.nivel) || MT_NIVEIS[MT_NIVEIS.length-1];
-  const faturamentoAlvo = proximoNivel.faturamento;
-  const pctFaturamento = Math.min(100, Math.round((metrics.faturamento / faturamentoAlvo) * 100));
 
   const atividadesPct = metrics.atividadesPct;
   const atividadesOk = atividadesPct !== null && atividadesPct >= MT_ATIVIDADES_MIN;
@@ -4825,11 +4843,13 @@ function mtRenderMesAtual(m){
         : `<span class="badge badge-neutral">Nenhum nível ainda</span>`}
     </div>
     <div class="card-body">
+      <div class="rt-form-row" style="grid-template-columns:1fr auto; margin-top:0; margin-bottom:20px; align-items:end;">
+        <label class="rt-label">Faturamento oficial do mês (Upseller)
+          <input type="number" step="0.01" id="mtFaturamentoInput" class="rt-input" value="${metrics.faturamento || ''}" placeholder="0,00">
+        </label>
+        <button class="btn btn-accent" id="mtFaturamentoBtn" data-year="${m.year}" data-month="${m.month}">Salvar faturamento</button>
+      </div>
       <div class="mt-progress-grid">
-        <div>
-          <div class="mt-progress-label"><span>Faturamento (meta: nível ${proximoNivel.nivel})</span><span>${fmtBRL(metrics.faturamento)} / ${fmtBRL(faturamentoAlvo)}</span></div>
-          ${rtProgressBar(pctFaturamento, pctFaturamento>=100?'var(--accent)':'var(--amber)')}
-        </div>
         <div>
           <div class="mt-progress-label"><span>Atividades da Rotina</span><span>${atividadesPct===null?'sem fechamento ainda':atividadesPct.toFixed(0)+'%'}</span></div>
           ${rtProgressBar(atividadesPct||0, atividadesOk?'var(--accent)':'var(--danger)')}
@@ -4839,6 +4859,42 @@ function mtRenderMesAtual(m){
           ${rtProgressBar(cpaPct, cpaOk?'var(--accent)':'var(--danger)')}
         </div>
       </div>
+    </div>
+  </div>`;
+}
+
+function mtRenderLadder(faturamentoAtual, nivelObj){
+  return `
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-head">
+      <div>
+        <div class="card-title">🪜 Caminho das metas</div>
+        <div class="card-desc">Os 4 níveis combinados, o que falta de faturamento pra cada um e o pró-labore que libera.</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div style="overflow-x:auto;">
+        <table class="alias-table">
+          <thead><tr><th>Nível</th><th>Faturamento necessário</th><th>Pró-labore (cada um)</th><th style="text-align:right;">Status</th></tr></thead>
+          <tbody>
+            ${MT_NIVEIS.map(n => {
+              const atingido = faturamentoAtual >= n.faturamento;
+              const ehProximo = !atingido && (!nivelObj || n.nivel === nivelObj.nivel + 1);
+              let statusHtml;
+              if(atingido) statusHtml = rtStatusBadge('good','batido');
+              else if(ehProximo) statusHtml = `<span class="badge badge-warning">faltam ${fmtBRL(Math.max(0, n.faturamento - faturamentoAtual))}</span>`;
+              else statusHtml = rtStatusBadge('neutral','—');
+              return `<tr style="${ehProximo?'background:var(--accent-soft);':''}">
+                <td style="font-weight:800;">Nível ${n.nivel}</td>
+                <td class="mono">${fmtBRL(n.faturamento)}</td>
+                <td class="mono">${fmtBRL(n.proLabore)}</td>
+                <td style="text-align:right;">${statusHtml}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div class="fin-note" style="margin-top:16px;">O nível "batido" acima é só pelo faturamento. Pra realmente valer o pró-labore, as atividades e o CPA (mostrados em cima) também precisam estar dentro da meta no mesmo mês.</div>
     </div>
   </div>`;
 }
@@ -4926,8 +4982,20 @@ function mtRender(){
   const atual = monthsData.find(m => m.isCurrent);
   const cicloNaoComecou = monthsData.every(m => m.isFuture);
   const mesAtualHtml = atual ? mtRenderMesAtual(atual) : mtRenderSemMesAtual(cicloNaoComecou);
+  const ladderHtml = mtRenderLadder(atual ? atual.metrics.faturamento : 0, atual ? atual.nivelObj : null);
 
-  wrap.innerHTML = mesAtualHtml + mtRenderTimeline(monthsData) + mtRenderBonus(totalPontos, faixa, proximaFaixa);
+  wrap.innerHTML = mesAtualHtml + ladderHtml + mtRenderTimeline(monthsData) + mtRenderBonus(totalPontos, faixa, proximaFaixa);
+
+  const btn = document.getElementById('mtFaturamentoBtn');
+  if(btn){
+    btn.addEventListener('click', async ()=>{
+      const year = Number(btn.dataset.year), month = Number(btn.dataset.month);
+      const valor = parseFloat(document.getElementById('mtFaturamentoInput').value) || 0;
+      await mtSaveFaturamento(year, month, valor);
+      showToast('Faturamento do mês atualizado');
+      mtRender();
+    });
+  }
 }
 
 function mtRenderSemMesAtual(cicloNaoComecou){
@@ -4950,6 +5018,13 @@ function mtSetupRealtime(){
       mtRefreshIfActive();
     })
     .subscribe();
+
+  sb.channel('public:metas_faturamento')
+    .on('postgres_changes', { event:'*', schema:'public', table:'metas_faturamento' }, async () => {
+      await mtLoadFaturamento();
+      mtRefreshIfActive();
+    })
+    .subscribe();
 }
 
 async function mtInit(){
@@ -4961,6 +5036,7 @@ async function mtInit(){
   await rtInit();
   await mkLoad();
   await mtLoadFechamentos();
+  await mtLoadFaturamento();
   if(!mtInitialized){ mtInitialized = true; mtSetupRealtime(); }
   mtRender();
 }

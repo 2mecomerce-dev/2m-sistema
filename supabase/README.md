@@ -18,14 +18,17 @@ rodar as migrations não vai ter o mesmo banco.
 | Alíquotas, comissão/frete por canal e custos fixos de precificação | `precificacao_config` (documento JSON, `id = 'principal'`) | aba **Precificação** |
 | Produtos cadastrados para precificação (custo + taxa fixa) | `precificacao_produtos` | aba **Precificação** |
 | Histórico de fechamento semanal da rotina (% concluído, itens feitos/total) | `rotina_fechamentos` | aba **Rotina** (botão "Fechar semana e reiniciar") |
+| Faturamento oficial do mês (digitado à mão, fonte: Upseller) | `metas_faturamento` | aba **Metas** |
 
 O dashboard da aba **Relatórios** não tem tabela própria: ele deriva tudo de
 `lotes`, `custos` e `marketing_semanal`.
 
-A aba **Metas** também não tem tabela própria: deriva o faturamento e CPA do
-mês de `marketing_semanal.data_fim`, e o % de atividades do mês de
-`rotina_fechamentos`. Os níveis e faixas de bônus ficam hardcoded no
-`index.html` (não são dado do usuário, são regra de negócio).
+A aba **Metas** só tem tabela própria pro faturamento (`metas_faturamento`,
+digitado manualmente uma vez por mês — não é derivado do marketing, que
+mede investimento em mídia, não faturamento real). CPA vem de
+`marketing_semanal`, e o % de atividades do mês vem de `rotina_fechamentos`
+somado ao checklist em andamento. Os níveis e faixas de bônus ficam
+hardcoded no `index.html` (não são dado do usuário, são regra de negócio).
 
 ## Views de leitura
 
@@ -67,6 +70,7 @@ ordem, um de cada vez:
 3. `0003_views_dashboard.sql`
 4. `0004_precificacao.sql`
 5. `0005_metas.sql`
+6. `0006_metas_faturamento_manual.sql`
 
 Todos são idempotentes — rodar de novo num banco que já tem dados não apaga
 nada. A `0002` copia os lançamentos de marketing que hoje estão dentro do JSON
