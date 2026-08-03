@@ -643,15 +643,20 @@
   .rt-item-row .done-text{text-decoration:line-through; color:var(--faint);}
   .rt-add-row{display:flex; gap:8px; margin-top:10px;}
 
-  .rt-kanban{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
-  @media (max-width:1040px){ .rt-kanban{grid-template-columns:1fr;} }
-  .rt-kcol{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-lg); padding:12px; min-height:80px;}
+  .rt-kanban{display:grid; grid-template-columns:repeat(4,1fr); gap:16px;}
+  @media (max-width:1280px){ .rt-kanban{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:640px){ .rt-kanban{grid-template-columns:1fr;} }
+  .rt-kcol{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-lg); padding:12px; min-height:80px; transition:background .15s, border-color .15s;}
+  .rt-kcol.drag-over{background:var(--accent-soft); border-color:var(--accent); border-style:dashed;}
   .rt-kcol-head{display:flex; align-items:center; justify-content:space-between; padding:4px 6px 12px;}
   .rt-kcol-title{font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.6px;}
   .rt-kcol-count{background:var(--border); border-radius:999px; padding:2px 9px; font-size:11.5px; font-weight:700; color:var(--muted);}
-  .rt-tcard{background:var(--surface); border:1px solid var(--border); border-radius:var(--r-md); padding:12px; margin-bottom:10px; box-shadow:var(--sh-sm);}
+  .rt-tcard{background:var(--surface); border:1px solid var(--border); border-radius:var(--r-md); padding:12px; margin-bottom:10px; box-shadow:var(--sh-sm); cursor:grab; transition:opacity .15s, box-shadow .15s;}
+  .rt-tcard.dragging{opacity:.4; box-shadow:none;}
   .rt-tcard-title{font-weight:700; font-size:13.5px; margin-bottom:8px;}
   .rt-tcard-meta{display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-bottom:9px;}
+  .rt-task-desc{font-size:12.5px; padding:7px 9px; min-height:44px; resize:vertical; margin-bottom:9px; cursor:text;}
+  .rt-task-desc::placeholder{color:var(--faint);}
   .rt-tcard-foot{display:flex; align-items:center; justify-content:space-between; gap:8px;}
   .rt-tcard-foot select{font-size:12px; padding:6px 8px; width:auto;}
 
@@ -839,6 +844,10 @@
       <div class="nav-item" data-view="rotina" data-title="Rotina & Melhoria Contínua" data-eyebrow="Operações">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
         Rotina
+      </div>
+      <div class="nav-item" data-view="marketing" data-title="Marketing & TikTok" data-eyebrow="Operações">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 7 13.5 15.5 8.5 10.5 2 17"/><path d="M16 7h6v6"/></svg>
+        Marketing & TikTok
       </div>
       <div class="nav-item" data-view="precificacao" data-title="Precificação de Produtos" data-eyebrow="Financeiro">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M14.8 9a2 2 0 0 0-1.8-1H11a1.5 1.5 0 0 0 0 3h2a1.5 1.5 0 0 1 0 3h-2a2 2 0 0 1-1.8-1M12 7v1.5M12 15.5V17"/></svg>
@@ -1150,11 +1159,15 @@
               <button class="ptab active" data-subtab="overview">🏠 Visão Geral</button>
               <button class="ptab" data-subtab="routine">✅ Rotina Semanal</button>
               <button class="ptab" data-subtab="tasks">🗂️ Tarefas Pontuais</button>
-              <button class="ptab" data-subtab="marketing">📈 Marketing & TikTok</button>
             </div>
           </div>
         </div>
         <div id="rtContent"></div>
+      </section>
+
+      <!-- ===== VIEW: MARKETING & TIKTOK ===== -->
+      <section class="view" id="view-marketing">
+        <div id="mktContent"></div>
       </section>
 
       <!-- ===== VIEW: PRECIFICAÇÃO ===== -->
@@ -1693,6 +1706,18 @@ async function extractOrderFromPage(page){
       const { cor, tamanho } = extrairCorTamanho(raw);
       return { sku: si.sku, cor, tamanho, qty: 1, descricao: descricaoRaw };
     });
+
+    // Se nenhum dos "SKUs" conseguiu achar um tamanho próprio, não são pares
+    // diferentes de verdade — é uma peça bicolor única (ex.: "Preto" +
+    // "Preto e Branco") cujo texto de variação o PDF quebrou em pedaços
+    // separados que pareceram SKUs distintos. Junta tudo numa linha só,
+    // igual já é feito no caso de SKU único com múltiplas cores.
+    if(resultados.length > 1 && resultados.every(r => r.tamanho === '?')){
+      const coresUnicas = [...new Set(resultados.map(r => r.cor).filter(Boolean))];
+      const tamanhoUnico = extrairCorTamanho(cand.map(it => splitConcat(it.text)).join(' ')).tamanho;
+      return [{ sku: resultados[0].sku, cor: coresUnicas.join(' E '), tamanho: tamanhoUnico, qty, descricao: descricaoRaw }];
+    }
+
     return resultados;
   }
 
@@ -2662,6 +2687,7 @@ document.querySelectorAll('.nav-item[data-view]').forEach(item => {
     if(v === 'fornecedor') refreshFornecedorView();
     if(v === 'produtos') renderAliasTable();
     if(v === 'rotina') rtInit();
+    if(v === 'marketing') mktInit();
     if(v === 'precificacao') ppInit();
     if(v === 'relatorios'){ repRender(); rtInit().then(repRender); }
     if(v === 'metas') mtInit();
@@ -2690,10 +2716,11 @@ const rtCategoryStyles = [
   { color:'#8A7CBF', icon:'🔄' },
 ];
 
-const rtPeople = ['Breno','Murilo'];
+const rtPeople = ['Breno','Murilo','Ambos'];
 const rtPersonColors = {
   'Breno': { ring:'#3B82F6', bg:'rgba(59,130,246,0.14)', fg:'#1D4ED8', initial:'B' },
   'Murilo': { ring:'#8B5CF6', bg:'rgba(139,92,246,0.14)', fg:'#6D28D9', initial:'M' },
+  'Ambos': { ring:'#D97706', bg:'rgba(217,119,6,0.14)', fg:'#B45309', initial:'BM' },
 };
 function rtAvatarFor(person){
   return rtPersonColors[person] || { ring:'var(--border-strong)', bg:'var(--surface-2)', fg:'var(--faint)', initial:'?' };
@@ -2793,6 +2820,8 @@ function rtDefaultState(){
 let rtState = rtDefaultState();
 let rtActiveSubtab = 'overview';
 let rtMarketingStoreFilter = 'Todas';
+let rtBreakdownWeekLabel = null; // semana (mais recente do período) escolhida no comparativo "Todas as lojas"; null = mais recente
+let rtBreakdownWindow = 1; // quantas semanas somar terminando na semana escolhida (1, 4, 8 ou 'all')
 let rtInitialized = false;
 let rtSaveTimer = null;
 
@@ -2851,6 +2880,46 @@ function rtLatestWeekBreakdown(){
   const label = rtState.marketing.weekOrder[rtState.marketing.weekOrder.length-1];
   const rows = rtState.stores.map(store => ({ store, entry: rtState.marketing.entries.find(e=>e.store===store && e.label===label) || null }));
   return { label, rows };
+}
+/* Igual a rtLatestWeekBreakdown, mas para uma semana escolhida pelo usuário
+   (cai pra mais recente se a semana não existir mais, ex.: após excluir), e
+   soma até `weekSpan` semanas terminando nela (1 vira o comportamento antigo;
+   4 dá uma visão de ~1 mês; 'all' soma tudo que já foi registrado). */
+function rtWeekBreakdown(label, weekSpan){
+  weekSpan = weekSpan || 1;
+  const weeks = rtConsolidatedWeeks(); // na ordem em que cada semana foi lançada pela 1ª vez
+  if(weeks.length===0) return { label:null, rangeLabel:null, weekCount:0, rows:[], invest:0, revenue:0, orders:0, roas:0, cpa:0, storesReported:0 };
+  const idx = weeks.findIndex(w=>w.label===label);
+  const endIdx = idx >= 0 ? idx : weeks.length - 1;
+  const span = weekSpan === 'all' ? (endIdx + 1) : Math.min(weekSpan, endIdx + 1);
+  const slice = weeks.slice(endIdx - span + 1, endIdx + 1);
+  const labelsInRange = new Set(slice.map(w => w.label));
+  const es = rtState.marketing.entries.filter(e => labelsInRange.has(e.label));
+
+  const rows = rtState.stores.map(store => {
+    const storeEntries = es.filter(e => e.store === store);
+    if(storeEntries.length === 0) return { store, entry: null };
+    const invest = storeEntries.reduce((s,e)=>s+e.invest,0);
+    const revenue = storeEntries.reduce((s,e)=>s+e.revenue,0);
+    const orders = storeEntries.reduce((s,e)=>s+e.orders,0);
+    return { store, entry: { invest, revenue, orders, roas: invest?revenue/invest:0, cpa: orders?invest/orders:0 } };
+  });
+
+  const invest = es.reduce((s,e)=>s+e.invest,0);
+  const revenue = es.reduce((s,e)=>s+e.revenue,0);
+  const orders = es.reduce((s,e)=>s+e.orders,0);
+  const rangeLabel = slice.length > 1 ? `${slice[0].label} – ${slice[slice.length-1].label}` : (slice[0] ? slice[0].label : null);
+
+  return {
+    label: weeks[endIdx].label,
+    rangeLabel,
+    weekCount: slice.length,
+    rows,
+    invest, revenue, orders,
+    roas: invest ? revenue/invest : 0,
+    cpa: orders ? invest/orders : 0,
+    storesReported: new Set(es.map(e=>e.store)).size
+  };
 }
 function rtComputeLastWeekMarketing(){
   const cw = rtConsolidatedWeeks();
@@ -3082,8 +3151,8 @@ function rtAttachRoutineHandlers(){
 }
 
 /* ---------- tarefas pontuais (kanban) ---------- */
-const rtKanbanColumns = ['A Fazer','Em Andamento','Concluído'];
-const rtKanbanIcon = { 'A Fazer':'🕘', 'Em Andamento':'🚧', 'Concluído':'✅' };
+const rtKanbanColumns = ['A Fazer','Em Andamento','Adiada','Concluído'];
+const rtKanbanIcon = { 'A Fazer':'🕘', 'Em Andamento':'🚧', 'Adiada':'⏳', 'Concluído':'✅' };
 
 function rtRenderTasks(){
   return `
@@ -3113,7 +3182,8 @@ function rtAttachTasksHandlers(){
       category: document.getElementById('rtTaskCategory').value.trim() || 'Geral',
       priority: document.getElementById('rtTaskPriority').value,
       due: document.getElementById('rtTaskDue').value,
-      status: 'A Fazer'
+      status: 'A Fazer',
+      description: ''
     });
     rtSave();
     rtRenderActive();
@@ -3123,22 +3193,23 @@ function rtAttachTasksHandlers(){
   kanban.innerHTML = rtKanbanColumns.map(col => {
     const items = rtState.tasks.filter(t=>t.status===col);
     return `
-    <div class="rt-kcol">
+    <div class="rt-kcol" data-status="${col}">
       <div class="rt-kcol-head">
         <span class="rt-kcol-title">${rtKanbanIcon[col]} ${col}</span>
         <span class="rt-kcol-count">${items.length}</span>
       </div>
       ${items.length===0 ? `<div class="empty-hint" style="padding:18px 8px;">Nada por aqui</div>` : items.map(t => {
-        const overdue = t.due && t.status!=='Concluído' && new Date(t.due) < new Date(new Date().toDateString());
+        const overdue = t.due && t.status!=='Concluído' && t.status!=='Adiada' && new Date(t.due) < new Date(new Date().toDateString());
         const prioBadge = t.priority==='Alta' ? rtStatusBadge('critical','Alta') : t.priority==='Média' ? rtStatusBadge('warning','Média') : rtStatusBadge('neutral','Baixa');
         return `
-        <div class="rt-tcard">
+        <div class="rt-tcard" draggable="true" data-id="${t.id}">
           <div class="rt-tcard-title">${t.title}</div>
           <div class="rt-tcard-meta">
             <span class="badge badge-neutral">${t.category}</span>
             ${prioBadge}
             ${t.due ? `<span class="badge ${overdue?'badge-critical':'badge-neutral'}">${overdue?'⚠ atrasada · ':'📅 '}${new Date(t.due+'T00:00').toLocaleDateString('pt-BR')}</span>` : ''}
           </div>
+          <textarea class="rt-input rt-task-desc" data-id="${t.id}" draggable="false" placeholder="Adicionar descrição..." rows="2">${t.description || ''}</textarea>
           <div class="rt-tcard-foot">
             <select class="rt-select rt-task-status" data-id="${t.id}" style="width:auto;">
               ${rtKanbanColumns.map(s=>`<option ${t.status===s?'selected':''}>${s}</option>`).join('')}
@@ -3161,6 +3232,44 @@ function rtAttachTasksHandlers(){
   kanban.querySelectorAll('.rt-task-delete').forEach(btn=>{
     btn.addEventListener('click', (e)=>{
       rtState.tasks = rtState.tasks.filter(x=>x.id!==e.target.dataset.id);
+      rtSave();
+      rtRenderActive();
+    });
+  });
+  kanban.querySelectorAll('.rt-task-desc').forEach(ta=>{
+    // não chama rtRenderActive() a cada tecla — perderia o foco/cursor do textarea
+    ta.addEventListener('input', (e)=>{
+      const t = rtState.tasks.find(x=>x.id===e.target.dataset.id);
+      t.description = e.target.value;
+      rtSave();
+    });
+  });
+
+  /* ---------- arrastar card entre colunas ---------- */
+  kanban.querySelectorAll('.rt-tcard').forEach(card=>{
+    card.addEventListener('dragstart', (e)=>{
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', card.dataset.id);
+      card.classList.add('dragging');
+    });
+    card.addEventListener('dragend', ()=> card.classList.remove('dragging'));
+  });
+
+  kanban.querySelectorAll('.rt-kcol').forEach(colEl=>{
+    colEl.addEventListener('dragover', (e)=>{
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      colEl.classList.add('drag-over');
+    });
+    colEl.addEventListener('dragleave', ()=> colEl.classList.remove('drag-over'));
+    colEl.addEventListener('drop', (e)=>{
+      e.preventDefault();
+      colEl.classList.remove('drag-over');
+      const id = e.dataTransfer.getData('text/plain');
+      const t = rtState.tasks.find(x=>x.id===id);
+      const newStatus = colEl.dataset.status;
+      if(!t || t.status===newStatus) return;
+      t.status = newStatus;
       rtSave();
       rtRenderActive();
     });
@@ -3201,7 +3310,14 @@ function rtRenderMarketing(){
   const tiktokTotal = rtComputeTiktokWeekTotal();
   const tiktokTarget = rtState.targets.tiktokPerAccount * rtState.tiktok.accounts.length;
   const isAll = rtMarketingStoreFilter === 'Todas';
-  const breakdown = rtLatestWeekBreakdown();
+  const breakdown = rtWeekBreakdown(rtBreakdownWeekLabel, rtBreakdownWindow);
+  const availableWeeks = rtConsolidatedWeeks();
+  const windowOptions = [
+    { v:'1', label:'1 semana' },
+    { v:'4', label:'4 semanas' },
+    { v:'8', label:'8 semanas' },
+    { v:'all', label:'Tudo' },
+  ];
 
   return `
   <div class="card" style="padding:20px; margin-bottom:20px;">
@@ -3246,9 +3362,32 @@ function rtRenderMarketing(){
 
     ${isAll ? `
     <div style="margin-top:26px; padding-top:18px; border-top:1px solid var(--border);">
-      <div class="card-title" style="font-size:14px;">🏪 Comparativo entre lojas ${breakdown.label ? `— semana ${breakdown.label}` : ''}</div>
-      <div class="card-desc" style="margin-top:4px;">Visão lado a lado das ${rtState.stores.length} lojas na última semana registrada.</div>
-      <div style="overflow-x:auto; margin-top:12px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;">
+        <div>
+          <div class="card-title" style="font-size:14px;">🏪 Visão geral consolidada ${breakdown.rangeLabel ? `— ${breakdown.rangeLabel}` : ''}</div>
+          <div class="card-desc" style="margin-top:4px;">Escolha até onde olhar e quantas semanas somar pra trás (ex.: 4 semanas ≈ 1 mês) — dá o total de todas as lojas e o comparativo lado a lado, pra decidir onde priorizar investimento.</div>
+        </div>
+        ${availableWeeks.length ? `
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <div class="rt-store-tabs" id="rtBreakdownWindow" style="margin:0;">
+            ${windowOptions.map(o=>`<button class="ptab ${String(rtBreakdownWindow)===o.v?'active':''}" data-window="${o.v}">${o.label}</button>`).join('')}
+          </div>
+          <label class="rt-label" style="min-width:190px;">até a semana
+            <select id="rtBreakdownWeek" class="rt-select">
+              ${[...availableWeeks].reverse().map(w=>`<option value="${w.label}" ${w.label===breakdown.label?'selected':''}>${w.label}</option>`).join('')}
+            </select>
+          </label>
+        </div>` : ''}
+      </div>
+
+      <div class="kpi-row" style="margin-top:16px;">
+        ${rtStatCard({icon:'💰', label:'Investimento total', value: fmtBRL(breakdown.invest), sub:`Soma de ${breakdown.weekCount} semana(s)`, kind:{k:'neutral', label:`${breakdown.storesReported}/${rtState.stores.length} lojas`}})}
+        ${rtStatCard({icon:'📈', label:'Faturamento total', value: fmtBRL(breakdown.revenue), sub:`Soma de ${breakdown.weekCount} semana(s)`, kind:{k:'neutral', label:`${breakdown.orders} pedidos`}})}
+        ${rtStatCard({icon:'💹', label:'ROAS geral', value: breakdown.invest ? breakdown.roas.toFixed(1)+'x' : '—', sub:'Meta: 15x', kind: breakdown.invest ? (breakdown.roas>=rtState.targets.roas ? {k:'good', label:'meta atingida'} : {k:'critical', label:'abaixo da meta'}) : {k:'neutral', label:'sem dados'}})}
+        ${rtStatCard({icon:'💸', label:'Custo por pedido geral', value: breakdown.orders ? fmtBRL(breakdown.cpa) : '—', sub:'Meta: menor que R$10', kind: breakdown.orders ? (breakdown.cpa<rtState.targets.cpa ? {k:'good', label:'dentro da meta'} : {k:'critical', label:'acima da meta'}) : {k:'neutral', label:'sem dados'}})}
+      </div>
+
+      <div style="overflow-x:auto; margin-top:20px;">
         <table class="alias-table" id="rtStoreBreakdownTable"></table>
       </div>
     </div>` : ''}
@@ -3332,7 +3471,7 @@ function rtAttachMarketingHandlers(){
     table.innerHTML = `<tr><td style="color:var(--faint); font-style:italic; padding:16px 10px;">Nenhuma semana registrada ${isAll?'ainda':'para '+rtMarketingStoreFilter+' ainda'}.</td></tr>`;
   }else{
     table.innerHTML = `
-      <thead><tr><th>Semana</th>${isAll?'<th>Lojas</th>':''}<th>Investimento</th><th>Faturamento</th><th>Pedidos</th><th>ROAS</th><th>CPA</th><th>Status</th></tr></thead>
+      <thead><tr><th>Semana</th>${isAll?'<th>Lojas</th>':''}<th>Investimento</th><th>Faturamento</th><th>Pedidos</th><th>ROAS</th><th>CPA</th><th>Status</th>${!isAll?'<th></th>':''}</tr></thead>
       <tbody>
         ${[...rows].reverse().map(w=>{
           const st = rtMarketingStatus(w.roas, w.cpa);
@@ -3340,14 +3479,48 @@ function rtAttachMarketingHandlers(){
             <td>${w.label}</td>${isAll?`<td>${w.storesReported}/${rtState.stores.length}</td>`:''}<td>${fmtBRL(w.invest)}</td><td>${fmtBRL(w.revenue)}</td><td>${w.orders}</td>
             <td style="font-weight:700;">${w.roas.toFixed(1)}x</td><td style="font-weight:700;">${fmtBRL(w.cpa)}</td>
             <td>${rtStatusBadge(st.kind, st.label)}</td>
+            ${!isAll?`<td><button class="rt-link-danger rt-mk-delete" data-store="${w.store}" data-label="${w.label}">Excluir</button></td>`:''}
           </tr>`;
         }).join('')}
       </tbody>`;
+
+    if(!isAll){
+      table.querySelectorAll('.rt-mk-delete').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          const store = btn.dataset.store, label = btn.dataset.label;
+          const ok = await confirmDialog('Excluir lançamento?', `Isso remove o registro de "${label}" de ${store}. Não pode ser desfeito.`, 'Excluir');
+          if(!ok) return;
+          rtState.marketing.entries = rtState.marketing.entries.filter(e => !(e.store === store && e.label === label));
+          rtRenderActive();
+          const { error } = await mkDelete(store, label);
+          if(error) showToast('Não consegui excluir no banco: ' + error.message);
+          else showToast(`Lançamento de "${label}" (${store}) excluído`);
+        });
+      });
+    }
+  }
+
+  const breakdownWindowEl = document.getElementById('rtBreakdownWindow');
+  if(breakdownWindowEl){
+    breakdownWindowEl.querySelectorAll('.ptab').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        rtBreakdownWindow = b.dataset.window === 'all' ? 'all' : parseInt(b.dataset.window, 10);
+        rtRenderActive();
+      });
+    });
+  }
+
+  const breakdownSelect = document.getElementById('rtBreakdownWeek');
+  if(breakdownSelect){
+    breakdownSelect.addEventListener('change', ()=>{
+      rtBreakdownWeekLabel = breakdownSelect.value;
+      rtRenderActive();
+    });
   }
 
   if(isAll){
     const breakdownTable = document.getElementById('rtStoreBreakdownTable');
-    const { rows: brows } = rtLatestWeekBreakdown();
+    const { rows: brows } = rtWeekBreakdown(rtBreakdownWeekLabel, rtBreakdownWindow);
     if(brows.every(r=>!r.entry)){
       breakdownTable.innerHTML = `<tr><td style="color:var(--faint); font-style:italic; padding:16px 10px;">Registre a primeira semana de alguma loja para ver o comparativo.</td></tr>`;
     }else{
@@ -3458,7 +3631,22 @@ function rtRenderActive(){
   if(rtActiveSubtab === 'overview'){ content.innerHTML = rtRenderOverview(); rtAttachOverviewHandlers(); }
   if(rtActiveSubtab === 'routine'){ content.innerHTML = rtRenderRoutine(); rtAttachRoutineHandlers(); }
   if(rtActiveSubtab === 'tasks'){ content.innerHTML = rtRenderTasks(); rtAttachTasksHandlers(); }
-  if(rtActiveSubtab === 'marketing'){ content.innerHTML = rtRenderMarketing(); rtAttachMarketingHandlers(); }
+  mktRenderActive();
+}
+
+/* Marketing & TikTok agora vive na própria aba, fora da Rotina,
+   mas continua usando o mesmo estado/tabela (rtState.tiktok, marketing_semanal). */
+function mktRenderActive(){
+  const el = document.getElementById('mktContent');
+  if(!el) return;
+  el.innerHTML = rtRenderMarketing();
+  rtAttachMarketingHandlers();
+}
+
+async function mktInit(){
+  document.getElementById('mktContent').innerHTML = rtInitialized ? '' : '<div class="empty-hint">Carregando…</div>';
+  await rtInit();
+  mktRenderActive();
 }
 
 document.getElementById('rtSubtabs').addEventListener('click', (e) => {
@@ -3548,6 +3736,13 @@ async function mkUpsert(entry){
     data_inicio: entry.dateFrom || null,
     data_fim: entry.dateTo || null
   }, { onConflict: 'loja,semana' });
+  if(error) syncLog('Marketing: ' + error.message, 'err');
+  return { error };
+}
+
+async function mkDelete(store, label){
+  if(!sb) return { error: { message: 'sem conexão com o banco' } };
+  const { error } = await sb.from('marketing_semanal').delete().eq('loja', store).eq('semana', label);
   if(error) syncLog('Marketing: ' + error.message, 'err');
   return { error };
 }
@@ -4145,7 +4340,7 @@ function repInsights(ctx){
       else if(dr !== null && dr >= 15) out.push({k:'good', ic:'📊', t:'Eficiência de mídia melhorando', d:`O ROAS subiu ${dr.toFixed(0)}% frente à semana ${mkAnterior.label} (${mkAnterior.roas.toFixed(1)}x → ${mkAtual.roas.toFixed(1)}x).`});
     }
   }else{
-    out.push({k:'neutral', ic:'📭', t:'Sem dados de marketing', d:'Nenhuma semana lançada ainda. Registre investimento, faturamento e nº de pedidos na aba Rotina → Marketing & TikTok para liberar as métricas desta página.'});
+    out.push({k:'neutral', ic:'📭', t:'Sem dados de marketing', d:'Nenhuma semana lançada ainda. Registre investimento, faturamento e nº de pedidos na aba Marketing & TikTok para liberar as métricas desta página.'});
   }
 
   return out;
@@ -4376,7 +4571,7 @@ function repRender(){
       <div class="card-body">
         <div class="empty-hint" style="padding:34px 10px;">
           Nenhuma semana de marketing registrada.<br>
-          Lance investimento, faturamento e nº de pedidos em <b>Rotina → Marketing &amp; TikTok</b> para liberar ROAS, CPA, ticket médio e o comparativo entre lojas.
+          Lance investimento, faturamento e nº de pedidos em <b>Marketing &amp; TikTok</b> para liberar ROAS, CPA, ticket médio e o comparativo entre lojas.
         </div>
       </div>
     </div>`;
