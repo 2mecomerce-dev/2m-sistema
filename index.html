@@ -1785,7 +1785,16 @@ async function extractOrdersFromPdf(file){
 function sugerirApelido(descricao){
   if(!descricao) return null;
   const d = descricao.toUpperCase();
-  // Mapa de palavras-chave na descrição → apelido sugerido
+
+  // Código explícito no final da descrição (ex.: "- 302") é o sinal mais confiável
+  // que existe — checa isso ANTES das palavras-chave genéricas. Uma descrição
+  // como "Bota Feminina Blogueira ... - 302" não pode virar "207" só porque
+  // "Blogueira" é um nome de estilo usado em vários números diferentes.
+  const codMatch = d.match(/[-–]\s*(\d{3})\b/);
+  if(codMatch) return codMatch[1];
+
+  // Mapa de palavras-chave na descrição → apelido sugerido (fallback quando
+  // não há código explícito)
   const regras = [
     { palavras: ['070', '- 070'], apelido: '070' },
     { palavras: ['207', '- 207'], apelido: '207' },
@@ -1803,9 +1812,6 @@ function sugerirApelido(descricao){
       if(d.includes(palavra)) return regra.apelido;
     }
   }
-  // Tentar extrair código numérico tipo "- 070", "- 207" do final da descrição
-  const codMatch = d.match(/[-–]\s*(\d{3})\b/);
-  if(codMatch) return codMatch[1];
   return null;
 }
 
