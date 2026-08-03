@@ -4960,6 +4960,83 @@ function mtRenderBonus(totalPontos, faixa, proximaFaixa){
   </div>`;
 }
 
+function mtRenderFaixasBonus(totalPontos){
+  return `
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-head">
+      <div>
+        <div class="card-title">🎯 Faixas do bônus de fim de ano</div>
+        <div class="card-desc">Todas as faixas de uma vez — quantos pontos cada uma exige e o bônus que libera.</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div style="overflow-x:auto;">
+        <table class="alias-table">
+          <thead><tr><th>Faixa (pontos)</th><th>Bônus (cada um)</th><th style="text-align:right;">Status</th></tr></thead>
+          <tbody>
+            ${MT_BONUS_FAIXAS.map(f => {
+              const label = f.max === Infinity ? `${f.min}+` : `${f.min}–${f.max}`;
+              const isAtual = totalPontos >= f.min && totalPontos <= f.max;
+              const jaSuperada = totalPontos > f.max;
+              let statusHtml;
+              if(isAtual) statusHtml = rtStatusBadge('good','faixa atual');
+              else if(jaSuperada) statusHtml = rtStatusBadge('neutral','superada');
+              else statusHtml = `<span class="badge badge-warning">faltam ${f.min - totalPontos} pt(s)</span>`;
+              return `<tr style="${isAtual?'background:var(--accent-soft);':''}">
+                <td style="font-weight:800;">${label}</td>
+                <td class="mono">${fmtBRL(f.valor)}</td>
+                <td style="text-align:right;">${statusHtml}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
+}
+
+function mtRenderProvisao(monthsData){
+  const passados = monthsData.filter(m => !m.isFuture && !m.isCurrent);
+  const pontosJaGanhos = passados.reduce((s,m)=>s+m.pontos, 0);
+  const proLaboreJaGanho = passados.reduce((s,m)=> s + (m.nivelObj ? m.nivelObj.proLabore : 0), 0);
+  const mesesRestantes = monthsData.filter(m => m.isFuture || m.isCurrent).length;
+
+  const cenarios = MT_NIVEIS.map(n => {
+    const pontos = pontosJaGanhos + mesesRestantes * n.nivel;
+    const proLabore = proLaboreJaGanho + mesesRestantes * n.proLabore;
+    const bonus = mtFaixaBonus(pontos).valor;
+    return { nivel: n.nivel, pontos, proLabore, bonus, total: proLabore + bonus };
+  });
+
+  return `
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-head">
+      <div>
+        <div class="card-title">📊 Provisão de ganhos até dezembro</div>
+        <div class="card-desc">Se mantiverem o mesmo nível em todos os ${mesesRestantes} mês(es) que faltam, quanto cada um leva no total (pró-labore acumulado + bônus de fim de ano).</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div style="overflow-x:auto;">
+        <table class="alias-table">
+          <thead><tr><th>Cenário</th><th>Pró-labore acumulado</th><th>Pontos no ano</th><th>Bônus de fim de ano</th><th style="text-align:right;">Total por pessoa</th></tr></thead>
+          <tbody>
+            ${cenarios.map(c => `
+              <tr>
+                <td style="font-weight:800;">Manter Nível ${c.nivel} todo mês</td>
+                <td class="mono">${fmtBRL(c.proLabore)}</td>
+                <td class="mono">${c.pontos}</td>
+                <td class="mono">${fmtBRL(c.bonus)}</td>
+                <td class="mono" style="text-align:right; font-weight:800; color:var(--accent-d);">${fmtBRL(c.total)}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div class="fin-note" style="margin-top:14px;">Já conta o que foi conquistado nos meses fechados (${pontosJaGanhos} ponto(s), ${fmtBRL(proLaboreJaGanho)} de pró-labore já ganho) somado à projeção dos ${mesesRestantes} mês(es) restantes em cada cenário.</div>
+    </div>
+  </div>`;
+}
+
 function mtRender(){
   const wrap = document.getElementById('mtContent');
   if(!wrap) return;
@@ -4983,8 +5060,10 @@ function mtRender(){
   const cicloNaoComecou = monthsData.every(m => m.isFuture);
   const mesAtualHtml = atual ? mtRenderMesAtual(atual) : mtRenderSemMesAtual(cicloNaoComecou);
   const ladderHtml = mtRenderLadder(atual ? atual.metrics.faturamento : 0, atual ? atual.nivelObj : null);
+  const faixasBonusHtml = mtRenderFaixasBonus(totalPontos);
+  const provisaoHtml = mtRenderProvisao(monthsData);
 
-  wrap.innerHTML = mesAtualHtml + ladderHtml + mtRenderTimeline(monthsData) + mtRenderBonus(totalPontos, faixa, proximaFaixa);
+  wrap.innerHTML = mesAtualHtml + ladderHtml + mtRenderTimeline(monthsData) + faixasBonusHtml + provisaoHtml + mtRenderBonus(totalPontos, faixa, proximaFaixa);
 
   const btn = document.getElementById('mtFaturamentoBtn');
   if(btn){
