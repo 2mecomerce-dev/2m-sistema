@@ -2765,6 +2765,7 @@ function rtDefaultCategories(){
       "Conferir valor de saldo",
       "Gravação de vídeos de produtos",
       "Estratégia de impulsionamento dos vídeos",
+      { text:"Postar 9 vídeos no TikTok na semana (3 contas × 3 posts)", computed:'tiktok' },
     ]},
     { name:"Melhoria Contínua", items:[
       "Reunião semanal de revisão dos indicadores",
@@ -2779,6 +2780,7 @@ function rtDefaultCategories(){
       const text = typeof it === 'string' ? it : it.text;
       const base = { id:`r-${ci}-${i}`, text, done:false };
       if(typeof it === 'object' && it.intervalDays){ base.intervalDays = it.intervalDays; base.lastDone = null; }
+      if(typeof it === 'object' && it.computed){ base.computed = it.computed; }
       return base;
     })
   }));
@@ -2790,7 +2792,13 @@ function rtIsIntervalDue(item){
   const days = Math.floor((Date.now() - new Date(item.lastDone+'T00:00:00').getTime()) / 86400000);
   return days >= item.intervalDays;
 }
+function rtTiktokGoalMet(){
+  const total = rtComputeTiktokWeekTotal();
+  const target = rtState.targets.tiktokPerAccount * rtState.tiktok.accounts.length;
+  return target > 0 && total >= target;
+}
 function rtItemEffectiveDone(item){
+  if(item.computed === 'tiktok') return rtTiktokGoalMet();
   return item.intervalDays ? !rtIsIntervalDue(item) : item.done;
 }
 function rtIntervalNextDueLabel(item){
@@ -3086,6 +3094,15 @@ function rtAttachRoutineHandlers(){
       <div class="rt-cat-body">
         ${cat.items.map(item => {
           const effDone = rtItemEffectiveDone(item);
+          if(item.computed === 'tiktok'){
+            const total = rtComputeTiktokWeekTotal();
+            const target = rtState.targets.tiktokPerAccount * rtState.tiktok.accounts.length;
+            return `
+            <div class="rt-item-row">
+              <span class="rt-cb" style="display:inline-flex; align-items:center; justify-content:center; background:${effDone?style.color:'var(--surface-2)'}; border:1.5px solid ${effDone?style.color:'var(--border-strong)'}; color:#fff; font-size:11px; font-weight:800;">${effDone?'✓':''}</span>
+              <span class="${effDone ? 'done-text' : ''}">${item.text} <span class="badge badge-neutral" style="margin-left:6px;">${total}/${target} posts · auto</span></span>
+            </div>`;
+          }
           const intervalBadge = item.intervalDays
             ? `<span class="badge badge-neutral" style="margin-left:8px;">🔁 a cada ${item.intervalDays}d${effDone ? ' · próxima ' + rtIntervalNextDueLabel(item) : ''}</span>`
             : '';
@@ -3142,8 +3159,7 @@ function rtAttachRoutineHandlers(){
     const ok = await confirmDialog('Fechar a semana?', `A semana está ${c.pct}% concluída. Isso reinicia todos os itens da rotina e do TikTok como pendentes.`, 'Fechar semana');
     if(!ok) return;
     await mtLogFechamento(c);
-    rtState.routine.categories.forEach(cat => cat.items.forEach(i => { if(!i.intervalDays) i.done = false; }));
-    Object.keys(rtState.tiktok.week).forEach(acc => rtState.tiktok.week[acc] = rtState.tiktok.week[acc].map(()=>false));
+    rtState.routine.categories.forEach(cat => cat.items.forEach(i => { if(!i.intervalDays && !i.computed) i.done = false; }));
     rtSave();
     rtRenderActive();
     showToast('Semana reiniciada');
@@ -3665,6 +3681,23 @@ function rtSemMarketing(){
 
 /* garante que o documento vindo do banco tenha todas as chaves
    que o render espera, mesmo que tenha sido salvo por uma versão antiga */
+function rtCurrentWeekKey(){
+  return dateKeyOf(startOfWeek(new Date()));
+}
+
+/* O grid de postagens do TikTok precisa acompanhar a semana civil (seg-dom)
+   sozinho, sem depender de alguém clicar em "Fechar semana e reiniciar" —
+   antes disso, ficava mostrando os posts da semana passada indefinidamente. */
+function rtEnsureTiktokWeek(){
+  if(!rtState.tiktok || !rtState.tiktok.week) return;
+  const key = rtCurrentWeekKey();
+  if(rtState.tiktok.weekKey !== key){
+    rtState.tiktok.weekKey = key;
+    Object.keys(rtState.tiktok.week).forEach(acc => { rtState.tiktok.week[acc] = rtState.tiktok.week[acc].map(()=>false); });
+    rtSave();
+  }
+}
+
 function rtEnsureShape(){
   const d = rtDefaultState();
   if(!rtState || typeof rtState !== 'object') rtState = d;
@@ -3673,6 +3706,7 @@ function rtEnsureShape(){
     rtState.marketing = { entries: [], weekOrder: [] };
   }
   if(!rtState.tiktok || !rtState.tiktok.week) rtState.tiktok = d.tiktok;
+  rtEnsureTiktokWeek();
 }
 
 async function rtLoad(){
