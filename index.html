@@ -1025,14 +1025,16 @@
             <div class="card">
               <div class="card-head">
                 <div>
-                  <div class="card-title">💰 Repasse Bravatto</div>
-                  <div class="card-desc">O fornecedor foi dividido: metade do valor do lote fica com a Bravatto. Registre o que foi pago pra acertar no mesmo dia.</div>
+                  <div class="card-title">💰 Pagamentos à Bravatto</div>
+                  <div class="card-desc">Fornecedor separado do Antonio — os pedidos deles não passam por aqui. Registre só o valor pago no dia.</div>
                 </div>
               </div>
               <div class="card-body">
-                <div id="brvResumo"></div>
-                <div class="rt-form-row" style="grid-template-columns:1fr auto; margin-top:14px; margin-bottom:0;">
-                  <label class="rt-label">Valor pago hoje à Bravatto (R$)
+                <div class="rt-form-row" style="grid-template-columns:1fr 1fr auto; margin-top:0; margin-bottom:0;">
+                  <label class="rt-label">Data
+                    <input type="date" id="brvDataInput" class="rt-input">
+                  </label>
+                  <label class="rt-label">Valor pago (R$)
                     <input type="number" id="brvValorInput" class="rt-input" step="0.01" min="0" placeholder="0,00">
                   </label>
                   <button class="btn btn-soft btn-sm" id="brvSalvarBtn">Registrar</button>
@@ -2386,85 +2388,47 @@ function refreshFornecedorView(){
   brvRender();
 }
 
-/* ---------- Bravatto: repasse diário (metade do valor do lote) ---------- */
+/* ---------- Bravatto: pagamentos diários (fornecedor separado, sem lotes) ---------- */
 let brvPagamentos = {}; // { dateKey: valorPago }
-
-function brvValorLoteDia(dateKey){
-  let total = 0;
-  history.forEach(h => {
-    if(h.dateKey !== dateKey) return;
-    const c = h.composicao || {};
-    Object.keys(c).forEach(modelo => {
-      const custo = custoMap[modelo];
-      if(typeof custo === 'number' && !isNaN(custo)) total += custo * c[modelo];
-    });
-  });
-  return total;
-}
-
-function brvDatasComLote(){
-  return [...new Set(history.map(h => h.dateKey))].filter(Boolean).sort().reverse();
-}
-
-function brvRenderResumo(){
-  const el = document.getElementById('brvResumo');
-  if(!el) return;
-  const hoje = todayKey();
-  const valorLote = brvValorLoteDia(hoje);
-  const devido = valorLote / 2;
-  const pago = brvPagamentos[hoje];
-  const temPago = typeof pago === 'number';
-  const diff = temPago ? pago - devido : null;
-  const diffColor = !temPago ? 'var(--faint)' : (Math.abs(diff) < 0.01 ? 'var(--accent-d)' : (diff < 0 ? 'var(--danger)' : 'var(--amber)'));
-  const diffLabel = !temPago ? '—' : (Math.abs(diff) < 0.01 ? 'bateu certinho' : (diff < 0 ? `falta ${fmtBRL(-diff)}` : `pago a mais ${fmtBRL(diff)}`));
-  el.innerHTML = `
-    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px;">
-      <div>
-        <div style="font-size:11px; color:var(--muted); font-weight:600;">Lote de hoje</div>
-        <div style="font-size:17px; font-weight:700; font-family:'JetBrains Mono',monospace;">${fmtBRL(valorLote)}</div>
-      </div>
-      <div>
-        <div style="font-size:11px; color:var(--muted); font-weight:600;">50% devido à Bravatto</div>
-        <div style="font-size:17px; font-weight:700; font-family:'JetBrains Mono',monospace; color:var(--accent-d);">${fmtBRL(devido)}</div>
-      </div>
-      <div>
-        <div style="font-size:11px; color:var(--muted); font-weight:600;">Diferença</div>
-        <div style="font-size:17px; font-weight:700; font-family:'JetBrains Mono',monospace; color:${diffColor};">${diffLabel}</div>
-      </div>
-    </div>`;
-  const input = document.getElementById('brvValorInput');
-  if(input && document.activeElement !== input) input.value = temPago ? pago.toFixed(2) : '';
-}
 
 function brvRenderHistorico(){
   const el = document.getElementById('brvHistorico');
   if(!el) return;
-  const datas = brvDatasComLote().slice(0, 10);
+  const datas = Object.keys(brvPagamentos).sort().reverse();
   if(datas.length === 0){
-    el.innerHTML = '<div class="empty-hint">Nenhum lote registrado ainda.</div>';
+    el.innerHTML = '<div class="empty-hint">Nenhum pagamento registrado ainda.</div>';
     return;
   }
-  el.innerHTML = datas.map(dk => {
-    const valorLote = brvValorLoteDia(dk);
-    const devido = valorLote / 2;
-    const pago = brvPagamentos[dk];
-    const temPago = typeof pago === 'number';
-    const diff = temPago ? pago - devido : null;
-    let badge;
-    if(!temPago) badge = '<span class="badge badge-neutral">sem registro</span>';
-    else if(Math.abs(diff) < 0.01) badge = '<span class="badge badge-good">✓ bateu</span>';
-    else if(diff < 0) badge = `<span class="badge badge-critical">falta ${fmtBRL(-diff)}</span>`;
-    else badge = `<span class="badge badge-warning">a mais ${fmtBRL(diff)}</span>`;
-    return `<div class="history-row">
+  el.innerHTML = datas.slice(0, 15).map(dk => `
+    <div class="history-row">
       <span class="d">${formatDateKeyToLabel(dk)}</span>
-      <span style="font-family:'JetBrains Mono',monospace; color:var(--muted); font-size:12px;">devido ${fmtBRL(devido)}</span>
-      ${badge}
-    </div>`;
-  }).join('');
+      <span class="n">${fmtBRL(brvPagamentos[dk])}</span>
+      <button class="del-x brv-del" data-date="${dk}" title="Excluir pagamento">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16zM10 11v6M14 11v6"/></svg>
+      </button>
+    </div>
+  `).join('');
+  el.querySelectorAll('.brv-del').forEach(btn => {
+    btn.addEventListener('click', async (e)=>{
+      const dk = e.currentTarget.dataset.date;
+      const ok = await confirmDialog(
+        'Excluir este pagamento?',
+        `Pagamento de ${formatDateKeyToLabel(dk)} — ${fmtBRL(brvPagamentos[dk])}. Essa ação não pode ser desfeita.`,
+        'Excluir pagamento'
+      );
+      if(!ok) return;
+      delete brvPagamentos[dk];
+      await store.set('pagamentos-bravatto', JSON.stringify(brvPagamentos));
+      brvRenderHistorico();
+      await sbDeletePagamentoBravatto(dk);
+      showToast('Pagamento excluído');
+    });
+  });
 }
 
 function brvRender(){
-  brvRenderResumo();
+  const dataInput = document.getElementById('brvDataInput');
+  if(dataInput && !dataInput.value) dataInput.value = todayKey();
   brvRenderHistorico();
 }
 
@@ -2476,10 +2440,13 @@ async function brvSalvarPagamento(dateKey, valor){
 }
 
 document.getElementById('brvSalvarBtn').addEventListener('click', async ()=>{
-  const input = document.getElementById('brvValorInput');
-  const valor = parseFloat(input.value);
+  const dataInput = document.getElementById('brvDataInput');
+  const valorInput = document.getElementById('brvValorInput');
+  const dateKey = dataInput.value || todayKey();
+  const valor = parseFloat(valorInput.value);
   if(isNaN(valor) || valor < 0){ showToast('Informe um valor válido'); return; }
-  await brvSalvarPagamento(todayKey(), valor);
+  await brvSalvarPagamento(dateKey, valor);
+  valorInput.value = '';
   showToast('Pagamento à Bravatto registrado');
 });
 
@@ -2638,6 +2605,11 @@ async function sbUpsertPagamentoBravatto(dateKey, valor){
   if(!sbConnected) return;
   const { error } = await sb.from('pagamentos_bravatto').upsert({ data: dateKey, valor_pago: valor, updated_at: new Date().toISOString() });
   syncLog(error ? `Falha ao gravar pagamento Bravatto: ${error.message}` : `Pagamento Bravatto gravado: ${dateKey} → R$ ${valor}`, error ? 'err' : 'ok');
+}
+async function sbDeletePagamentoBravatto(dateKey){
+  if(!sbConnected) return;
+  const { error } = await sb.from('pagamentos_bravatto').delete().eq('data', dateKey);
+  syncLog(error ? `Falha ao remover pagamento Bravatto: ${error.message}` : `Pagamento Bravatto removido: ${dateKey}`, error ? 'err' : 'ok');
 }
 
 function setupRealtime(){

@@ -19,7 +19,7 @@ rodar as migrations não vai ter o mesmo banco.
 | Produtos cadastrados para precificação (custo + taxa fixa) | `precificacao_produtos` | aba **Precificação** |
 | Histórico de fechamento semanal da rotina (% concluído, itens feitos/total) | `rotina_fechamentos` | aba **Rotina** (botão "Fechar semana e reiniciar") |
 | Faturamento oficial do mês (digitado à mão, fonte: Upseller) | `metas_faturamento` | aba **Metas** |
-| Valor pago à Bravatto por dia (fornecedor separado, metade do lote do dia) | `pagamentos_bravatto` | aba **Separador de Pedidos** |
+| Valor pago à Bravatto por dia (fornecedor separado do Antonio, sem lotes/etiquetas) | `pagamentos_bravatto` | aba **Separador de Pedidos** |
 
 O dashboard da aba **Relatórios** não tem tabela própria: ele deriva tudo de
 `lotes`, `custos` e `marketing_semanal`.

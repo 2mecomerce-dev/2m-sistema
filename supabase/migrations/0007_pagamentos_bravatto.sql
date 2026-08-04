@@ -1,12 +1,10 @@
 -- ============================================================
--- 0007 — Repasse diário para o fornecedor Bravatto
+-- 0007 — Pagamentos diários ao fornecedor Bravatto
 --
--- O fornecedor foi dividido: metade do valor de cada lote continua
--- indo pro fornecedor já cadastrado (custos/lotes), a outra metade
--- vai pra um segundo fornecedor (Bravatto), pago à parte. Essa
--- tabela guarda só o valor efetivamente pago à Bravatto em cada
--- dia, pra bater com o valor devido (metade do lote do dia) na
--- hora do acerto — que acontece no mesmo dia que os pedidos saem.
+-- Segundo fornecedor, independente do já cadastrado (Antonio, via
+-- custos/lotes). Os pedidos enviados à Bravatto não passam pelo
+-- separador de etiquetas — o app só guarda o valor efetivamente
+-- pago a eles em cada dia, pra manter o controle do repasse.
 -- ============================================================
 
 create table if not exists public.pagamentos_bravatto (
@@ -15,7 +13,7 @@ create table if not exists public.pagamentos_bravatto (
   updated_at  timestamptz   not null default now()
 );
 
-comment on table public.pagamentos_bravatto is 'Valor pago à Bravatto por dia. Fornecedor separado do de custos/lotes — recebe metade do valor do lote do dia.';
+comment on table public.pagamentos_bravatto is 'Valor pago à Bravatto por dia. Fornecedor separado do de custos/lotes — não tem lotes/composição, só o valor pago.';
 
 drop trigger if exists pagamentos_bravatto_touch on public.pagamentos_bravatto;
 create trigger pagamentos_bravatto_touch
