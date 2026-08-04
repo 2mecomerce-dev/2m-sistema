@@ -19,6 +19,7 @@ rodar as migrations não vai ter o mesmo banco.
 | Produtos cadastrados para precificação (custo + taxa fixa) | `precificacao_produtos` | aba **Precificação** |
 | Histórico de fechamento semanal da rotina (% concluído, itens feitos/total) | `rotina_fechamentos` | aba **Rotina** (botão "Fechar semana e reiniciar") |
 | Faturamento oficial do mês (digitado à mão, fonte: Upseller) | `metas_faturamento` | aba **Metas** |
+| Valor pago à Bravatto por dia (fornecedor separado, metade do lote do dia) | `pagamentos_bravatto` | aba **Separador de Pedidos** |
 
 O dashboard da aba **Relatórios** não tem tabela própria: ele deriva tudo de
 `lotes`, `custos` e `marketing_semanal`.
@@ -71,6 +72,7 @@ ordem, um de cada vez:
 4. `0004_precificacao.sql`
 5. `0005_metas.sql`
 6. `0006_metas_faturamento_manual.sql`
+7. `0007_pagamentos_bravatto.sql`
 
 Todos são idempotentes — rodar de novo num banco que já tem dados não apaga
 nada. A `0002` copia os lançamentos de marketing que hoje estão dentro do JSON

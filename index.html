@@ -1025,6 +1025,25 @@
             <div class="card">
               <div class="card-head">
                 <div>
+                  <div class="card-title">💰 Repasse Bravatto</div>
+                  <div class="card-desc">O fornecedor foi dividido: metade do valor do lote fica com a Bravatto. Registre o que foi pago pra acertar no mesmo dia.</div>
+                </div>
+              </div>
+              <div class="card-body">
+                <div id="brvResumo"></div>
+                <div class="rt-form-row" style="grid-template-columns:1fr auto; margin-top:14px; margin-bottom:0;">
+                  <label class="rt-label">Valor pago hoje à Bravatto (R$)
+                    <input type="number" id="brvValorInput" class="rt-input" step="0.01" min="0" placeholder="0,00">
+                  </label>
+                  <button class="btn btn-soft btn-sm" id="brvSalvarBtn">Registrar</button>
+                </div>
+                <div id="brvHistorico" style="margin-top:14px;"></div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <div>
                   <div class="card-title">Volume por dia</div>
                   <div class="card-desc">Pares separados nos últimos dias.</div>
                 </div>
@@ -1416,6 +1435,10 @@ async function loadData(){
     history = v ? JSON.parse(v) : [];
   }catch(e){ history = []; }
   await loadCustoMap();
+  try{
+    const v = await store.get('pagamentos-bravatto');
+    brvPagamentos = v ? JSON.parse(v) : {};
+  }catch(e){ brvPagamentos = {}; }
 
   // 2. Renderizar com dados locais
   renderAliasTable();
@@ -2360,7 +2383,105 @@ function refreshFornecedorView(){
   renderFornecedorTable();
   renderCustoTable();
   repRefreshIfActive();
+  brvRender();
 }
+
+/* ---------- Bravatto: repasse diário (metade do valor do lote) ---------- */
+let brvPagamentos = {}; // { dateKey: valorPago }
+
+function brvValorLoteDia(dateKey){
+  let total = 0;
+  history.forEach(h => {
+    if(h.dateKey !== dateKey) return;
+    const c = h.composicao || {};
+    Object.keys(c).forEach(modelo => {
+      const custo = custoMap[modelo];
+      if(typeof custo === 'number' && !isNaN(custo)) total += custo * c[modelo];
+    });
+  });
+  return total;
+}
+
+function brvDatasComLote(){
+  return [...new Set(history.map(h => h.dateKey))].filter(Boolean).sort().reverse();
+}
+
+function brvRenderResumo(){
+  const el = document.getElementById('brvResumo');
+  if(!el) return;
+  const hoje = todayKey();
+  const valorLote = brvValorLoteDia(hoje);
+  const devido = valorLote / 2;
+  const pago = brvPagamentos[hoje];
+  const temPago = typeof pago === 'number';
+  const diff = temPago ? pago - devido : null;
+  const diffColor = !temPago ? 'var(--faint)' : (Math.abs(diff) < 0.01 ? 'var(--accent-d)' : (diff < 0 ? 'var(--danger)' : 'var(--amber)'));
+  const diffLabel = !temPago ? '—' : (Math.abs(diff) < 0.01 ? 'bateu certinho' : (diff < 0 ? `falta ${fmtBRL(-diff)}` : `pago a mais ${fmtBRL(diff)}`));
+  el.innerHTML = `
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px;">
+      <div>
+        <div style="font-size:11px; color:var(--muted); font-weight:600;">Lote de hoje</div>
+        <div style="font-size:17px; font-weight:700; font-family:'JetBrains Mono',monospace;">${fmtBRL(valorLote)}</div>
+      </div>
+      <div>
+        <div style="font-size:11px; color:var(--muted); font-weight:600;">50% devido à Bravatto</div>
+        <div style="font-size:17px; font-weight:700; font-family:'JetBrains Mono',monospace; color:var(--accent-d);">${fmtBRL(devido)}</div>
+      </div>
+      <div>
+        <div style="font-size:11px; color:var(--muted); font-weight:600;">Diferença</div>
+        <div style="font-size:17px; font-weight:700; font-family:'JetBrains Mono',monospace; color:${diffColor};">${diffLabel}</div>
+      </div>
+    </div>`;
+  const input = document.getElementById('brvValorInput');
+  if(input && document.activeElement !== input) input.value = temPago ? pago.toFixed(2) : '';
+}
+
+function brvRenderHistorico(){
+  const el = document.getElementById('brvHistorico');
+  if(!el) return;
+  const datas = brvDatasComLote().slice(0, 10);
+  if(datas.length === 0){
+    el.innerHTML = '<div class="empty-hint">Nenhum lote registrado ainda.</div>';
+    return;
+  }
+  el.innerHTML = datas.map(dk => {
+    const valorLote = brvValorLoteDia(dk);
+    const devido = valorLote / 2;
+    const pago = brvPagamentos[dk];
+    const temPago = typeof pago === 'number';
+    const diff = temPago ? pago - devido : null;
+    let badge;
+    if(!temPago) badge = '<span class="badge badge-neutral">sem registro</span>';
+    else if(Math.abs(diff) < 0.01) badge = '<span class="badge badge-good">✓ bateu</span>';
+    else if(diff < 0) badge = `<span class="badge badge-critical">falta ${fmtBRL(-diff)}</span>`;
+    else badge = `<span class="badge badge-warning">a mais ${fmtBRL(diff)}</span>`;
+    return `<div class="history-row">
+      <span class="d">${formatDateKeyToLabel(dk)}</span>
+      <span style="font-family:'JetBrains Mono',monospace; color:var(--muted); font-size:12px;">devido ${fmtBRL(devido)}</span>
+      ${badge}
+    </div>`;
+  }).join('');
+}
+
+function brvRender(){
+  brvRenderResumo();
+  brvRenderHistorico();
+}
+
+async function brvSalvarPagamento(dateKey, valor){
+  brvPagamentos[dateKey] = valor;
+  await store.set('pagamentos-bravatto', JSON.stringify(brvPagamentos));
+  brvRender();
+  await sbUpsertPagamentoBravatto(dateKey, valor);
+}
+
+document.getElementById('brvSalvarBtn').addEventListener('click', async ()=>{
+  const input = document.getElementById('brvValorInput');
+  const valor = parseFloat(input.value);
+  if(isNaN(valor) || valor < 0){ showToast('Informe um valor válido'); return; }
+  await brvSalvarPagamento(todayKey(), valor);
+  showToast('Pagamento à Bravatto registrado');
+});
 
 document.getElementById('periodTabs').addEventListener('click', (e)=>{
   const btn = e.target.closest('.ptab');
@@ -2436,12 +2557,13 @@ async function sbPing(){
 }
 
 async function sbPullAll(){
-  const [aliasesRes, custosRes, lotesRes] = await Promise.all([
+  const [aliasesRes, custosRes, lotesRes, pagamentosBravattoRes] = await Promise.all([
     sb.from('apelidos').select('sku,apelido'),
     sb.from('custos').select('modelo,custo'),
-    sb.from('lotes').select('id,date_key,date_label,total,composicao,timestamp_ms,backdated')
+    sb.from('lotes').select('id,date_key,date_label,total,composicao,timestamp_ms,backdated'),
+    sb.from('pagamentos_bravatto').select('data,valor_pago')
   ]);
-  if(aliasesRes.error || custosRes.error || lotesRes.error){
+  if(aliasesRes.error || custosRes.error || lotesRes.error || pagamentosBravattoRes.error){
     syncLog('Falha ao puxar dados do Supabase.','err');
     return false;
   }
@@ -2456,6 +2578,10 @@ async function sbPullAll(){
 
   history = lotesRes.data.map(loteRowToHistoryItem);
   await store.set('history', JSON.stringify(history));
+
+  brvPagamentos = {};
+  pagamentosBravattoRes.data.forEach(r => { brvPagamentos[r.data] = Number(r.valor_pago); });
+  await store.set('pagamentos-bravatto', JSON.stringify(brvPagamentos));
 
   if(rtInitialized){
     await mkLoad();
@@ -2508,6 +2634,11 @@ async function sbDeleteLote(id){
   const { error } = await sb.from('lotes').delete().eq('id', id);
   syncLog(error ? `Falha ao remover lote: ${error.message}` : `Lote removido: ${id}`, error ? 'err' : 'ok');
 }
+async function sbUpsertPagamentoBravatto(dateKey, valor){
+  if(!sbConnected) return;
+  const { error } = await sb.from('pagamentos_bravatto').upsert({ data: dateKey, valor_pago: valor, updated_at: new Date().toISOString() });
+  syncLog(error ? `Falha ao gravar pagamento Bravatto: ${error.message}` : `Pagamento Bravatto gravado: ${dateKey} → R$ ${valor}`, error ? 'err' : 'ok');
+}
 
 function setupRealtime(){
   sb.channel('public:apelidos')
@@ -2543,6 +2674,15 @@ function setupRealtime(){
       renderHistory();
       updateTodayLabel();
       refreshFornecedorView();
+    })
+    .subscribe();
+
+  sb.channel('public:pagamentos_bravatto')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'pagamentos_bravatto' }, (payload) => {
+      if(payload.eventType === 'DELETE'){ delete brvPagamentos[payload.old.data]; }
+      else { brvPagamentos[payload.new.data] = Number(payload.new.valor_pago); }
+      store.set('pagamentos-bravatto', JSON.stringify(brvPagamentos));
+      brvRender();
     })
     .subscribe();
 }
