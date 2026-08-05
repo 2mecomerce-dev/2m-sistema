@@ -1604,6 +1604,11 @@ document.getElementById('btnAddAlias').addEventListener('click', async ()=>{
 const CORES_BASE = ['MARROM','PRETO','AZUL','BRANCO','VERDE','VERMELHO','AMARELO','CINZA',
   'BEGE','CARAMELO','CAQUI','VINHO','LARANJA','ROSA','DOURADO','PRATA','NUDE'];
 
+// Apelidos de produtos que não são calçados (kits, acessórios) — não têm
+// numeração nem cor de par, então a lista de separação mostra só
+// "(qtd) Apelido", sem tentar casar cor/tamanho.
+const APELIDOS_SEM_VARIACAO = ['KIT GRIP'];
+
 function splitConcat(s){
   return s.replace(/([a-zà-ÿ])([A-ZÀ-Ý])/g, '$1 $2');
 }
@@ -1857,6 +1862,7 @@ function sugerirApelido(descricao){
     { palavras: ['TEXANA', 'COWBOY'], apelido: '070' },
     { palavras: ['BLOGUEIRA', 'FEMININA CANO'], apelido: '207' },
     { palavras: ['COTURNO'], apelido: 'COTURNO' },
+    { palavras: ['GRIP', 'LUVA ACADEMIA'], apelido: 'KIT GRIP' },
   ];
   for(const regra of regras){
     for(const palavra of regra.palavras){
@@ -1869,6 +1875,7 @@ function sugerirApelido(descricao){
 function buildItemLabel(o){
   const apelido = aliasMap[o.sku];
   if(!apelido) return null;
+  if(APELIDOS_SEM_VARIACAO.includes(apelido)) return apelido;
   return o.cor ? `${apelido} ${o.cor} (${o.tamanho})` : `${apelido} (${o.tamanho})`;
 }
 
@@ -1918,7 +1925,9 @@ function buildOrderedTicket(orders){
       for(let k = 0; k < qty; k++) pendingSkus[o.sku].samples.push(sample);
       return;
     }
-    const base = o.cor ? `${apelido} ${o.cor} (${o.tamanho})` : `${apelido} (${o.tamanho})`;
+    const base = APELIDOS_SEM_VARIACAO.includes(apelido)
+      ? apelido
+      : (o.cor ? `${apelido} ${o.cor} (${o.tamanho})` : `${apelido} (${o.tamanho})`);
     const label = qty > 1 ? `(${qty}) ${base}` : base;
     lines.push({ label, bold: qty > 1 });
     distinct.add(base);
