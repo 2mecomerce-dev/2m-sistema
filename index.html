@@ -1890,20 +1890,27 @@ function buildOrderedTicket(orders){
     if(o.group){
       const parts = [];
       let groupQty = 0;
-      let allResolved = true;
+      const semVariacaoContagem = {}; // apelido → qty, pra somar repetições (ex: 2x Kit Grip na mesma etiqueta) em vez de listar duplicado
       o.group.forEach(item => {
-        const lbl = buildItemLabel(item);
-        if(!lbl){
-          allResolved = false;
+        const apelido = aliasMap[item.sku];
+        if(!apelido){
           const sample = `${item.cor || ''} ${item.tamanho || ''}`.trim();
           if(!pendingSkus[item.sku]){
             pendingSkus[item.sku] = { samples: [], descricao: item.descricao || '', sugestao: sugerirApelido(item.descricao) };
           }
           pendingSkus[item.sku].samples.push(sample);
-        } else {
-          parts.push(lbl);
-          groupQty += (item.qty || 1);
+          return;
         }
+        groupQty += (item.qty || 1);
+        if(APELIDOS_SEM_VARIACAO.includes(apelido)){
+          semVariacaoContagem[apelido] = (semVariacaoContagem[apelido] || 0) + (item.qty || 1);
+        } else {
+          parts.push(buildItemLabel(item));
+        }
+      });
+      Object.keys(semVariacaoContagem).forEach(apelido => {
+        const n = semVariacaoContagem[apelido];
+        parts.push(n > 1 ? `(${n}) ${apelido}` : apelido);
       });
       if(parts.length > 0){
         const label = parts.join(' + ');
