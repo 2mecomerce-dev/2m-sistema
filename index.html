@@ -1674,7 +1674,11 @@ async function extractOrderFromPage(page){
     // Método 1: SKU colado com texto (ex: "1734428091Botina")
     const m1 = it.text.match(/(\d{10})[A-Za-zÀ-ÿ]/);
     if(m1){
-      if(!allSkuItems.some(s => s.sku === m1[1] && Math.abs(s.x0 - it.x0) < 5)){
+      // Só é duplicata se x E y baterem (mesmo texto renderizado 2x no mesmo
+      // ponto) — mesma coluna (x) em linhas diferentes (top) é outro produto,
+      // mesmo quando o SKU repete (ex.: Shopee reaproveita o SKU entre
+      // variações de cor de um mesmo kit, diferenciando só pela Variação).
+      if(!allSkuItems.some(s => s.sku === m1[1] && Math.abs(s.x0 - it.x0) < 5 && Math.abs(s.top - it.top) < 5)){
         allSkuItems.push({ sku: m1[1], x0: it.x0, top: it.top });
       }
       return;
@@ -1682,7 +1686,7 @@ async function extractOrderFromPage(page){
     // Método 2: SKU como número solto de 10 dígitos na coluna da tabela
     if(/^\d{10}$/.test(it.text.trim()) && it.x0 < headerX - 2){
       const skuVal = it.text.trim();
-      if(!allSkuItems.some(s => s.sku === skuVal && Math.abs(s.x0 - it.x0) < 5)){
+      if(!allSkuItems.some(s => s.sku === skuVal && Math.abs(s.x0 - it.x0) < 5 && Math.abs(s.top - it.top) < 5)){
         allSkuItems.push({ sku: skuVal, x0: it.x0, top: it.top });
       }
     }
@@ -1746,7 +1750,14 @@ async function extractOrderFromPage(page){
     if(resultados.length > 1 && resultados.every(r => r.tamanho === '?')){
       const coresUnicas = [...new Set(resultados.map(r => r.cor).filter(Boolean))];
       const tamanhoUnico = extrairCorTamanho(cand.map(it => splitConcat(it.text)).join(' ')).tamanho;
-      return [{ sku: resultados[0].sku, cor: coresUnicas.join(' E '), tamanho: tamanhoUnico, qty, descricao: descricaoRaw }];
+      // Quando o SKU é IGUAL em todas as linhas (ex.: Shopee reaproveita o
+      // mesmo SKU entre variações de cor de um kit, diferenciando só pela
+      // Variação), cada linha detectada é uma unidade real — soma a
+      // quantidade em vez de confiar no QTD lido perto do cabeçalho, que só
+      // pega a linha mais próxima e erra a soma quando há mais de uma linha.
+      const skusIguais = new Set(resultados.map(r => r.sku)).size === 1;
+      const qtyFinal = skusIguais ? resultados.reduce((sum, r) => sum + (r.qty || 1), 0) : qty;
+      return [{ sku: resultados[0].sku, cor: coresUnicas.join(' E '), tamanho: tamanhoUnico, qty: qtyFinal, descricao: descricaoRaw }];
     }
 
     return resultados;
