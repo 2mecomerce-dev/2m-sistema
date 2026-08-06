@@ -4964,20 +4964,26 @@ function mtMonthMetrics(year, month){
     const d = new Date(f.fechado_em);
     return d.getFullYear() === year && d.getMonth() === month;
   });
-  const pctPoints = fechamentosMes.map(f => Number(f.pct_concluido));
 
-  // No mês corrente, soma o checklist em andamento (ainda não fechado) —
-  // não precisa esperar "Fechar semana" pra ver o número mexer.
+  // A meta é mensal, então soma itens feitos / itens totais de TODAS as
+  // semanas do mês (não a média das porcentagens semanais — isso distorceria
+  // o número quando as semanas têm quantidades de itens diferentes).
+  let itensFeitos = fechamentosMes.reduce((s,f) => s + Number(f.itens_feitos), 0);
+  let itensTotalMes = fechamentosMes.reduce((s,f) => s + Number(f.itens_total), 0);
+
+  // No mês corrente, soma também o checklist da semana em andamento (ainda
+  // não fechado) — não precisa esperar "Fechar semana" pra ver o número mexer.
   const now = new Date();
   const isMesAtual = year === now.getFullYear() && month === now.getMonth();
   if(isMesAtual && rtState.routine && rtState.routine.categories){
     const live = rtComputeRoutineCompletion();
-    if(live.total > 0) pctPoints.push(live.pct);
+    if(live.total > 0){
+      itensFeitos += live.done;
+      itensTotalMes += live.total;
+    }
   }
 
-  const atividadesPct = pctPoints.length
-    ? pctPoints.reduce((s,p)=>s+p,0) / pctPoints.length
-    : null;
+  const atividadesPct = itensTotalMes > 0 ? (itensFeitos / itensTotalMes) * 100 : null;
 
   return { faturamento, cpa, atividadesPct };
 }
