@@ -709,6 +709,9 @@
   .rt-item-row{display:flex; align-items:center; gap:11px; padding:9px 0; border-top:1px dashed var(--border); font-size:13px;}
   .rt-item-row:first-child{border-top:none;}
   .rt-item-row .done-text{text-decoration:line-through; color:var(--faint);}
+  .rt-item-row > span:nth-child(2){flex:1;}
+  .rt-item-delete{background:none; border:none; color:var(--faint); font-size:16px; line-height:1; cursor:pointer; padding:2px 4px; flex-shrink:0;}
+  .rt-item-delete:hover{color:var(--danger);}
   .rt-add-row{display:flex; gap:8px; margin-top:10px;}
 
   .rt-kanban{display:grid; grid-template-columns:repeat(4,1fr); gap:16px;}
@@ -2972,7 +2975,6 @@ function rtDefaultCategories(){
     { name:"Análise de Dados", items:[
       "Revisar taxa de conversão da semana",
       "Revisar ticket médio",
-      "Revisar taxa de abandono de carrinho",
       "Comparar desempenho com a semana anterior",
     ]},
     { name:"Marketing (resumo operacional)", items:[
@@ -2980,7 +2982,7 @@ function rtDefaultCategories(){
       "Pausar ou ajustar anúncios abaixo da meta",
       "Planejar pautas de conteúdo/postagens da semana",
       "Revisar concorrência (preços, promoções, novidades)",
-      "Conferir valor de saldo",
+      { text:"Conferir campanhas de ads", intervalDays:2 },
       "Gravação de vídeos de produtos",
       "Estratégia de impulsionamento dos vídeos",
       { text:"Postar 9 vídeos no TikTok na semana (3 contas × 3 posts)", computed:'tiktok' },
@@ -3319,6 +3321,7 @@ function rtAttachRoutineHandlers(){
             <div class="rt-item-row">
               <span class="rt-cb" style="display:inline-flex; align-items:center; justify-content:center; background:${effDone?style.color:'var(--surface-2)'}; border:1.5px solid ${effDone?style.color:'var(--border-strong)'}; color:#fff; font-size:11px; font-weight:800;">${effDone?'✓':''}</span>
               <span class="${effDone ? 'done-text' : ''}">${item.text} <span class="badge badge-neutral" style="margin-left:6px;">${total}/${target} posts · auto</span></span>
+              <button type="button" class="rt-item-delete" data-cat="${ci}" data-id="${item.id}" title="Excluir item">×</button>
             </div>`;
           }
           const intervalBadge = item.intervalDays
@@ -3328,6 +3331,7 @@ function rtAttachRoutineHandlers(){
           <div class="rt-item-row">
             <input type="checkbox" class="rt-cb rt-routine-check" data-cat="${ci}" data-id="${item.id}" ${effDone?'checked':''} style="accent-color:${style.color};">
             <span class="${effDone ? 'done-text' : ''}">${item.text}${intervalBadge}</span>
+            <button type="button" class="rt-item-delete" data-cat="${ci}" data-id="${item.id}" title="Excluir item">×</button>
           </div>`;
         }).join('')}
         <form class="rt-add-item-form rt-add-row" data-cat="${ci}">
@@ -3371,6 +3375,16 @@ function rtAttachRoutineHandlers(){
       rtRenderActive();
     });
   });
+  wrap.querySelectorAll('.rt-item-delete').forEach(btn => {
+    btn.addEventListener('click', async ()=>{
+      const ci = btn.dataset.cat, id = btn.dataset.id;
+      const ok = await confirmDialog('Excluir item?', 'Isso remove o item da lista de rotina desta categoria.', 'Excluir');
+      if(!ok) return;
+      rtState.routine.categories[ci].items = rtState.routine.categories[ci].items.filter(i=>i.id!==id);
+      rtSave();
+      rtRenderActive();
+    });
+  });
 
   document.getElementById('rtCloseWeekBtn').addEventListener('click', async ()=>{
     const c = rtComputeRoutineCompletion();
@@ -3378,6 +3392,7 @@ function rtAttachRoutineHandlers(){
     if(!ok) return;
     await mtLogFechamento(c);
     rtState.routine.categories.forEach(cat => cat.items.forEach(i => { if(!i.intervalDays && !i.computed) i.done = false; }));
+    rtState.tiktok.accounts.forEach(acc => { rtState.tiktok.week[acc] = rtState.tiktok.days.map(()=>false); });
     rtSave();
     rtRenderActive();
     showToast('Semana reiniciada');
