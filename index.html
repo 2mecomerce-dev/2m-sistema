@@ -5021,6 +5021,27 @@ async function mtSaveFaturamento(year, month, valor){
   if(error) syncLog('Metas: ' + error.message, 'err');
 }
 
+// Teste da integração com a Upseller (proxy em /api/upseller-lucro, ver
+// api/upseller-lucro.js). So preenche o campo — nao salva sozinho, pra
+// sempre passar por conferencia humana antes de virar o numero oficial.
+async function mtFetchUpsellerFaturamento(year, month){
+  const inicio = dateKeyOf(new Date(year, month, 1));
+  const fim = todayKey();
+  const statusEl = document.getElementById('mtUpsellerStatus');
+  if(statusEl) statusEl.textContent = 'Buscando na Upseller…';
+  try{
+    const resp = await fetch(`/api/upseller-lucro?platform=shopee&beginDate=${inicio}&endDate=${fim}`);
+    const json = await resp.json();
+    if(!resp.ok || json.code !== 0) throw new Error(json.error || json.msg || 'Falha ao consultar a Upseller');
+    const recebimento = Number(json.data && json.data.orderRevenue) || 0;
+    const input = document.getElementById('mtFaturamentoInput');
+    if(input) input.value = recebimento.toFixed(2);
+    if(statusEl) statusEl.textContent = `✓ Shopee: ${fmtBRL(recebimento)} recebidos entre ${formatDateKeyToLabel(inicio)} e ${formatDateKeyToLabel(fim)} — confira e clique em "Salvar faturamento".`;
+  }catch(e){
+    if(statusEl) statusEl.textContent = '✕ ' + e.message;
+  }
+}
+
 function mtMonthMetrics(year, month){
   // Faturamento é digitado à mão (fonte: Upseller) — não é somado das
   // entradas semanais de Marketing, que medem investimento em mídia,
@@ -5101,11 +5122,15 @@ function mtRenderMesAtual(m){
         : `<span class="badge badge-neutral">Nenhum nível ainda</span>`}
     </div>
     <div class="card-body">
-      <div class="rt-form-row" style="grid-template-columns:1fr auto; margin-top:0; margin-bottom:20px; align-items:end;">
+      <div class="rt-form-row" style="grid-template-columns:1fr auto; margin-top:0; margin-bottom:10px; align-items:end;">
         <label class="rt-label">Faturamento oficial do mês (Upseller)
           <input type="number" step="0.01" id="mtFaturamentoInput" class="rt-input" value="${metrics.faturamento || ''}" placeholder="0,00">
         </label>
         <button class="btn btn-accent" id="mtFaturamentoBtn" data-year="${m.year}" data-month="${m.month}">Salvar faturamento</button>
+      </div>
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:20px;">
+        <button class="btn btn-soft btn-sm" id="mtBuscarUpsellerBtn" data-year="${m.year}" data-month="${m.month}">🔄 Buscar da Upseller (Shopee · teste)</button>
+        <span id="mtUpsellerStatus" style="font-size:12px; color:var(--muted);"></span>
       </div>
       <div class="mt-progress-grid">
         <div>
@@ -5331,6 +5356,12 @@ function mtRender(){
       await mtSaveFaturamento(year, month, valor);
       showToast('Faturamento do mês atualizado');
       mtRender();
+    });
+  }
+  const btnUp = document.getElementById('mtBuscarUpsellerBtn');
+  if(btnUp){
+    btnUp.addEventListener('click', ()=>{
+      mtFetchUpsellerFaturamento(Number(btnUp.dataset.year), Number(btnUp.dataset.month));
     });
   }
 }
