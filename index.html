@@ -5406,10 +5406,16 @@ async function mtInit(){
 /* ═══════════════════════════════════════════════════════
    VALOR A RECEBER — integração (em teste) com a Upseller
    Busca o relatório de Lucro por Pedido via o proxy em
-   /api/upseller-lucro (ver api/upseller-lucro.js). Só a Shopee está
-   ligada por enquanto; TikTok Shop e Mercado Livre entram depois de
-   confirmar que esse pipeline funciona de verdade.
+   /api/upseller-lucro (ver api/upseller-lucro.js), somando Shopee e
+   TikTok Shop (todas as lojas). Só o recebimento líquido por
+   enquanto — o cálculo de lucro real (descontando fornecedor, mídia
+   e custos fixos) entra depois que essa parte estiver validada.
    ═══════════════════════════════════════════════════════ */
+
+const VR_PLATAFORMAS = [
+  { key: 'shopee', nome: 'Shopee' },
+  { key: 'tiktok', nome: 'TikTok Shop' },
+];
 
 let vrPeriod = 'mes'; // 'hoje' | 'semana' | 'mes' | 'custom'
 let vrCustomRange = { from: null, to: null };
@@ -5438,7 +5444,7 @@ function vrRender(){
       <div class="card-head">
         <div>
           <div class="card-title">💰 Valor a Receber — Upseller</div>
-          <div class="card-desc">Valor líquido recebido (já com comissão, frete, taxas e devolução descontados), direto da Upseller, menos nosso custo de fornecedor e mídia paga = Lucro Real do período. Atualiza sozinho ao abrir a aba — troque o período só se quiser olhar uma data específica. Em teste — por enquanto só a Shopee está ligada.</div>
+          <div class="card-desc">Valor líquido recebido (já com comissão, frete, taxas e devolução descontados), somando todas as lojas — Shopee e TikTok Shop. Atualiza sozinho ao abrir a aba — troque o período só se quiser olhar uma data específica.</div>
         </div>
       </div>
       <div class="card-body">
@@ -5480,42 +5486,6 @@ function vrRender(){
   vrBuscar(); // busca automática ao abrir a aba, sem precisar clicar em nada
 }
 
-// Custo do fornecedor Antonio no período: pares separados (lotes) × custo
-// cadastrado por modelo — é o mesmo cálculo usado na aba Fornecedor
-// (valor devido pelo volume vendido, não necessariamente já pago).
-function vrSumFornecedorNoPeriodo(from, to){
-  let total = 0;
-  history.forEach(h => {
-    if(h.dateKey < from || h.dateKey > to) return;
-    const c = h.composicao || {};
-    Object.keys(c).forEach(modelo => {
-      const custo = custoMap[modelo];
-      if(typeof custo === 'number' && !isNaN(custo)) total += custo * c[modelo];
-    });
-  });
-  return total;
-}
-
-// Valor efetivamente pago à Bravatto no período (aba Separador de Pedidos).
-function vrSumBravattoNoPeriodo(from, to){
-  let total = 0;
-  Object.keys(brvPagamentos).forEach(dk => {
-    if(dk >= from && dk <= to) total += brvPagamentos[dk];
-  });
-  return total;
-}
-
-// Investimento em mídia paga no período (aba Marketing & TikTok).
-function vrSumMidiaNoPeriodo(from, to){
-  const entries = (rtState.marketing && rtState.marketing.entries) ? rtState.marketing.entries : [];
-  let total = 0;
-  entries.forEach(e => {
-    const ref = e.dateTo || e.dateFrom;
-    if(ref && ref >= from && ref <= to) total += (e.invest || 0);
-  });
-  return total;
-}
-
 async function vrBuscar(){
   const { from, to, label } = vrGetPeriodRange();
   const statusEl = document.getElementById('vrStatus');
@@ -5525,62 +5495,53 @@ async function vrBuscar(){
   statusEl.textContent = `Buscando na Upseller — ${label}…`;
   resultEl.innerHTML = '';
   try{
-    const resp = await fetch(`/api/upseller-lucro?platform=shopee&beginDate=${from}&endDate=${to}`);
-    const json = await resp.json();
-    if(!resp.ok || json.code !== 0) throw new Error(json.error || json.msg || 'Falha ao consultar a Upseller');
+    const respostas = await Promise.all(VR_PLATAFORMAS.map(async p => {
+      const resp = await fetch(`/api/upseller-lucro?platform=${p.key}&beginDate=${from}&endDate=${to}`);
+      const json = await resp.json();
+      if(!resp.ok || json.code !== 0) throw new Error(`${p.nome}: ${json.error || json.msg || 'falha ao consultar'}`);
+      const d = json.data || {};
+      return {
+        nome: p.nome,
+        valorPedido: Number(d.orderAmount) || 0,
+        vendasProdutos: Number(d.itemSale) || 0,
+        recebimento: Number(d.orderRevenue) || 0, // já vem líquido de devolução, confirmado com pedido real reembolsado
+        devolvido: Number(d.buyerRefundAmount) || 0,
+      };
+    }));
 
-    const d = json.data || {};
-    const valorPedido = Number(d.orderAmount) || 0;
-    const vendasProdutos = Number(d.itemSale) || 0;
-    const recebimento = Number(d.orderRevenue) || 0; // já vem líquido de devolução, confirmado com pedido real reembolsado
-    const devolvido = Number(d.buyerRefundAmount) || 0;
+    const totalValorPedido = respostas.reduce((s,p)=>s+p.valorPedido, 0);
+    const totalVendas = respostas.reduce((s,p)=>s+p.vendasProdutos, 0);
+    const totalRecebimento = respostas.reduce((s,p)=>s+p.recebimento, 0);
+    const totalDevolvido = respostas.reduce((s,p)=>s+p.devolvido, 0);
     const now = new Date();
 
-    const custoFornecedor = vrSumFornecedorNoPeriodo(from, to);
-    const custoBravatto = vrSumBravattoNoPeriodo(from, to);
-    const midia = vrSumMidiaNoPeriodo(from, to);
-    const lucroReal = recebimento - custoFornecedor - custoBravatto - midia;
-
-    statusEl.textContent = `✓ Atualizado agora · Shopee · ${label}`;
+    statusEl.textContent = `✓ Atualizado agora · ${VR_PLATAFORMAS.map(p=>p.nome).join(' + ')} · ${label}`;
     resultEl.innerHTML = `
       <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:16px;">
         <div>
           <div style="font-size:11px; color:var(--muted); font-weight:600;">Valor do pedido</div>
-          <div style="font-size:19px; font-weight:700; font-family:'JetBrains Mono',monospace;">${fmtBRL(valorPedido)}</div>
+          <div style="font-size:19px; font-weight:700; font-family:'JetBrains Mono',monospace;">${fmtBRL(totalValorPedido)}</div>
         </div>
         <div>
           <div style="font-size:11px; color:var(--muted); font-weight:600;">Vendas de produtos</div>
-          <div style="font-size:19px; font-weight:700; font-family:'JetBrains Mono',monospace;">${fmtBRL(vendasProdutos)}</div>
+          <div style="font-size:19px; font-weight:700; font-family:'JetBrains Mono',monospace;">${fmtBRL(totalVendas)}</div>
         </div>
         <div>
           <div style="font-size:11px; color:var(--muted); font-weight:600;">Recebimento líquido</div>
-          <div style="font-size:19px; font-weight:700; font-family:'JetBrains Mono',monospace; color:var(--accent-d);">${fmtBRL(recebimento)}</div>
-          ${devolvido > 0 ? `<div style="font-size:10.5px; color:var(--danger);">já descontando ${fmtBRL(devolvido)} de devolução</div>` : ''}
+          <div style="font-size:19px; font-weight:700; font-family:'JetBrains Mono',monospace; color:var(--accent-d);">${fmtBRL(totalRecebimento)}</div>
+          ${totalDevolvido > 0 ? `<div style="font-size:10.5px; color:var(--danger);">já descontando ${fmtBRL(totalDevolvido)} de devolução</div>` : ''}
         </div>
       </div>
-
-      <div class="card" style="margin-top:20px; margin-bottom:0; background:var(--surface-2); box-shadow:none;">
-        <div class="card-body">
-          <div style="font-size:13px; font-weight:700; margin-bottom:10px;">🧮 Lucro Real do período — ${label}</div>
-          <div class="history-row"><span>Recebimento líquido (Shopee, já com devolução)</span><span class="n" style="color:var(--accent-d);">+ ${fmtBRL(recebimento)}</span></div>
-          <div class="history-row"><span>Fornecedor Antonio (devido no período)</span><span class="n" style="color:var(--danger);">− ${fmtBRL(custoFornecedor)}</span></div>
-          <div class="history-row"><span>Fornecedor Bravatto (pago no período)</span><span class="n" style="color:var(--danger);">− ${fmtBRL(custoBravatto)}</span></div>
-          <div class="history-row"><span>Investimento em mídia paga</span><span class="n" style="color:var(--danger);">− ${fmtBRL(midia)}</span></div>
-          <div class="history-row" style="border-top:2px solid var(--border-strong); margin-top:4px; padding-top:14px;">
-            <span style="font-weight:700;">Lucro Real</span>
-            <span class="n" style="font-size:21px; color:${lucroReal>=0?'var(--accent-d)':'var(--danger)'};">${fmtBRL(lucroReal)}</span>
-          </div>
-        </div>
+      <div style="margin-top:16px;">
+        ${respostas.map(p => `<div class="history-row"><span>${p.nome}</span><span class="n">${fmtBRL(p.recebimento)}</span></div>`).join('')}
       </div>
-      <div style="font-size:11px; color:var(--faint); margin-top:10px; line-height:1.5;">⚠️ Hoje só considera a Shopee — TikTok Shop e Mercado Livre entram assim que conectarmos. Ainda não quebra por produto, só o total do período.</div>
-
       <div class="rt-form-row" style="grid-template-columns:1fr auto; margin-top:18px; margin-bottom:0; align-items:center;">
         <div style="font-size:12.5px; color:var(--muted);">Usar o recebimento líquido como faturamento do mês atual em Metas?</div>
         <button class="btn btn-soft btn-sm" id="vrUsarEmMetasBtn">Usar em Metas</button>
       </div>`;
 
     document.getElementById('vrUsarEmMetasBtn').addEventListener('click', async ()=>{
-      await mtSaveFaturamento(now.getFullYear(), now.getMonth(), recebimento);
+      await mtSaveFaturamento(now.getFullYear(), now.getMonth(), totalRecebimento);
       showToast('Faturamento do mês atualizado em Metas');
     });
   }catch(e){
@@ -5588,9 +5549,7 @@ async function vrBuscar(){
   }
 }
 
-async function vrInit(){
-  await rtInit();
-  await mkLoad();
+function vrInit(){
   vrRender();
 }
 
