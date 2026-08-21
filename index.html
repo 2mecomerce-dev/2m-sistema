@@ -929,6 +929,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M7 16l4-5 3 3 5-6"/></svg>
         Relatórios
       </div>
+      <div class="nav-item" data-view="analise" data-title="Análise de Dados" data-eyebrow="Inteligência">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="13" width="3" height="5" rx="0.5"/><rect x="12" y="9" width="3" height="9" rx="0.5"/><rect x="17" y="6" width="3" height="12" rx="0.5"/></svg>
+        Análise de Dados
+      </div>
     </div>
 
     <div class="nav-group">
@@ -1308,6 +1312,11 @@
         <div id="repContent"></div>
       </section>
 
+      <!-- ===== VIEW: ANÁLISE DE DADOS ===== -->
+      <section class="view" id="view-analise">
+        <div id="anContent"></div>
+      </section>
+
       <!-- ===== VIEW: METAS ===== -->
       <section class="view" id="view-metas">
         <div id="mtContent"></div>
@@ -1582,6 +1591,7 @@ function renderHistory(){
   }
   renderChart();
   repRefreshIfActive();
+  anRefreshIfActive();
 }
 
 function renderChart(){
@@ -2898,6 +2908,7 @@ document.querySelectorAll('.nav-item[data-view]').forEach(item => {
     if(v === 'marketing') mktInit();
     if(v === 'precificacao') ppInit();
     if(v === 'relatorios'){ repRender(); rtInit().then(repRender); }
+    if(v === 'analise') anInit();
     if(v === 'metas') mtInit();
     if(v === 'recebiveis') vrInit();
   });
@@ -2973,11 +2984,11 @@ function rtDefaultCategories(){
       "Comparar desempenho com a semana anterior",
     ]},
     { name:"Marketing (resumo operacional)", items:[
-      "Revisar ROAS e CPA das campanhas ativas",
-      "Pausar ou ajustar anúncios abaixo da meta",
+      "Análise e ajuste de campanhas (toda quarta-feira)",
       "Planejar pautas de conteúdo/postagens da semana",
       "Revisar concorrência (preços, promoções, novidades)",
       { text:"Conferir campanhas de ads", intervalDays:2 },
+      "Reabastecer o saldo de ads das contas (toda segunda-feira)",
       "Gravação de vídeos de produtos",
       "Estratégia de impulsionamento dos vídeos",
       { text:"Postar 9 vídeos no TikTok na semana (3 contas × 3 posts)", computed:'tiktok' },
@@ -3703,6 +3714,7 @@ function rtAttachMarketingHandlers(){
     rtEnsureWeekOrder(label);
     rtRenderActive();
     repRefreshIfActive();
+    anRefreshIfActive();
 
     const { error } = await mkUpsert(entry);
     if(error) showToast('Não consegui salvar no banco: ' + error.message);
@@ -4020,6 +4032,7 @@ function rtSetupRealtime(){
         rtRenderActive();
         repRefreshIfActive();
         mtRefreshIfActive();
+        anRefreshIfActive();
       }
     })
     .subscribe();
@@ -4030,6 +4043,7 @@ function rtSetupRealtime(){
       rtRenderActive();
       repRefreshIfActive();
       mtRefreshIfActive();
+      anRefreshIfActive();
     })
     .subscribe();
 }
@@ -4963,6 +4977,358 @@ document.getElementById('repTabs').addEventListener('click', (e)=>{
   document.querySelectorAll('#repTabs .ptab').forEach(b => b.classList.toggle('active', b === btn));
   repRender();
 });
+
+/* ═══════════════════════════════════════════════════════
+   ANÁLISE DE DADOS
+
+   3 dos 5 blocos são calculados em cima de dados que já existem
+   (history/lotes para modelos, rtState.marketing.entries para lojas) —
+   não precisam de tabela própria. Vídeo de destaque e devoluções têm
+   tabela própria (videos_destaque, devolucoes) porque não tem como
+   derivar isso do que já é registrado em outro lugar.
+   ═══════════════════════════════════════════════════════ */
+
+let anPeriod = '30d';
+let anInitialized = false;
+let videosDestaque = [];
+let devolucoes = [];
+
+function anRefreshIfActive(){
+  const v = document.getElementById('view-analise');
+  if(v && v.classList.contains('active')) anRenderActive();
+}
+
+async function anLoadVideos(){
+  if(!sb) return false;
+  const { data, error } = await sb.from('videos_destaque').select('*').order('data', { ascending:false }).order('id', { ascending:false });
+  if(error){ syncLog('Análise: ' + error.message, 'err'); return false; }
+  videosDestaque = data || [];
+  return true;
+}
+async function anLoadDevolucoes(){
+  if(!sb) return false;
+  const { data, error } = await sb.from('devolucoes').select('*').order('data', { ascending:false }).order('id', { ascending:false });
+  if(error){ syncLog('Análise: ' + error.message, 'err'); return false; }
+  devolucoes = data || [];
+  return true;
+}
+async function anInsertVideo(v){
+  const { data, error } = await sb.from('videos_destaque').insert(v).select().single();
+  if(error){ showToast('Não consegui salvar: ' + error.message); return null; }
+  return data;
+}
+async function anDeleteVideo(id){
+  const { error } = await sb.from('videos_destaque').delete().eq('id', id);
+  if(error) showToast('Não consegui excluir: ' + error.message);
+}
+async function anInsertDevolucao(d){
+  const { data, error } = await sb.from('devolucoes').insert(d).select().single();
+  if(error){ showToast('Não consegui salvar: ' + error.message); return null; }
+  return data;
+}
+async function anDeleteDevolucao(id){
+  const { error } = await sb.from('devolucoes').delete().eq('id', id);
+  if(error) showToast('Não consegui excluir: ' + error.message);
+}
+
+function anSetupRealtime(){
+  sb.channel('public:videos_destaque')
+    .on('postgres_changes', { event:'*', schema:'public', table:'videos_destaque' }, async ()=>{ await anLoadVideos(); anRenderActive(); })
+    .subscribe();
+  sb.channel('public:devolucoes')
+    .on('postgres_changes', { event:'*', schema:'public', table:'devolucoes' }, async ()=>{ await anLoadDevolucoes(); anRenderActive(); })
+    .subscribe();
+}
+
+async function anInit(){
+  if(anInitialized) return;
+  anInitialized = true;
+  document.getElementById('anContent').innerHTML = '<div class="empty-hint">Carregando…</div>';
+  await rtInit(); // precisa de rtState.marketing.entries pro card de desempenho por loja
+  await Promise.all([anLoadVideos(), anLoadDevolucoes()]);
+  anSetupRealtime();
+  anRenderActive();
+}
+
+/* ---------- top/bottom modelos e produtos parados (a partir de history/lotes) ---------- */
+function anTopBottomModelos(range){
+  const A = repAggregate(range.from, range.to);
+  const rows = repAbc(A.byModel).rows;
+  if(rows.length === 0) return { top:[], bottom:[], total:0 };
+  const top = rows.slice(0, 3);
+  const bottom = rows.length > 3 ? rows.slice(-3).reverse() : [];
+  return { top, bottom, total: rows.length };
+}
+function anProdutosParados(diasLimite){
+  diasLimite = diasLimite || 14;
+  const lastSale = {};
+  history.forEach(h => {
+    const c = h.composicao;
+    if(!c) return;
+    Object.keys(c).forEach(m => { if(!lastSale[m] || h.dateKey > lastSale[m]) lastSale[m] = h.dateKey; });
+  });
+  const hoje = new Date(todayKey() + 'T12:00:00');
+  return Object.keys(lastSale).map(modelo => {
+    const dias = Math.floor((hoje - new Date(lastSale[modelo] + 'T12:00:00')) / 86400000);
+    return { modelo, ultimaVenda: lastSale[modelo], dias };
+  }).filter(r => r.dias >= diasLimite).sort((a,b) => b.dias - a.dias);
+}
+function anStorePerformance(range){
+  const entries = (rtState.marketing.entries || []).filter(e => {
+    if(!range.from) return true;
+    const ref = e.dateTo || e.dateFrom;
+    if(!ref) return false;
+    return ref >= range.from && ref <= range.to;
+  });
+  const byStore = {};
+  entries.forEach(e => {
+    if(!byStore[e.store]) byStore[e.store] = { store:e.store, invest:0, revenue:0, orders:0 };
+    byStore[e.store].invest += e.invest;
+    byStore[e.store].revenue += e.revenue;
+    byStore[e.store].orders += e.orders;
+  });
+  return Object.values(byStore)
+    .map(s => ({ ...s, roas: s.invest ? s.revenue/s.invest : 0, cpa: s.orders ? s.invest/s.orders : 0 }))
+    .sort((a,b) => b.roas - a.roas);
+}
+
+function anRankRow(r, i, isTop){
+  const medalhas = ['🥇','🥈','🥉'];
+  return `
+  <div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-top:${i===0?'none':'1px dashed var(--border)'};">
+    <span style="font-size:15px; width:22px;">${isTop ? (medalhas[i]||`${i+1}º`) : `${i+1}º`}</span>
+    <span style="flex:1; font-weight:600; font-size:13px;">${r.modelo}</span>
+    <span class="mono" style="font-weight:700; font-size:13px;">${r.qtd} <span style="color:var(--faint); font-weight:500;">pares</span></span>
+  </div>`;
+}
+
+function anDevolBreakdown(){
+  if(devolucoes.length === 0) return '';
+  const byMotivo = {};
+  devolucoes.forEach(d => { byMotivo[d.motivo] = (byMotivo[d.motivo] || 0) + 1; });
+  const total = devolucoes.length;
+  const rows = Object.entries(byMotivo).sort((a,b) => b[1]-a[1]);
+  return `
+  <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:16px;">
+    ${rows.map(([motivo,qtd]) => `<span class="badge badge-neutral">${motivo}: <b>${qtd}</b> (${(qtd/total*100).toFixed(0)}%)</span>`).join('')}
+  </div>`;
+}
+function anVideoRows(){
+  if(videosDestaque.length === 0) return `<tr><td style="color:var(--faint); font-style:italic; padding:16px 10px;">Nenhum vídeo registrado ainda.</td></tr>`;
+  const melhor = videosDestaque.reduce((best,v) => (!best || v.pedidos_atribuidos > best.pedidos_atribuidos) ? v : best, null);
+  const melhorId = melhor && melhor.pedidos_atribuidos > 0 ? melhor.id : null;
+  return `
+    <thead><tr><th>Data</th><th>Conta</th><th>Vídeo</th><th>Alcance</th><th>Pedidos</th><th></th></tr></thead>
+    <tbody>
+      ${videosDestaque.map(v => `<tr ${v.id===melhorId ? 'style="background:var(--accent-soft);"' : ''}>
+        <td>${formatDateKeyToLabel(v.data)}</td>
+        <td>${v.conta}</td>
+        <td>${v.video}${v.id===melhorId ? ' <span class="badge badge-good">🏆 destaque</span>' : ''}</td>
+        <td>${v.alcance || 0}</td>
+        <td style="font-weight:700;">${v.pedidos_atribuidos || 0}</td>
+        <td><button class="rt-link-danger an-video-delete" data-id="${v.id}">Excluir</button></td>
+      </tr>`).join('')}
+    </tbody>`;
+}
+function anDevolRows(){
+  if(devolucoes.length === 0) return `<tr><td style="color:var(--faint); font-style:italic; padding:16px 10px;">Nenhuma devolução registrada ainda.</td></tr>`;
+  return `
+    <thead><tr><th>Data</th><th>Produto</th><th>Loja</th><th>Motivo</th><th>Obs.</th><th></th></tr></thead>
+    <tbody>
+      ${devolucoes.map(d => `<tr>
+        <td>${formatDateKeyToLabel(d.data)}</td>
+        <td style="font-weight:600;">${d.produto}</td>
+        <td>${d.loja || '—'}</td>
+        <td><span class="badge badge-neutral">${d.motivo}</span></td>
+        <td style="color:var(--faint);">${d.observacao || ''}</td>
+        <td><button class="rt-link-danger an-devol-delete" data-id="${d.id}">Excluir</button></td>
+      </tr>`).join('')}
+    </tbody>`;
+}
+
+function anRenderContent(){
+  const range = repRange(anPeriod);
+  const tb = anTopBottomModelos(range);
+  const parados = anProdutosParados(14);
+  const storePerf = anStorePerformance(range);
+
+  return `
+  <div class="card" style="padding:16px 20px; margin-bottom:20px;">
+    <div class="period-tabs" id="anPeriodTabs">
+      <button class="ptab ${anPeriod==='7d'?'active':''}" data-period="7d">7 dias</button>
+      <button class="ptab ${anPeriod==='30d'?'active':''}" data-period="30d">30 dias</button>
+      <button class="ptab ${anPeriod==='90d'?'active':''}" data-period="90d">90 dias</button>
+      <button class="ptab ${anPeriod==='tudo'?'active':''}" data-period="tudo">Todo o período</button>
+    </div>
+  </div>
+
+  <div class="card" style="padding:20px; margin-bottom:20px;">
+    <div class="card-title">🏆 Top &amp; bottom modelos</div>
+    <div class="card-desc" style="margin-top:4px;">${range.label} · decide o que promover e o que talvez valha tirar do ar.</div>
+    ${tb.top.length===0 ? `<div class="empty-hint" style="margin-top:14px;">Nenhum lote com detalhe por modelo neste período.</div>` : `
+    <div class="grid-2" style="margin-top:16px; grid-template-columns:1fr 1fr; gap:24px;">
+      <div>
+        <div class="card-desc" style="margin-bottom:6px;"><b>🔥 Mais vendidos</b></div>
+        ${tb.top.map((r,i)=>anRankRow(r,i,true)).join('')}
+      </div>
+      <div>
+        <div class="card-desc" style="margin-bottom:6px;"><b>🐌 Menos vendidos</b></div>
+        ${tb.bottom.length===0 ? `<div class="empty-hint">Só ${tb.total} modelo(s) no período — pouco pra separar um "bottom".</div>` : tb.bottom.map((r,i)=>anRankRow(r,i,false)).join('')}
+      </div>
+    </div>`}
+  </div>
+
+  <div class="card" style="padding:20px; margin-bottom:20px;">
+    <div class="card-title">⏳ Produtos parados</div>
+    <div class="card-desc" style="margin-top:4px;">Modelos que já venderam antes, mas estão há 14+ dias sem nenhuma saída — candidatos a desconto ou descontinuar.</div>
+    ${parados.length===0 ? `<div class="empty-hint" style="margin-top:14px;">Nenhum modelo parado há 14 dias ou mais 🎉</div>` : `
+    <div style="overflow-x:auto; margin-top:14px;">
+      <table class="alias-table">
+        <thead><tr><th>Modelo</th><th>Última venda</th><th>Dias parado</th></tr></thead>
+        <tbody>
+          ${parados.map(r => `<tr>
+            <td style="font-weight:600;">${r.modelo}</td>
+            <td>${formatDateKeyToLabel(r.ultimaVenda)}</td>
+            <td><span class="badge ${r.dias>=30?'badge-critical':'badge-warning'}">${r.dias} dias</span></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`}
+  </div>
+
+  <div class="card" style="padding:20px; margin-bottom:20px;">
+    <div class="card-title">🏪 Desempenho por loja</div>
+    <div class="card-desc" style="margin-top:4px;">${range.label} · ranking por ROAS — mostra onde o investimento em ads está rendendo mais, proporcionalmente.</div>
+    ${storePerf.length===0 ? `<div class="empty-hint" style="margin-top:14px;">Nenhum lançamento de mídia paga no período. Registre em Marketing &amp; TikTok.</div>` : `
+    <div style="overflow-x:auto; margin-top:14px;">
+      <table class="alias-table">
+        <thead><tr><th>Loja</th><th>Investimento</th><th>Faturamento</th><th>Pedidos</th><th>ROAS</th><th>CPA</th></tr></thead>
+        <tbody>
+          ${storePerf.map((s,i) => `<tr>
+            <td style="font-weight:700;">${i===0?'🏆 ':''}${s.store}</td>
+            <td>${fmtBRL(s.invest)}</td>
+            <td>${fmtBRL(s.revenue)}</td>
+            <td>${s.orders}</td>
+            <td style="font-weight:700;">${s.roas.toFixed(1)}x</td>
+            <td style="font-weight:700;">${fmtBRL(s.cpa)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div class="card-desc" style="margin-top:10px; font-size:11.5px;">Margem real por canal ainda não dá pra calcular automático — precisaria cruzar o custo de cada produto com o mix de vendas por loja, o que ainda não é rastreado separado.</div>`}
+  </div>
+
+  <div class="card" style="padding:20px; margin-bottom:20px;">
+    <div class="card-title">🎥 Vídeo de destaque (TikTok)</div>
+    <div class="card-desc" style="margin-top:4px;">Registre o vídeo que mais performou na semana — alcance e pedidos atribuídos — pra saber o que replicar.</div>
+    <form id="anVideoForm" class="rt-form-row" style="grid-template-columns:1fr 1fr 2fr 1fr 1fr auto;">
+      <label class="rt-label">Data<input type="date" id="anVideoData" class="rt-input" value="${todayKey()}" required></label>
+      <label class="rt-label">Conta<select id="anVideoConta" class="rt-select">${rtState.tiktok.accounts.map(a=>`<option>${a}</option>`).join('')}</select></label>
+      <label class="rt-label">Vídeo / tema<input type="text" id="anVideoTema" class="rt-input" placeholder="Ex: unboxing bota craquelada" required></label>
+      <label class="rt-label">Alcance<input type="number" id="anVideoAlcance" class="rt-input" placeholder="views" min="0"></label>
+      <label class="rt-label">Pedidos<input type="number" id="anVideoPedidos" class="rt-input" placeholder="0" min="0"></label>
+      <button type="submit" class="btn btn-accent">Registrar</button>
+    </form>
+    <div style="overflow-x:auto; margin-top:16px;">
+      <table class="alias-table" id="anVideoTable">${anVideoRows()}</table>
+    </div>
+  </div>
+
+  <div class="card" style="padding:20px;">
+    <div class="card-title">↩️ Devoluções por motivo</div>
+    <div class="card-desc" style="margin-top:4px;">Registre cada devolução com o motivo — mostra se o problema é recorrente (defeito, tamanho, etc.), não só quantas vieram.</div>
+    <form id="anDevolForm" class="rt-form-row" style="grid-template-columns:1fr 1.4fr 1fr 1fr 1.4fr auto;">
+      <label class="rt-label">Data<input type="date" id="anDevolData" class="rt-input" value="${todayKey()}" required></label>
+      <label class="rt-label">Produto<input type="text" id="anDevolProduto" class="rt-input" placeholder="Ex: 070 marrom" required></label>
+      <label class="rt-label">Loja<select id="anDevolLoja" class="rt-select"><option value="">—</option>${rtState.stores.map(s=>`<option>${s}</option>`).join('')}</select></label>
+      <label class="rt-label">Motivo
+        <select id="anDevolMotivo" class="rt-select">
+          <option>Defeito</option><option>Tamanho errado</option><option>Arrependimento</option><option>Não gostou do produto</option><option>Atraso na entrega</option><option>Outro</option>
+        </select>
+      </label>
+      <label class="rt-label">Observação<input type="text" id="anDevolObs" class="rt-input" placeholder="opcional"></label>
+      <button type="submit" class="btn btn-accent">Registrar</button>
+    </form>
+    ${anDevolBreakdown()}
+    <div style="overflow-x:auto; margin-top:16px;">
+      <table class="alias-table" id="anDevolTable">${anDevolRows()}</table>
+    </div>
+  </div>`;
+}
+
+function anAttachHandlers(){
+  document.getElementById('anPeriodTabs').addEventListener('click', (e)=>{
+    const btn = e.target.closest('.ptab');
+    if(!btn) return;
+    anPeriod = btn.dataset.period;
+    anRenderActive();
+  });
+
+  document.getElementById('anVideoForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const video = document.getElementById('anVideoTema').value.trim();
+    if(!video) return;
+    const payload = {
+      data: document.getElementById('anVideoData').value || todayKey(),
+      conta: document.getElementById('anVideoConta').value,
+      video,
+      alcance: parseInt(document.getElementById('anVideoAlcance').value, 10) || 0,
+      pedidos_atribuidos: parseInt(document.getElementById('anVideoPedidos').value, 10) || 0
+    };
+    const saved = await anInsertVideo(payload);
+    if(saved){
+      videosDestaque.unshift(saved);
+      anRenderActive();
+      showToast('Vídeo registrado');
+    }
+  });
+  document.querySelectorAll('.an-video-delete').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id = Number(btn.dataset.id);
+      const ok = await confirmDialog('Excluir vídeo?', 'Isso remove o registro da lista.', 'Excluir');
+      if(!ok) return;
+      videosDestaque = videosDestaque.filter(v=>v.id!==id);
+      anRenderActive();
+      await anDeleteVideo(id);
+    });
+  });
+
+  document.getElementById('anDevolForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const produto = document.getElementById('anDevolProduto').value.trim();
+    if(!produto) return;
+    const payload = {
+      data: document.getElementById('anDevolData').value || todayKey(),
+      produto,
+      loja: document.getElementById('anDevolLoja').value || null,
+      motivo: document.getElementById('anDevolMotivo').value,
+      observacao: document.getElementById('anDevolObs').value.trim() || null
+    };
+    const saved = await anInsertDevolucao(payload);
+    if(saved){
+      devolucoes.unshift(saved);
+      anRenderActive();
+      showToast('Devolução registrada');
+    }
+  });
+  document.querySelectorAll('.an-devol-delete').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id = Number(btn.dataset.id);
+      const ok = await confirmDialog('Excluir devolução?', 'Isso remove o registro da lista.', 'Excluir');
+      if(!ok) return;
+      devolucoes = devolucoes.filter(d=>d.id!==id);
+      anRenderActive();
+      await anDeleteDevolucao(id);
+    });
+  });
+}
+
+function anRenderActive(){
+  const el = document.getElementById('anContent');
+  if(!el) return;
+  el.innerHTML = anRenderContent();
+  anAttachHandlers();
+}
 
 /* ═══════════════════════════════════════════════════════
    METAS & BÔNUS
