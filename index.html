@@ -1685,7 +1685,7 @@ const CORES_BASE = ['MARROM','PRETO','AZUL','BRANCO','VERDE','VERMELHO','AMARELO
 // Apelidos de produtos que não são calçados (kits, acessórios) — não têm
 // numeração nem cor de par, então a lista de separação mostra só
 // "(qtd) Apelido", sem tentar casar cor/tamanho.
-const APELIDOS_SEM_VARIACAO = ['KIT GRIP'];
+const APELIDOS_SEM_VARIACAO = ['KIT GRIP', 'CINTO'];
 
 function splitConcat(s){
   return s.replace(/([a-zà-ÿ])([A-ZÀ-Ý])/g, '$1 $2');
@@ -1938,6 +1938,14 @@ function sugerirApelido(descricao){
   const codMatch = d.match(/[-–]\s*(\d{3})\b/);
   if(codMatch) return codMatch[1];
 
+  // Combinação específica: "Mocassim ... Camurça" é sempre cadastrado como
+  // um apelido só ("MOCASSIM CAMURÇA") — checa isso antes da regra genérica
+  // de "MOCASSIM" sozinho, senão a sugestão sai truncada e não bate com o
+  // que já está cadastrado pros outros SKUs do mesmo produto.
+  const temMocassim = d.includes('MOCASSIM') || d.includes('MOCASSIN');
+  const temCamurca = d.includes('CAMURÇA') || d.includes('CAMURCA') || d.includes('SUEDE');
+  if(temMocassim && temCamurca) return 'MOCASSIM CAMURÇA';
+
   // Mapa de palavras-chave na descrição → apelido sugerido (fallback quando
   // não há código explícito)
   const regras = [
@@ -1950,6 +1958,7 @@ function sugerirApelido(descricao){
     { palavras: ['CHELSEA'], apelido: '070' },
     { palavras: ['TEXANA', 'COWBOY'], apelido: '070' },
     { palavras: ['BLOGUEIRA', 'FEMININA CANO'], apelido: '207' },
+    { palavras: ['CINTO'], apelido: 'CINTO' },
     { palavras: ['COTURNO'], apelido: 'COTURNO' },
     { palavras: ['GRIP', 'LUVA ACADEMIA'], apelido: 'KIT GRIP' },
   ];
