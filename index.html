@@ -568,7 +568,7 @@
   .btn-danger:hover{background:#B83434;}
 
   .confirm-overlay{
-    display:none; position:fixed; inset:0; z-index:200;
+    display:none; position:fixed; inset:0; z-index:300;
     background:rgba(15,18,26,.55); backdrop-filter:blur(2px);
     align-items:center; justify-content:center; padding:20px;
   }
@@ -5679,7 +5679,10 @@ function afLeadCardHTML(rec){
   <div class="rt-tcard" draggable="true" data-id="${rec.id}">
     <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
       <span style="font-weight:700; font-size:13px;">${rec.handle || '(sem @)'}</span>
-      <span class="mono" style="font-weight:700;">${rec.score ?? '—'}</span>
+      <span style="display:flex; align-items:center; gap:6px;">
+        <span class="mono" style="font-weight:700;">${rec.score ?? '—'}</span>
+        <button type="button" class="rt-item-delete af-card-delete" data-id="${rec.id}" data-kind="lead" title="Excluir lead">×</button>
+      </span>
     </div>
     ${tags.length ? `<div style="display:flex; flex-wrap:wrap; gap:5px; margin-top:7px;">${tags.join('')}</div>` : ''}
     ${next}
@@ -5713,12 +5716,27 @@ function afRenderPipeline(){
   </div>`;
 }
 
+async function afQuickDelete(kind, id){
+  const label = kind === 'lead' ? 'lead' : 'demanda';
+  const ok = await confirmDialog(`Excluir ${label}?`, 'Essa ação não pode ser desfeita.', 'Excluir');
+  if(!ok) return;
+  const table = kind === 'lead' ? 'afiliados_leads' : 'afiliados_tasks';
+  if(kind === 'lead') afState.leads = afState.leads.filter(r=>r.id!==id);
+  else afState.tasks = afState.tasks.filter(r=>r.id!==id);
+  afRenderActive();
+  const { error } = await sb.from(table).delete().eq('id', id);
+  if(error) showToast('Não consegui excluir: ' + error.message);
+}
+
 function afAttachPipelineHandlers(){
   const kanban = document.getElementById('afPipelineKanban');
   kanban.querySelectorAll('.rt-tcard').forEach(card => {
     card.addEventListener('dragstart', e => { e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain', card.dataset.id); card.classList.add('dragging'); });
     card.addEventListener('dragend', () => card.classList.remove('dragging'));
     card.addEventListener('click', () => afOpenLeadModal(Number(card.dataset.id)));
+  });
+  kanban.querySelectorAll('.af-card-delete').forEach(btn => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); afQuickDelete('lead', Number(btn.dataset.id)); });
   });
   kanban.querySelectorAll('.rt-kcol').forEach(col => {
     col.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect='move'; col.classList.add('drag-over'); });
@@ -5819,7 +5837,10 @@ function afTaskCardHTML(rec){
   if(rec.selo) tags.push(`<span class="badge ${rec.selo_tipo||'badge-neutral'}">${rec.selo}</span>`);
   return `
   <div class="rt-tcard" draggable="true" data-id="${rec.id}">
-    <div style="font-weight:700; font-size:12.5px;">${rec.titulo}</div>
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px;">
+      <div style="font-weight:700; font-size:12.5px;">${rec.titulo}</div>
+      <button type="button" class="rt-item-delete af-card-delete" data-id="${rec.id}" data-kind="task" title="Excluir demanda">×</button>
+    </div>
     ${tags.length ? `<div style="display:flex; flex-wrap:wrap; gap:5px; margin-top:7px;">${tags.join('')}</div>` : ''}
     ${rec.responsavel ? `<div style="font-size:11px; color:var(--faint); margin-top:6px;">Responsável: ${rec.responsavel}</div>` : ''}
     ${rec.obs ? `<div style="font-size:11.5px; color:var(--muted); background:var(--surface-2); border-radius:6px; padding:6px 8px; margin-top:7px; white-space:pre-wrap;">📝 ${rec.obs}</div>` : ''}
@@ -5920,6 +5941,9 @@ function afAttachTasksHandlers(){
     card.addEventListener('dragend', () => card.classList.remove('dragging'));
     card.addEventListener('click', () => afOpenTaskModal(Number(card.dataset.id)));
   });
+  kanban.querySelectorAll('.af-card-delete').forEach(btn => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); afQuickDelete('task', Number(btn.dataset.id)); });
+  });
   kanban.querySelectorAll('.rt-kcol').forEach(col => {
     col.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect='move'; col.classList.add('drag-over'); });
     col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
@@ -6011,19 +6035,9 @@ document.getElementById('afModalSave').addEventListener('click', async () => {
 });
 document.getElementById('afModalDelete').addEventListener('click', async () => {
   if(!afModalContext || !afModalContext.id) return;
-  const ok = await confirmDialog('Excluir?', 'Essa ação não pode ser desfeita.', 'Excluir');
-  if(!ok) return;
-  if(afModalContext.type==='lead'){
-    const id = afModalContext.id;
-    afState.leads = afState.leads.filter(l=>l.id!==id);
-    afRenderActive(); afCloseModal();
-    await sb.from('afiliados_leads').delete().eq('id', id);
-  }else{
-    const id = afModalContext.id;
-    afState.tasks = afState.tasks.filter(t=>t.id!==id);
-    afRenderActive(); afCloseModal();
-    await sb.from('afiliados_tasks').delete().eq('id', id);
-  }
+  const { type, id } = afModalContext;
+  afCloseModal();
+  await afQuickDelete(type, id);
 });
 
 /* ---------- Importar leads via CSV ---------- */
