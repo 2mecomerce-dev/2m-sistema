@@ -589,6 +589,27 @@
   .confirm-actions .btn{flex:1;}
   @keyframes popIn{from{opacity:0; transform:scale(.94);} to{opacity:1; transform:scale(1);}}
 
+  /* ---------- Modal genérico (Central de Afiliados) ---------- */
+  .modal-overlay{
+    position:fixed; inset:0; z-index:210; background:rgba(15,18,26,.55); backdrop-filter:blur(2px);
+    align-items:flex-start; justify-content:center; padding:40px 20px; overflow-y:auto;
+  }
+  .modal-box{
+    background:var(--surface); border-radius:var(--r-lg); box-shadow:var(--sh-lg); width:100%;
+    animation:popIn .18s ease both;
+  }
+  .modal-head{display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--border);}
+  .modal-head h3{font-size:16px; font-weight:700; margin:0;}
+  .modal-x{background:none; border:none; color:var(--faint); font-size:16px; cursor:pointer; line-height:1; padding:4px;}
+  .modal-x:hover{color:var(--ink);}
+  .modal-body{padding:18px 20px;}
+  .modal-foot{padding:14px 20px; border-top:1px solid var(--border);}
+
+  /* ---------- Kanban horizontal com scroll (Central de Afiliados) ---------- */
+  .af-kanban-wrap{overflow-x:auto; padding-bottom:6px;}
+  .af-kanban{display:flex; gap:14px; min-width:max-content;}
+  .af-kanban .rt-kcol{width:260px; flex:none;}
+
   .scrim{display:none;}
 
   /* ---------- Sincronia ---------- */
@@ -912,6 +933,10 @@
       <div class="nav-item" data-view="marketing" data-title="Marketing & TikTok" data-eyebrow="Operações">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 7 13.5 15.5 8.5 10.5 2 17"/><path d="M16 7h6v6"/></svg>
         Marketing & TikTok
+      </div>
+      <div class="nav-item" data-view="afiliados" data-title="Central de Afiliados" data-eyebrow="Parcerias">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Central de Afiliados
       </div>
       <div class="nav-item" data-view="precificacao" data-title="Precificação de Produtos" data-eyebrow="Financeiro">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M14.8 9a2 2 0 0 0-1.8-1H11a1.5 1.5 0 0 0 0 3h2a1.5 1.5 0 0 1 0 3h-2a2 2 0 0 1-1.8-1M12 7v1.5M12 15.5V17"/></svg>
@@ -1258,6 +1283,67 @@
       <section class="view" id="view-marketing">
         <div id="mktContent"></div>
       </section>
+
+      <!-- ===== VIEW: CENTRAL DE AFILIADOS ===== -->
+      <section class="view" id="view-afiliados">
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-body" style="padding:16px 20px;">
+            <div class="period-tabs" id="afSubtabs">
+              <button class="ptab active" data-subtab="overview">🏠 Visão Geral</button>
+              <button class="ptab" data-subtab="pipeline">🧭 Pipeline de Criadores</button>
+              <button class="ptab" data-subtab="amostras">📦 Controle de Amostras</button>
+              <button class="ptab" data-subtab="tasks">🗂️ Central de Demandas</button>
+              <button class="ptab" data-subtab="criterios">🎯 Critérios & Metas</button>
+            </div>
+          </div>
+        </div>
+        <div id="afContent"></div>
+      </section>
+
+      <!-- ===== MODAL: Central de Afiliados (lead / demanda) ===== -->
+      <div class="modal-overlay" id="afModalOverlay" style="display:none;">
+        <div class="modal-box" style="max-width:640px;">
+          <div class="modal-head">
+            <h3 id="afModalTitle">Editar</h3>
+            <button class="modal-x" id="afModalClose" type="button" aria-label="Fechar">✕</button>
+          </div>
+          <div class="modal-body" id="afModalBody"></div>
+          <div class="modal-foot" style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+            <button type="button" class="rt-link-danger" id="afModalDelete">Excluir</button>
+            <div style="display:flex; gap:8px;">
+              <button type="button" class="btn btn-ghost" id="afModalCancel">Cancelar</button>
+              <button type="button" class="btn btn-accent" id="afModalSave">Salvar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== MODAL: Central de Afiliados (importar CSV) ===== -->
+      <div class="modal-overlay" id="afImportOverlay" style="display:none;">
+        <div class="modal-box" style="max-width:640px;">
+          <div class="modal-head">
+            <h3>Importar leads (CSV)</h3>
+            <button class="modal-x" id="afImportClose" type="button" aria-label="Fechar">✕</button>
+          </div>
+          <div class="modal-body">
+            <p class="card-desc">Exporte a lista de criadores do TikTok Shop Seller Center (ou qualquer planilha) como <b>.csv</b>. Colunas como @/nome, seguidores, receita, engajamento e categoria são reconhecidas pelo nome do cabeçalho.</p>
+            <div class="rt-form-row" style="grid-template-columns:1fr 1fr; margin-top:10px;">
+              <label class="rt-label">Arquivo CSV<input type="file" id="afImportFile" class="rt-input" accept=".csv,text/csv"></label>
+              <label class="rt-label">Importar para a coluna
+                <select id="afImportTargetCol" class="rt-select"></select>
+              </label>
+            </div>
+            <div id="afImportPreview" style="display:none; margin-top:14px;">
+              <div class="card-desc" id="afImportPreviewHead" style="margin-bottom:8px;"></div>
+              <div style="overflow-x:auto;"><table class="alias-table" id="afImportPreviewTable"></table></div>
+            </div>
+          </div>
+          <div class="modal-foot" style="display:flex; align-items:center; justify-content:flex-end; gap:8px;">
+            <button type="button" class="btn btn-ghost" id="afImportCancel">Cancelar</button>
+            <button type="button" class="btn btn-accent" id="afImportConfirm" disabled>Importar</button>
+          </div>
+        </div>
+      </div>
 
       <!-- ===== VIEW: PRECIFICAÇÃO ===== -->
       <section class="view" id="view-precificacao">
@@ -2918,6 +3004,7 @@ document.querySelectorAll('.nav-item[data-view]').forEach(item => {
     if(v === 'precificacao') ppInit();
     if(v === 'relatorios'){ repRender(); rtInit().then(repRender); }
     if(v === 'analise') anInit();
+    if(v === 'afiliados') afInit();
     if(v === 'metas') mtInit();
     if(v === 'recebiveis') vrInit();
   });
@@ -5340,6 +5427,873 @@ function anRenderActive(){
 }
 
 /* ═══════════════════════════════════════════════════════
+   CENTRAL DE AFILIADOS
+
+   Módulo do funcionário responsável pelos afiliados/criadores das 3
+   lojas no TikTok Shop. Tabelas próprias (afiliados_leads,
+   afiliados_amostras, afiliados_tasks, afiliados_estado) com RLS que
+   libera tanto admin quanto o perfil "afiliados" (ver migration 0009).
+   ═══════════════════════════════════════════════════════ */
+
+const AF_PIPELINE_COLS = [
+  { key:'leads', title:'Leads selecionados (por métricas)' },
+  { key:'novo', title:'Novo contato' },
+  { key:'qualificacao', title:'Em qualificação' },
+  { key:'selecionada', title:'Amostra selecionada' },
+  { key:'enviada', title:'Amostra enviada' },
+  { key:'ativo', title:'Ativo / performando' },
+  { key:'encaminhado', title:'Encaminhados p/ Breno' },
+];
+const AF_TASK_COLS = [
+  { key:'afazer', title:'A fazer' },
+  { key:'andamento', title:'Em andamento' },
+  { key:'aguardando_criador', title:'Aguardando resposta do criador' },
+  { key:'aguardando_breno', title:'Aguardando Breno' },
+  { key:'concluido', title:'Concluído' },
+];
+const AF_CAT_COLORS = { teal:'#4F97AB', accent:'#E87A45', good:'#5B9A85', warning:'#D9A047' };
+
+function afDefaultRotina(){
+  return [
+    { cat:'prospeccao', color:'teal', icon:'🔍', title:'Prospecção & Pipeline', items:[
+      { id:'prospeccao-1', text:'Mapear novos criadores pelos critérios de pontuação', done:false },
+      { id:'prospeccao-2', text:'Iniciar contato com os leads de "Leads selecionados (métricas)"', done:false },
+      { id:'prospeccao-3', text:'Atualizar o estágio de cada criador em conversa no Pipeline', done:false },
+      { id:'prospeccao-4', text:'Revisar cards parados há mais de 7 dias sem retorno', done:false },
+    ]},
+    { cat:'amostras', color:'accent', icon:'📦', title:'Amostras da semana', items:[
+      { id:'amostras-1', text:'Selecionar os 3 criadores da semana (score ≥ 70)', done:false },
+      { id:'amostras-2', text:'Separar e enviar os pares escolhidos', done:false },
+      { id:'amostras-3', text:'Cobrar 1º post de quem recebeu amostra há mais de 7 dias', done:false },
+      { id:'amostras-4', text:'Conferir resultado das amostras enviadas há 3–4 semanas', done:false, recur:'a cada 4 semanas' },
+    ]},
+    { cat:'leads', color:'good', icon:'💬', title:'Leads & Parcerias', items:[
+      { id:'leads-1', text:'Responder todas as mensagens novas de criadores', done:false },
+      { id:'leads-2', text:'Qualificar cada lead novo (proposta, audiência, histórico, oportunidade fora do TikTok)', done:false },
+      { id:'leads-3', text:'Encaminhar pra Breno as oportunidades de alto potencial', done:false },
+      { id:'leads-4', text:'Fazer follow-up com quem ficou "em negociação" sem resposta', done:false },
+    ]},
+    { cat:'performance', color:'warning', icon:'📊', title:'Performance & Relatório', items:[
+      { id:'performance-1', text:'Atualizar a comissão gerada pelos afiliados da carteira dele', done:false },
+      { id:'performance-2', text:'Conferir progresso da semana vs. meta de R$ 1.700/mês', done:false },
+      { id:'performance-3', text:'Marcar as prioridades da próxima semana na Central de demandas', done:false },
+      { id:'performance-4', text:'Enviar resumo rápido pro Breno (o que foi feito, o que travou)', done:false, recur:'toda sexta' },
+      { id:'performance-5', text:'Revisar os pesos do score de qualificação com o Breno', done:false, recur:'a cada 30 dias' },
+    ]},
+  ];
+}
+
+let afState = { leads:[], amostras:[], tasks:[], estado:{ rotina: afDefaultRotina(), metas:{ comissaoMes:0 } } };
+let afInitialized = false;
+let afActiveSubtab = 'overview';
+let afModalContext = null;
+let afParsedImportRows = [];
+
+function afCurrentWeekRange(){
+  const now = new Date(); now.setHours(12,0,0,0);
+  const day = now.getDay();
+  const diffToMonday = (day===0?6:day-1);
+  const monday = new Date(now); monday.setDate(now.getDate()-diffToMonday);
+  const sunday = new Date(monday); sunday.setDate(monday.getDate()+6);
+  const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return { start: fmt(monday), end: fmt(sunday) };
+}
+
+async function afLoadAliasMap(){
+  if(Object.keys(aliasMap).length > 0) return;
+  const { data, error } = await sb.from('apelidos').select('sku,apelido');
+  if(error) return;
+  (data||[]).forEach(r => { aliasMap[r.sku] = r.apelido; });
+}
+async function afLoadLeads(){
+  const { data, error } = await sb.from('afiliados_leads').select('*').order('created_at', { ascending:true });
+  if(error){ syncLog('Afiliados: '+error.message, 'err'); return; }
+  afState.leads = data || [];
+}
+async function afLoadAmostras(){
+  const { data, error } = await sb.from('afiliados_amostras').select('*').order('semana_inicio', { ascending:false }).order('id', { ascending:false });
+  if(error){ syncLog('Afiliados: '+error.message, 'err'); return; }
+  afState.amostras = data || [];
+}
+async function afLoadTasks(){
+  const { data, error } = await sb.from('afiliados_tasks').select('*').order('created_at', { ascending:true });
+  if(error){ syncLog('Afiliados: '+error.message, 'err'); return; }
+  afState.tasks = data || [];
+}
+async function afLoadEstado(){
+  const { data, error } = await sb.from('afiliados_estado').select('*').eq('id','principal').maybeSingle();
+  if(error) syncLog('Afiliados: '+error.message, 'err');
+  if(data && data.dados && Object.keys(data.dados).length){
+    afState.estado = data.dados;
+  }else{
+    afState.estado = { rotina: afDefaultRotina(), metas:{ comissaoMes:0 } };
+  }
+  if(!afState.estado.rotina) afState.estado.rotina = afDefaultRotina();
+  if(!afState.estado.metas) afState.estado.metas = { comissaoMes:0 };
+}
+async function afSaveEstado(){
+  await sb.from('afiliados_estado').upsert({ id:'principal', dados: afState.estado, updated_at: new Date().toISOString() });
+}
+
+function afSetupRealtime(){
+  sb.channel('public:afiliados_leads').on('postgres_changes', { event:'*', schema:'public', table:'afiliados_leads' }, async ()=>{ await afLoadLeads(); afRenderActive(); }).subscribe();
+  sb.channel('public:afiliados_amostras').on('postgres_changes', { event:'*', schema:'public', table:'afiliados_amostras' }, async ()=>{ await afLoadAmostras(); afRenderActive(); }).subscribe();
+  sb.channel('public:afiliados_tasks').on('postgres_changes', { event:'*', schema:'public', table:'afiliados_tasks' }, async ()=>{ await afLoadTasks(); afRenderActive(); }).subscribe();
+  sb.channel('public:afiliados_estado').on('postgres_changes', { event:'*', schema:'public', table:'afiliados_estado' }, async ()=>{ await afLoadEstado(); afRenderActive(); }).subscribe();
+}
+
+async function afInit(){
+  if(afInitialized) return;
+  afInitialized = true;
+  document.getElementById('afContent').innerHTML = '<div class="empty-hint">Carregando…</div>';
+  await afLoadAliasMap();
+  await Promise.all([afLoadLeads(), afLoadAmostras(), afLoadTasks(), afLoadEstado()]);
+  afSetupRealtime();
+  afRenderActive();
+}
+
+function afRenderActive(){
+  const content = document.getElementById('afContent');
+  if(!content) return;
+  document.querySelectorAll('#afSubtabs .ptab').forEach(b => b.classList.toggle('active', b.dataset.subtab === afActiveSubtab));
+  if(afActiveSubtab === 'overview'){ content.innerHTML = afRenderOverview(); afAttachOverviewHandlers(); }
+  if(afActiveSubtab === 'pipeline'){ content.innerHTML = afRenderPipeline(); afAttachPipelineHandlers(); }
+  if(afActiveSubtab === 'amostras'){ content.innerHTML = afRenderAmostras(); afAttachAmostrasHandlers(); }
+  if(afActiveSubtab === 'tasks'){ content.innerHTML = afRenderTasks(); afAttachTasksHandlers(); }
+  if(afActiveSubtab === 'criterios'){ content.innerHTML = afRenderCriterios(); }
+}
+document.getElementById('afSubtabs').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.ptab');
+  if(!btn) return;
+  afActiveSubtab = btn.dataset.subtab;
+  afRenderActive();
+});
+
+/* ---------- Visão geral ---------- */
+function afFunnelRow(label, count, max){
+  const pct = max ? Math.round(count/max*100) : 0;
+  return `
+  <div style="display:grid; grid-template-columns:190px 1fr 40px; align-items:center; gap:10px; margin-bottom:8px;">
+    <div style="font-size:12.5px; color:var(--muted); font-weight:600;">${label}</div>
+    <div class="progress-track"><div class="progress-fill" style="width:${pct}%;"></div></div>
+    <div class="mono" style="font-size:12.5px; text-align:right;">${count}</div>
+  </div>`;
+}
+
+function afRenderOverview(){
+  const meta = 1700, variavelPct = 0.10;
+  const comissao = afState.estado.metas.comissaoMes || 0;
+  const pct = Math.min(100, Math.round(comissao/meta*100));
+  const variavel = comissao * variavelPct;
+  const week = afCurrentWeekRange();
+  const amostrasSemana = afState.amostras.filter(a => a.semana_inicio === week.start).length;
+  const now = new Date();
+  const leadsInboundMes = afState.leads.filter(l => {
+    if(!l.created_at) return false;
+    const d = new Date(l.created_at);
+    return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth() && (l.origem||'').toLowerCase().includes('inbound');
+  }).length;
+  const encaminhadosMes = afState.leads.filter(l => {
+    if(l.col!=='encaminhado' || !l.created_at) return false;
+    const d = new Date(l.created_at);
+    return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth();
+  }).length;
+  const maxFunnel = Math.max(1, ...AF_PIPELINE_COLS.map(c => afState.leads.filter(l=>l.col===c.key).length));
+  const prioridades = afState.tasks
+    .filter(t => t.col==='afazer' || t.col==='andamento')
+    .sort((a,b) => { const ord={Alta:0,'Média':1,Baixa:2}; return (ord[a.prioridade] ?? 3) - (ord[b.prioridade] ?? 3); })
+    .slice(0,5);
+
+  return `
+  <div class="kpi-row">
+    ${rtStatCard({icon:'💰', label:'Comissão gerada (mês)', value: fmtBRL(comissao), sub:`${pct}% da meta de ${fmtBRL(meta)}`, kind: pct>=100?{k:'good',label:'meta batida'}:pct>=50?{k:'warning',label:'em andamento'}:{k:'critical',label:'abaixo da meta'}})}
+    ${rtStatCard({icon:'💵', label:'Variável estimado (10%)', value: fmtBRL(variavel), sub:`Projeção se bater a meta: ${fmtBRL(meta*variavelPct)}`, kind:{k:'neutral', label:'estimado'}})}
+    ${rtStatCard({icon:'📦', label:'Amostras da semana', value:`${amostrasSemana}/3`, sub: amostrasSemana<3 ? `${3-amostrasSemana} vaga(s) livre(s)` : 'todas as vagas usadas', kind: amostrasSemana>=3?{k:'good',label:'completo'}:{k:'neutral',label:'em andamento'}})}
+    ${rtStatCard({icon:'🌱', label:'Leads inbound (mês)', value:`${leadsInboundMes}`, sub:`${encaminhadosMes} encaminhado(s) pra você`, kind:{k:'neutral', label:'este mês'}})}
+  </div>
+
+  <div class="card" style="padding:20px; margin-bottom:20px;">
+    <div class="card-title">💰 Registrar comissão do mês</div>
+    <div class="card-desc" style="margin-top:4px;">Atualize sempre que fechar mais uma venda de afiliado — alimenta o card acima.</div>
+    <div class="rt-form-row" style="grid-template-columns:1fr; max-width:320px; margin-top:10px;">
+      <label class="rt-label">Comissão gerada até agora (R$)<input type="number" step="0.01" id="afComissaoInput" class="rt-input" value="${comissao || ''}"></label>
+    </div>
+  </div>
+
+  <div class="card" style="padding:20px; margin-bottom:20px;">
+    <div class="card-title">Funil do pipeline de criadores</div>
+    <div class="card-desc" style="margin-top:4px;">Espelha ao vivo os cards da aba Pipeline de criadores.</div>
+    <div style="margin-top:14px;">
+      ${AF_PIPELINE_COLS.map(c => afFunnelRow(c.title, afState.leads.filter(l=>l.col===c.key).length, maxFunnel)).join('')}
+    </div>
+  </div>
+
+  <div class="card" style="padding:20px;">
+    <div class="card-title">Prioridades da semana</div>
+    <div class="card-desc" style="margin-top:4px;">Puxado da Central de demandas.</div>
+    <div style="overflow-x:auto; margin-top:14px;">
+      <table class="alias-table">
+        <thead><tr><th>Tarefa</th><th>Relacionado a</th><th>Prioridade</th><th>Prazo</th></tr></thead>
+        <tbody>
+          ${prioridades.length===0 ? `<tr><td colspan="4" style="color:var(--faint); font-style:italic; padding:16px 10px;">Nenhuma demanda pendente.</td></tr>` : prioridades.map(t => `
+            <tr>
+              <td style="font-weight:600;">${t.titulo}</td>
+              <td>${t.relacionado || '—'}</td>
+              <td>${t.prioridade ? `<span class="badge ${t.prioridade==='Alta'?'badge-critical':t.prioridade==='Média'?'badge-warning':'badge-neutral'}">${t.prioridade}</span>` : '—'}</td>
+              <td class="mono">${t.prazo || '—'}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+function afAttachOverviewHandlers(){
+  const input = document.getElementById('afComissaoInput');
+  if(!input) return;
+  input.addEventListener('change', async ()=>{
+    afState.estado.metas.comissaoMes = parseFloat(input.value) || 0;
+    await afSaveEstado();
+    afRenderActive();
+    showToast('Comissão do mês atualizada');
+  });
+}
+
+/* ---------- Pipeline de criadores ---------- */
+function afLeadCardHTML(rec){
+  const tags = [];
+  if(rec.loja) tags.push(`<span class="badge badge-neutral">${rec.loja}</span>`);
+  if(rec.origem) tags.push(`<span class="badge ${rec.origem==='Gerando vendas'?'badge-good':rec.origem==='Oportunidade fora do TikTok'?'badge-warning':'badge-neutral'}">${rec.origem}</span>`);
+  if(rec.categoria) tags.push(`<span class="badge badge-neutral">${rec.categoria}</span>`);
+  if(rec.receita_30d) tags.push(`<span class="badge badge-neutral">Receita 30d ${fmtBRL(rec.receita_30d)}</span>`);
+  if(rec.engajamento) tags.push(`<span class="badge badge-neutral">Eng. ${rec.engajamento}</span>`);
+  if(rec.seguidores) tags.push(`<span class="badge badge-neutral">${rec.seguidores} seg.</span>`);
+  if(rec.views_medio) tags.push(`<span class="badge badge-neutral">Views méd. ${rec.views_medio}</span>`);
+  if(rec.comissao_media) tags.push(`<span class="badge badge-neutral">Comissão méd. ${rec.comissao_media}</span>`);
+  if(rec.canal_contato) tags.push(`<span class="badge badge-neutral">${rec.canal_contato}</span>`);
+  if(rec.fast_growing) tags.push(`<span class="badge badge-good">Fast growing</span>`);
+  const next = rec.proximo_passo
+    ? `<div style="font-size:11.5px; color:var(--muted); border-top:1px dashed var(--border); padding-top:7px; margin-top:7px;">${rec.proximo_passo_label || 'Próximo passo'}: <b style="color:var(--ink);">${rec.proximo_passo}</b></div>`
+    : (rec.resultado_livre ? `<div style="font-size:11.5px; color:var(--muted); margin-top:7px;">🎯 ${rec.resultado_livre}</div>` : '');
+  const obs = rec.observacao ? `<div style="font-size:11.5px; color:var(--muted); background:var(--surface-2); border-radius:6px; padding:6px 8px; margin-top:7px; white-space:pre-wrap;">📝 ${rec.observacao}</div>` : '';
+  return `
+  <div class="rt-tcard" draggable="true" data-id="${rec.id}">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+      <span style="font-weight:700; font-size:13px;">${rec.handle || '(sem @)'}</span>
+      <span class="mono" style="font-weight:700;">${rec.score ?? '—'}</span>
+    </div>
+    ${tags.length ? `<div style="display:flex; flex-wrap:wrap; gap:5px; margin-top:7px;">${tags.join('')}</div>` : ''}
+    ${next}
+    ${obs}
+  </div>`;
+}
+
+function afRenderPipeline(){
+  return `
+  <div class="card" style="padding:20px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+      <div>
+        <div class="card-title">🧭 Pipeline de Criadores</div>
+        <div class="card-desc" style="margin-top:4px;">Do primeiro contato até virar afiliado ativo — arraste os cards entre colunas, clique num card pra editar.</div>
+      </div>
+      <button class="btn btn-soft btn-sm" id="afOpenImportBtn" type="button">📥 Importar leads (CSV)</button>
+    </div>
+    <div class="af-kanban-wrap" style="margin-top:16px;">
+      <div class="af-kanban" id="afPipelineKanban">
+        ${AF_PIPELINE_COLS.map(c => {
+          const items = afState.leads.filter(l => l.col === c.key);
+          return `
+          <div class="rt-kcol" data-status="${c.key}">
+            <div class="rt-kcol-head"><span class="rt-kcol-title">${c.title}</span><span class="rt-kcol-count">${items.length}</span></div>
+            ${items.length===0 ? `<div class="empty-hint" style="padding:14px 6px;">Nada por aqui</div>` : items.map(afLeadCardHTML).join('')}
+            <button type="button" class="af-add-btn" data-col="${c.key}">+ Adicionar lead</button>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+function afAttachPipelineHandlers(){
+  const kanban = document.getElementById('afPipelineKanban');
+  kanban.querySelectorAll('.rt-tcard').forEach(card => {
+    card.addEventListener('dragstart', e => { e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain', card.dataset.id); card.classList.add('dragging'); });
+    card.addEventListener('dragend', () => card.classList.remove('dragging'));
+    card.addEventListener('click', () => afOpenLeadModal(Number(card.dataset.id)));
+  });
+  kanban.querySelectorAll('.rt-kcol').forEach(col => {
+    col.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect='move'; col.classList.add('drag-over'); });
+    col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
+    col.addEventListener('drop', async e => {
+      e.preventDefault(); col.classList.remove('drag-over');
+      const id = Number(e.dataTransfer.getData('text/plain'));
+      const rec = afState.leads.find(l => l.id===id);
+      const newCol = col.dataset.status;
+      if(!rec || rec.col===newCol) return;
+      rec.col = newCol;
+      afRenderActive();
+      await sb.from('afiliados_leads').update({ col:newCol, updated_at:new Date().toISOString() }).eq('id', id);
+    });
+  });
+  kanban.querySelectorAll('.af-add-btn').forEach(btn => {
+    btn.addEventListener('click', () => afOpenLeadModal(null, btn.dataset.col));
+  });
+  const importBtn = document.getElementById('afOpenImportBtn');
+  if(importBtn) importBtn.addEventListener('click', afOpenImportModal);
+}
+
+function afLeadFormHTML(rec){
+  return `
+  <div class="rt-form-row" style="grid-template-columns:1fr 1fr; margin-top:0;">
+    <label class="rt-label">Perfil (@)<input type="text" id="af-f-handle" class="rt-input" value="${rec?.handle||''}" placeholder="@usuario"></label>
+    <label class="rt-label">Estágio<select id="af-f-col" class="rt-select">${AF_PIPELINE_COLS.map(c=>`<option value="${c.key}" ${rec?.col===c.key?'selected':''}>${c.title}</option>`).join('')}</select></label>
+    <label class="rt-label">Loja<select id="af-f-loja" class="rt-select"><option value="">—</option>${rtState.stores.map(s=>`<option ${rec?.loja===s?'selected':''}>${s}</option>`).join('')}</select></label>
+    <label class="rt-label">Origem / status<input type="text" id="af-f-origem" class="rt-input" value="${rec?.origem||''}" placeholder="Inbound, Prospecção, Gerando vendas..."></label>
+    <label class="rt-label">Score (0–100)<input type="number" id="af-f-score" class="rt-input" min="0" max="100" value="${rec?.score ?? ''}"></label>
+    <label class="rt-label">Categoria<input type="text" id="af-f-categoria" class="rt-input" value="${rec?.categoria||''}" placeholder="Moda / calçados"></label>
+    <label class="rt-label">Receita gerada 30d (R$)<input type="number" step="0.01" id="af-f-receita" class="rt-input" value="${rec?.receita_30d ?? ''}"></label>
+    <label class="rt-label">Taxa de engajamento<input type="text" id="af-f-eng" class="rt-input" value="${rec?.engajamento||''}" placeholder="5,2%"></label>
+    <label class="rt-label">Seguidores<input type="text" id="af-f-seguidores" class="rt-input" value="${rec?.seguidores||''}" placeholder="58k"></label>
+    <label class="rt-label">Visualização média/vídeo<input type="text" id="af-f-views" class="rt-input" value="${rec?.views_medio||''}" placeholder="12k"></label>
+    <label class="rt-label">Comissão média aceita<input type="text" id="af-f-comissao" class="rt-input" value="${rec?.comissao_media||''}" placeholder="15%"></label>
+    <label class="rt-label">Canal de contato<input type="text" id="af-f-canal" class="rt-input" value="${rec?.canal_contato||''}" placeholder="WhatsApp, Instagram DM..."></label>
+    <label class="rt-label" style="flex-direction:row; align-items:center; gap:8px;"><input type="checkbox" id="af-f-fast" ${rec?.fast_growing?'checked':''} style="width:auto;"> Selo "Fast growing"</label>
+    <label class="rt-label" style="grid-column:1/-1;">Marcas parceiras (histórico)<input type="text" id="af-f-marcas" class="rt-input" value="${rec?.marcas_parceiras||''}"></label>
+    <label class="rt-label" style="grid-column:1/-1;">Próximo passo / proposta<input type="text" id="af-f-proximo" class="rt-input" value="${rec?.proximo_passo||''}"></label>
+    <label class="rt-label" style="grid-column:1/-1;">Resultado (texto livre)<input type="text" id="af-f-resultado" class="rt-input" value="${rec?.resultado_livre||''}" placeholder="Ex.: Comissão no mês R$ 210,00"></label>
+    <label class="rt-label" style="grid-column:1/-1;">Observação<textarea id="af-f-observacao" class="rt-input" rows="3">${rec?.observacao||''}</textarea></label>
+  </div>`;
+}
+function afOpenLeadModal(id, presetCol){
+  const rec = id ? afState.leads.find(l=>l.id===id) : null;
+  afModalContext = { type:'lead', id };
+  document.getElementById('afModalTitle').textContent = rec ? 'Editar lead' : 'Novo lead';
+  document.getElementById('afModalDelete').style.display = rec ? '' : 'none';
+  document.getElementById('afModalBody').innerHTML = afLeadFormHTML(rec);
+  if(!rec && presetCol) document.getElementById('af-f-col').value = presetCol;
+  document.getElementById('afModalOverlay').style.display = 'flex';
+}
+async function afSaveLeadFromForm(){
+  const handle = document.getElementById('af-f-handle').value.trim();
+  if(!handle) return;
+  const proximo = document.getElementById('af-f-proximo').value.trim();
+  const payload = {
+    handle, col: document.getElementById('af-f-col').value,
+    loja: document.getElementById('af-f-loja').value || null,
+    origem: document.getElementById('af-f-origem').value.trim() || null,
+    score: document.getElementById('af-f-score').value===''? null : Number(document.getElementById('af-f-score').value),
+    categoria: document.getElementById('af-f-categoria').value.trim() || null,
+    receita_30d: document.getElementById('af-f-receita').value===''? null : Number(document.getElementById('af-f-receita').value),
+    engajamento: document.getElementById('af-f-eng').value.trim() || null,
+    seguidores: document.getElementById('af-f-seguidores').value.trim() || null,
+    views_medio: document.getElementById('af-f-views').value.trim() || null,
+    comissao_media: document.getElementById('af-f-comissao').value.trim() || null,
+    canal_contato: document.getElementById('af-f-canal').value.trim() || null,
+    fast_growing: document.getElementById('af-f-fast').checked,
+    marcas_parceiras: document.getElementById('af-f-marcas').value.trim() || null,
+    proximo_passo: proximo || null,
+    proximo_passo_label: proximo ? 'Próximo passo' : null,
+    resultado_livre: document.getElementById('af-f-resultado').value.trim() || null,
+    observacao: document.getElementById('af-f-observacao').value.trim() || null,
+    updated_at: new Date().toISOString()
+  };
+  if(afModalContext.id){
+    const { error } = await sb.from('afiliados_leads').update(payload).eq('id', afModalContext.id);
+    if(error){ showToast('Não consegui salvar: '+error.message); return; }
+    Object.assign(afState.leads.find(l=>l.id===afModalContext.id), payload);
+  }else{
+    const { data, error } = await sb.from('afiliados_leads').insert(payload).select().single();
+    if(error){ showToast('Não consegui salvar: '+error.message); return; }
+    afState.leads.push(data);
+  }
+  afRenderActive();
+  afCloseModal();
+  showToast('Lead salvo');
+}
+
+/* ---------- Central de demandas (rotina fixa + kanban variável) ---------- */
+function afTaskCardHTML(rec){
+  const tags = [];
+  if(rec.prioridade) tags.push(`<span class="badge ${rec.prioridade==='Alta'?'badge-critical':rec.prioridade==='Média'?'badge-warning':'badge-neutral'}">${rec.prioridade}</span>`);
+  if(rec.prazo) tags.push(`<span class="badge badge-neutral mono">${rec.prazo}</span>`);
+  if(rec.relacionado) tags.push(`<span class="badge badge-neutral">${rec.relacionado}</span>`);
+  if(rec.selo) tags.push(`<span class="badge ${rec.selo_tipo||'badge-neutral'}">${rec.selo}</span>`);
+  return `
+  <div class="rt-tcard" draggable="true" data-id="${rec.id}">
+    <div style="font-weight:700; font-size:12.5px;">${rec.titulo}</div>
+    ${tags.length ? `<div style="display:flex; flex-wrap:wrap; gap:5px; margin-top:7px;">${tags.join('')}</div>` : ''}
+    ${rec.responsavel ? `<div style="font-size:11px; color:var(--faint); margin-top:6px;">Responsável: ${rec.responsavel}</div>` : ''}
+    ${rec.obs ? `<div style="font-size:11.5px; color:var(--muted); background:var(--surface-2); border-radius:6px; padding:6px 8px; margin-top:7px; white-space:pre-wrap;">📝 ${rec.obs}</div>` : ''}
+  </div>`;
+}
+
+function afRenderTasks(){
+  return `
+  <div class="card" style="padding:20px; margin-bottom:20px;">
+    <div class="card-title">🔁 Rotina semanal fixa</div>
+    <div class="card-desc" style="margin-top:4px;">Reinicia toda semana — desmarque os itens ao começar uma nova. Dá pra editar os itens de cada categoria.</div>
+    <div class="rt-cat-grid" id="afRecurGrid" style="margin-top:14px;">
+      ${afState.estado.rotina.map((cat,ci) => {
+        const color = AF_CAT_COLORS[cat.color] || '#4F97AB';
+        const done = cat.items.filter(i=>i.done).length;
+        const pct = cat.items.length ? Math.round(done/cat.items.length*100) : 0;
+        return `
+        <div class="card">
+          <div class="rt-cat-head">
+            <div class="rt-cat-ic" style="background:${color}22; color:${color};">${cat.icon}</div>
+            <div class="rt-cat-progress">
+              <div class="rt-cat-name">${cat.title}</div>
+              <div style="margin-top:6px;">${rtProgressBar(pct,color)}</div>
+            </div>
+            <div class="rt-cat-count">${done}/${cat.items.length}</div>
+          </div>
+          <div class="rt-cat-body">
+            ${cat.items.map(item => `
+              <div class="rt-item-row">
+                <input type="checkbox" class="rt-cb af-recur-check" data-cat="${ci}" data-id="${item.id}" ${item.done?'checked':''} style="accent-color:${color};">
+                <span class="${item.done?'done-text':''}">${item.text}${item.recur?`<span class="badge badge-neutral" style="margin-left:8px;">🔁 ${item.recur}</span>`:''}</span>
+                <button type="button" class="rt-item-delete" data-cat="${ci}" data-id="${item.id}" title="Excluir item">×</button>
+              </div>`).join('')}
+            <form class="af-recur-add-form rt-add-row" data-cat="${ci}">
+              <input type="text" class="rt-input" placeholder="Adicionar item a esta categoria..." style="font-size:13px;">
+              <button type="submit" class="btn btn-soft btn-sm">+ Adicionar</button>
+            </form>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>
+
+  <div class="card" style="padding:20px;">
+    <div class="card-title">📌 Demandas variáveis da semana</div>
+    <div class="card-desc" style="margin-top:4px;">Negociações pontuais, aprovações e imprevistos — arraste pra mudar de estágio, clique num card pra editar.</div>
+    <div class="af-kanban-wrap" style="margin-top:14px;">
+      <div class="af-kanban" id="afTasksKanban">
+        ${AF_TASK_COLS.map(c => {
+          const items = afState.tasks.filter(t => t.col === c.key);
+          return `
+          <div class="rt-kcol" data-status="${c.key}">
+            <div class="rt-kcol-head"><span class="rt-kcol-title">${c.title}</span><span class="rt-kcol-count">${items.length}</span></div>
+            ${items.length===0 ? `<div class="empty-hint" style="padding:14px 6px;">Nada por aqui</div>` : items.map(afTaskCardHTML).join('')}
+            <button type="button" class="af-add-btn" data-col="${c.key}">+ Adicionar demanda</button>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+function afAttachTasksHandlers(){
+  const grid = document.getElementById('afRecurGrid');
+  grid.querySelectorAll('.af-recur-check').forEach(cb => {
+    cb.addEventListener('change', async (e) => {
+      const ci=e.target.dataset.cat, id=e.target.dataset.id;
+      const item = afState.estado.rotina[ci].items.find(i=>i.id===id);
+      item.done = e.target.checked;
+      afRenderActive();
+      await afSaveEstado();
+    });
+  });
+  grid.querySelectorAll('.rt-item-delete').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const ci=btn.dataset.cat, id=btn.dataset.id;
+      const ok = await confirmDialog('Excluir item?', 'Isso remove o item da lista.', 'Excluir');
+      if(!ok) return;
+      afState.estado.rotina[ci].items = afState.estado.rotina[ci].items.filter(i=>i.id!==id);
+      afRenderActive();
+      await afSaveEstado();
+    });
+  });
+  grid.querySelectorAll('.af-recur-add-form').forEach(f => {
+    f.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const ci=f.dataset.cat; const input=f.querySelector('input'); const text=input.value.trim();
+      if(!text) return;
+      afState.estado.rotina[ci].items.push({ id:'extra-'+Date.now(), text, done:false });
+      afRenderActive();
+      await afSaveEstado();
+    });
+  });
+
+  const kanban = document.getElementById('afTasksKanban');
+  kanban.querySelectorAll('.rt-tcard').forEach(card => {
+    card.addEventListener('dragstart', e => { e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain', card.dataset.id); card.classList.add('dragging'); });
+    card.addEventListener('dragend', () => card.classList.remove('dragging'));
+    card.addEventListener('click', () => afOpenTaskModal(Number(card.dataset.id)));
+  });
+  kanban.querySelectorAll('.rt-kcol').forEach(col => {
+    col.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect='move'; col.classList.add('drag-over'); });
+    col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
+    col.addEventListener('drop', async e => {
+      e.preventDefault(); col.classList.remove('drag-over');
+      const id = Number(e.dataTransfer.getData('text/plain'));
+      const rec = afState.tasks.find(t => t.id===id);
+      const newCol = col.dataset.status;
+      if(!rec || rec.col===newCol) return;
+      rec.col = newCol;
+      afRenderActive();
+      await sb.from('afiliados_tasks').update({ col:newCol }).eq('id', id);
+    });
+  });
+  kanban.querySelectorAll('.af-add-btn').forEach(btn => {
+    btn.addEventListener('click', () => afOpenTaskModal(null, btn.dataset.col));
+  });
+}
+
+function afTaskFormHTML(rec){
+  return `
+  <div class="rt-form-row" style="grid-template-columns:1fr 1fr; margin-top:0;">
+    <label class="rt-label" style="grid-column:1/-1;">Título<input type="text" id="af-t-titulo" class="rt-input" value="${rec?.titulo||''}"></label>
+    <label class="rt-label">Estágio<select id="af-t-col" class="rt-select">${AF_TASK_COLS.map(c=>`<option value="${c.key}" ${rec?.col===c.key?'selected':''}>${c.title}</option>`).join('')}</select></label>
+    <label class="rt-label">Prioridade<select id="af-t-prioridade" class="rt-select"><option value="">—</option><option ${rec?.prioridade==='Alta'?'selected':''}>Alta</option><option ${rec?.prioridade==='Média'?'selected':''}>Média</option><option ${rec?.prioridade==='Baixa'?'selected':''}>Baixa</option></select></label>
+    <label class="rt-label">Prazo<input type="text" id="af-t-prazo" class="rt-input" value="${rec?.prazo||''}" placeholder="Ex.: até 30/08"></label>
+    <label class="rt-label">Relacionado a<input type="text" id="af-t-relacionado" class="rt-input" value="${rec?.relacionado||''}"></label>
+    <label class="rt-label">Responsável<input type="text" id="af-t-responsavel" class="rt-input" value="${rec?.responsavel||''}"></label>
+    <label class="rt-label">Selo de status<input type="text" id="af-t-selo" class="rt-input" value="${rec?.selo||''}"></label>
+    <label class="rt-label">Cor do selo
+      <select id="af-t-selotipo" class="rt-select">
+        <option value="badge-neutral" ${rec?.selo_tipo==='badge-neutral'?'selected':''}>Neutro</option>
+        <option value="badge-warning" ${rec?.selo_tipo==='badge-warning'?'selected':''}>Destaque</option>
+        <option value="badge-good" ${rec?.selo_tipo==='badge-good'?'selected':''}>Positivo</option>
+        <option value="badge-critical" ${rec?.selo_tipo==='badge-critical'?'selected':''}>Crítico</option>
+      </select>
+    </label>
+    <label class="rt-label" style="grid-column:1/-1;">Observação<textarea id="af-t-obs" class="rt-input" rows="3">${rec?.obs||''}</textarea></label>
+  </div>`;
+}
+function afOpenTaskModal(id, presetCol){
+  const rec = id ? afState.tasks.find(t=>t.id===id) : null;
+  afModalContext = { type:'task', id };
+  document.getElementById('afModalTitle').textContent = rec ? 'Editar demanda' : 'Nova demanda';
+  document.getElementById('afModalDelete').style.display = rec ? '' : 'none';
+  document.getElementById('afModalBody').innerHTML = afTaskFormHTML(rec);
+  if(!rec && presetCol) document.getElementById('af-t-col').value = presetCol;
+  document.getElementById('afModalOverlay').style.display = 'flex';
+}
+async function afSaveTaskFromForm(){
+  const titulo = document.getElementById('af-t-titulo').value.trim();
+  if(!titulo) return;
+  const payload = {
+    titulo, col: document.getElementById('af-t-col').value,
+    prioridade: document.getElementById('af-t-prioridade').value || null,
+    prazo: document.getElementById('af-t-prazo').value.trim() || null,
+    relacionado: document.getElementById('af-t-relacionado').value.trim() || null,
+    responsavel: document.getElementById('af-t-responsavel').value.trim() || null,
+    selo: document.getElementById('af-t-selo').value.trim() || null,
+    selo_tipo: document.getElementById('af-t-selotipo').value,
+    obs: document.getElementById('af-t-obs').value.trim() || null
+  };
+  if(afModalContext.id){
+    const { error } = await sb.from('afiliados_tasks').update(payload).eq('id', afModalContext.id);
+    if(error){ showToast('Não consegui salvar: '+error.message); return; }
+    Object.assign(afState.tasks.find(t=>t.id===afModalContext.id), payload);
+  }else{
+    const { data, error } = await sb.from('afiliados_tasks').insert(payload).select().single();
+    if(error){ showToast('Não consegui salvar: '+error.message); return; }
+    afState.tasks.push(data);
+  }
+  afRenderActive();
+  afCloseModal();
+  showToast('Demanda salva');
+}
+
+/* ---------- Modal compartilhado (lead / demanda) ---------- */
+function afCloseModal(){
+  document.getElementById('afModalOverlay').style.display = 'none';
+  afModalContext = null;
+}
+document.getElementById('afModalClose').addEventListener('click', afCloseModal);
+document.getElementById('afModalCancel').addEventListener('click', afCloseModal);
+document.getElementById('afModalOverlay').addEventListener('click', (e) => { if(e.target.id==='afModalOverlay') afCloseModal(); });
+document.getElementById('afModalSave').addEventListener('click', async () => {
+  if(!afModalContext) return;
+  if(afModalContext.type==='lead') await afSaveLeadFromForm();
+  else if(afModalContext.type==='task') await afSaveTaskFromForm();
+});
+document.getElementById('afModalDelete').addEventListener('click', async () => {
+  if(!afModalContext || !afModalContext.id) return;
+  const ok = await confirmDialog('Excluir?', 'Essa ação não pode ser desfeita.', 'Excluir');
+  if(!ok) return;
+  if(afModalContext.type==='lead'){
+    const id = afModalContext.id;
+    afState.leads = afState.leads.filter(l=>l.id!==id);
+    afRenderActive(); afCloseModal();
+    await sb.from('afiliados_leads').delete().eq('id', id);
+  }else{
+    const id = afModalContext.id;
+    afState.tasks = afState.tasks.filter(t=>t.id!==id);
+    afRenderActive(); afCloseModal();
+    await sb.from('afiliados_tasks').delete().eq('id', id);
+  }
+});
+
+/* ---------- Importar leads via CSV ---------- */
+function afOpenImportModal(){
+  document.getElementById('afImportFile').value = '';
+  document.getElementById('afImportPreview').style.display = 'none';
+  document.getElementById('afImportConfirm').disabled = true;
+  afParsedImportRows = [];
+  document.getElementById('afImportTargetCol').innerHTML = AF_PIPELINE_COLS.map(c=>`<option value="${c.key}">${c.title}</option>`).join('');
+  document.getElementById('afImportOverlay').style.display = 'flex';
+}
+document.getElementById('afImportClose').addEventListener('click', () => document.getElementById('afImportOverlay').style.display='none');
+document.getElementById('afImportCancel').addEventListener('click', () => document.getElementById('afImportOverlay').style.display='none');
+document.getElementById('afImportOverlay').addEventListener('click', (e) => { if(e.target.id==='afImportOverlay') document.getElementById('afImportOverlay').style.display='none'; });
+
+function afParseCSV(text){
+  const rows=[]; let row=[], field='', inQuotes=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(inQuotes){
+      if(c==='"'){ if(text[i+1]==='"'){ field+='"'; i++; } else inQuotes=false; }
+      else field+=c;
+    }else{
+      if(c==='"') inQuotes=true;
+      else if(c===','||c===';'){ row.push(field); field=''; }
+      else if(c==='\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+      else if(c==='\r'){ /* ignora */ }
+      else field+=c;
+    }
+  }
+  if(field.length||row.length){ row.push(field); rows.push(row); }
+  return rows.filter(r => r.some(cell => cell.trim() !== ''));
+}
+const AF_HEADER_MAP = [
+  { field:'handle', keys:['creator','handle','username','usuario','criador','nome','@'] },
+  { field:'score', keys:['score','pontua'] },
+  { field:'seguidores', keys:['follower','seguidor'] },
+  { field:'receita_30d', keys:['revenue','gmv','receita'] },
+  { field:'engajamento', keys:['engagement','engajamento'] },
+  { field:'views_medio', keys:['view','visualiza'] },
+  { field:'categoria', keys:['categor'] },
+  { field:'comissao_media', keys:['commission','comiss'] },
+  { field:'loja', keys:['store','loja','shop'] },
+  { field:'canal_contato', keys:['contact','contato','channel','canal'] }
+];
+function afNormalize(s){ return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim(); }
+function afMapHeaders(headers){
+  return headers.map(h => {
+    const norm = afNormalize(h);
+    for(const m of AF_HEADER_MAP){ if(m.keys.some(k => norm.includes(k))) return m.field; }
+    return null;
+  });
+}
+document.getElementById('afImportFile').addEventListener('change', () => {
+  const file = document.getElementById('afImportFile').files[0];
+  document.getElementById('afImportConfirm').disabled = true;
+  document.getElementById('afImportPreview').style.display = 'none';
+  afParsedImportRows = [];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const rows = afParseCSV(String(reader.result||''));
+    if(rows.length<2) return;
+    const fields = afMapHeaders(rows[0]);
+    afParsedImportRows = rows.slice(1).map((r,i) => {
+      const rec = { origem:'Prospecção' };
+      fields.forEach((f,idx) => { if(f && r[idx]!==undefined && r[idx].trim()!=='') rec[f]=r[idx].trim(); });
+      if(!rec.handle) rec.handle = '@lead-importado-'+(i+1);
+      if(rec.score!==undefined) rec.score = Number(rec.score) || null;
+      if(rec.receita_30d!==undefined) rec.receita_30d = Number(String(rec.receita_30d).replace(',','.')) || null;
+      return rec;
+    });
+    const targetCol = document.getElementById('afImportTargetCol').value;
+    document.getElementById('afImportPreviewHead').textContent = afParsedImportRows.length + ' lead(s) detectado(s) — serão adicionados em "' + AF_PIPELINE_COLS.find(c=>c.key===targetCol).title + '"';
+    document.getElementById('afImportPreviewTable').innerHTML = `<thead><tr><th>Perfil</th><th>Loja</th><th>Score</th><th>Seguidores</th></tr></thead><tbody>${afParsedImportRows.slice(0,8).map(rec=>`<tr><td>${rec.handle}</td><td>${rec.loja||'—'}</td><td>${rec.score??'—'}</td><td>${rec.seguidores||'—'}</td></tr>`).join('')}</tbody>`;
+    document.getElementById('afImportPreview').style.display = 'block';
+    document.getElementById('afImportConfirm').disabled = afParsedImportRows.length===0;
+  };
+  reader.readAsText(file, 'UTF-8');
+});
+document.getElementById('afImportTargetCol').addEventListener('change', () => {
+  if(!afParsedImportRows.length) return;
+  const targetCol = document.getElementById('afImportTargetCol').value;
+  document.getElementById('afImportPreviewHead').textContent = afParsedImportRows.length + ' lead(s) detectado(s) — serão adicionados em "' + AF_PIPELINE_COLS.find(c=>c.key===targetCol).title + '"';
+});
+document.getElementById('afImportConfirm').addEventListener('click', async () => {
+  if(!afParsedImportRows.length) return;
+  const targetCol = document.getElementById('afImportTargetCol').value;
+  const payloads = afParsedImportRows.map(r => ({ ...r, col: targetCol }));
+  const { data, error } = await sb.from('afiliados_leads').insert(payloads).select();
+  if(error){ showToast('Não consegui importar: '+error.message); return; }
+  afState.leads.push(...(data||[]));
+  document.getElementById('afImportOverlay').style.display = 'none';
+  afRenderActive();
+  showToast(payloads.length + ' lead(s) importado(s)');
+});
+
+/* ---------- Controle de amostras ---------- */
+function afAmostrasRows(){
+  if(afState.amostras.length===0) return `<tr><td style="color:var(--faint); font-style:italic; padding:16px 10px;">Nenhuma amostra registrada ainda.</td></tr>`;
+  return `
+    <thead><tr><th>Semana</th><th>Criador</th><th>Modelo</th><th>Envio</th><th>Score</th><th>Contato</th><th>Resultado</th><th>Decisão</th><th></th></tr></thead>
+    <tbody>
+      ${afState.amostras.map(a => `
+        <tr>
+          <td class="mono">${formatDateKeyToLabel(a.semana_inicio)} a ${formatDateKeyToLabel(a.semana_fim)}</td>
+          <td style="font-weight:600;">${a.criador}${a.loja?`<div style="font-size:11px; color:var(--faint);">${a.loja}</div>`:''}</td>
+          <td>${a.modelo||'—'}${a.tamanho?` — ${a.tamanho}`:''}</td>
+          <td><input type="date" class="rt-input af-am-envio" data-id="${a.id}" value="${a.data_envio||''}" style="font-size:12px; padding:6px 8px;"></td>
+          <td class="mono">${a.score ?? '—'}</td>
+          <td>${a.forma_contato||'—'}</td>
+          <td><input type="text" class="rt-input af-am-resultado" data-id="${a.id}" value="${a.resultado||''}" placeholder="Ex.: 3 vendas · R$ 96" style="font-size:12px; padding:6px 8px;"></td>
+          <td>
+            <select class="rt-select af-am-decisao" data-id="${a.id}" style="font-size:12px; padding:6px 8px;">
+              <option value="">—</option>
+              <option ${a.decisao==='Renovar'?'selected':''}>Renovar</option>
+              <option ${a.decisao==='Não repetir'?'selected':''}>Não repetir</option>
+            </select>
+          </td>
+          <td><button class="rt-link-danger af-am-delete" data-id="${a.id}">Excluir</button></td>
+        </tr>`).join('')}
+    </tbody>`;
+}
+function afRenderAmostras(){
+  const week = afCurrentWeekRange();
+  const thisWeek = afState.amostras.filter(a => a.semana_inicio === week.start);
+  const modelos = [...new Set(Object.values(aliasMap))].sort();
+  return `
+  <div class="card" style="padding:20px;">
+    <div class="card-title">📦 Controle de Amostras</div>
+    <div class="card-desc" style="margin-top:4px;">Limite fixo: <b>3 pares por semana</b>, um por criador, escolhidos pelo score (ver Critérios &amp; Metas). Semana atual: ${thisWeek.length}/3 vagas usadas.</div>
+
+    <form id="afAmostraForm" class="rt-form-row" style="grid-template-columns:1.3fr 1fr 1fr 0.7fr 0.7fr 1fr auto;">
+      <label class="rt-label">Criador (@)<input type="text" id="af-am-criador" class="rt-input" placeholder="@usuario" required></label>
+      <label class="rt-label">Loja<select id="af-am-loja" class="rt-select"><option value="">—</option>${rtState.stores.map(s=>`<option>${s}</option>`).join('')}</select></label>
+      <label class="rt-label">Modelo<select id="af-am-modelo" class="rt-select"><option value="">—</option>${modelos.map(m=>`<option>${m}</option>`).join('')}</select></label>
+      <label class="rt-label">Tamanho<input type="text" id="af-am-tamanho" class="rt-input" placeholder="37"></label>
+      <label class="rt-label">Score<input type="number" id="af-am-score" class="rt-input" min="0" max="100"></label>
+      <label class="rt-label">Forma de contato<input type="text" id="af-am-contato" class="rt-input" placeholder="WhatsApp, TikTok chat..."></label>
+      <button type="submit" class="btn btn-accent">Registrar</button>
+    </form>
+
+    <div style="overflow-x:auto; margin-top:16px;">
+      <table class="alias-table" id="afAmostrasTable">${afAmostrasRows()}</table>
+    </div>
+    <div class="card-desc" style="margin-top:12px; font-size:11.5px;"><b>Regra de reavaliação:</b> se em 3–4 semanas a amostra não gerar venda registrada, não repetir com o mesmo criador nesse ciclo.</div>
+  </div>`;
+}
+function afAttachAmostrasHandlers(){
+  document.getElementById('afAmostraForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const criador = document.getElementById('af-am-criador').value.trim();
+    if(!criador) return;
+    const week = afCurrentWeekRange();
+    const payload = {
+      semana_inicio: week.start, semana_fim: week.end, criador,
+      loja: document.getElementById('af-am-loja').value || null,
+      modelo: document.getElementById('af-am-modelo').value || null,
+      tamanho: document.getElementById('af-am-tamanho').value.trim() || null,
+      score: document.getElementById('af-am-score').value===''? null : Number(document.getElementById('af-am-score').value),
+      forma_contato: document.getElementById('af-am-contato').value.trim() || null
+    };
+    const { data, error } = await sb.from('afiliados_amostras').insert(payload).select().single();
+    if(error){ showToast('Não consegui salvar: '+error.message); return; }
+    afState.amostras.unshift(data);
+    afRenderActive();
+    showToast('Amostra registrada');
+  });
+  document.querySelectorAll('.af-am-envio').forEach(inp => {
+    inp.addEventListener('change', async (e) => {
+      const id=Number(e.target.dataset.id);
+      const val = e.target.value || null;
+      await sb.from('afiliados_amostras').update({ data_envio: val }).eq('id', id);
+      const rec = afState.amostras.find(a=>a.id===id); if(rec) rec.data_envio = val;
+    });
+  });
+  document.querySelectorAll('.af-am-resultado').forEach(inp => {
+    inp.addEventListener('change', async (e) => {
+      const id=Number(e.target.dataset.id);
+      const val = e.target.value.trim() || null;
+      await sb.from('afiliados_amostras').update({ resultado: val }).eq('id', id);
+      const rec = afState.amostras.find(a=>a.id===id); if(rec) rec.resultado = val;
+    });
+  });
+  document.querySelectorAll('.af-am-decisao').forEach(sel => {
+    sel.addEventListener('change', async (e) => {
+      const id=Number(e.target.dataset.id);
+      const val = e.target.value || null;
+      await sb.from('afiliados_amostras').update({ decisao: val }).eq('id', id);
+      const rec = afState.amostras.find(a=>a.id===id); if(rec) rec.decisao = val;
+    });
+  });
+  document.querySelectorAll('.af-am-delete').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = Number(btn.dataset.id);
+      const ok = await confirmDialog('Excluir amostra?', 'Isso remove o registro.', 'Excluir');
+      if(!ok) return;
+      afState.amostras = afState.amostras.filter(a=>a.id!==id);
+      afRenderActive();
+      await sb.from('afiliados_amostras').delete().eq('id', id);
+    });
+  });
+}
+
+/* ---------- Critérios & metas (referência estática) ---------- */
+function afRenderCriterios(){
+  return `
+  <div class="card" style="padding:20px; margin-bottom:20px;">
+    <div class="card-title">ICP do criador ideal</div>
+    <div class="card-desc" style="margin-top:4px;">Fonte: TikTok Shop · Buscar criadores. Primeiro confere se está dentro do ICP (sim/não) — só depois o score prioriza entre quem já está dentro.</div>
+    <div style="overflow-x:auto; margin-top:14px;">
+      <table class="alias-table">
+        <thead><tr><th>Métrica</th><th>Mínimo do ICP</th><th>Critério de aprovação</th></tr></thead>
+        <tbody>
+          <tr><td>Nicho</td><td class="mono">Sapatos / calçados</td><td>Conteúdo é do nicho — moda/calçado, não genérico</td></tr>
+          <tr><td>Seguidores</td><td class="mono">10 mil</td><td>Abaixo disso o alcance ainda é baixo demais pra valer o par</td></tr>
+          <tr><td>GMV — 30 dias</td><td class="mono">R$ 90 mil</td><td>Mostra que ele já vende de verdade na plataforma</td></tr>
+          <tr><td>Unidades vendidas — 30 dias</td><td class="mono">1.000</td><td>Confirma volume, não só um ticket alto isolado</td></tr>
+          <tr><td>Média de visualizações dos vídeos</td><td class="mono">900</td><td>Se zerada, não descarta — avaliar parceria por LIVE em vez de vídeo</td></tr>
+          <tr><td>Taxa de engajamento</td><td class="mono">2%</td><td>Audiência que interage, não só segue</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card-desc" style="margin-top:12px;"><b>Dentro do ICP</b> = bate todos os mínimos acima. <b>Views médias em 0</b> não elimina — vira candidato a parceria por LIVE. Abaixo de qualquer outro mínimo → fora do ICP por ora.</div>
+  </div>
+
+  <div class="card" style="padding:20px; margin-bottom:20px;">
+    <div class="card-title">Score pra priorizar entre quem já está no ICP (0–100)</div>
+    <div style="overflow-x:auto; margin-top:14px;">
+      <table class="alias-table">
+        <thead><tr><th>Métrica</th><th>Peso</th><th>O que observar</th></tr></thead>
+        <tbody>
+          <tr><td>Categoria de conteúdo</td><td class="mono">20</td><td>Já posta moda/calçado; combina com o público da loja</td></tr>
+          <tr><td>Receita gerada (30 dias)</td><td class="mono">20</td><td>Vendas via LIVE, vídeo ou vitrine</td></tr>
+          <tr><td>Taxa de engajamento</td><td class="mono">15</td><td>(curtidas+comentários+compart.) ÷ visualizações</td></tr>
+          <tr><td>Visualização média por vídeo</td><td class="mono">15</td><td>Alcance real do conteúdo recente</td></tr>
+          <tr><td>Tamanho de audiência</td><td class="mono">10</td><td>Faixa saudável — nem tão pequeno nem tão grande</td></tr>
+          <tr><td>Selo "Fast growing"</td><td class="mono">10</td><td>Top 10% em crescimento — vale antecipar</td></tr>
+          <tr><td>Comissão média aceita</td><td class="mono">5</td><td>Compatível com o que a loja consegue pagar</td></tr>
+          <tr><td>Marcas parceiras / histórico</td><td class="mono">5</td><td>Já trabalhou com marcas do nicho, sem conflito direto</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card-desc" style="margin-top:12px;"><b>≥ 75</b> → prioridade alta para amostra · <b>55–74</b> → bom potencial, acompanhar orgânico primeiro · <b>&lt; 55</b> → baixo potencial por ora.</div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card" style="padding:20px;">
+      <div class="card-title">Meta de comissão &amp; variável</div>
+      <p class="card-desc" style="margin-top:8px;">Hoje, somando as 3 lojas, todos os afiliados juntos geram cerca de <b>R$ 1.700</b> em comissão por mês. A meta inicial dele é chegar sozinho nesse valor, só com a carteira que ele mesmo constrói e qualifica.</p>
+      <div class="card-desc" style="margin-top:10px; background:var(--surface-2); border-radius:8px; padding:12px 14px;">
+        <b>Meta mensal:</b> R$ 1.700 em comissão gerada pelos afiliados sob gestão dele.<br>
+        <b>Variável:</b> 10% sobre a comissão de <i>todos</i> os afiliados que ele atuar, pago sobre o realizado.<br>
+        <b>Revisar</b> a meta trimestralmente conforme a carteira dele crescer.
+      </div>
+    </div>
+    <div class="card" style="padding:20px;">
+      <div class="card-title">Regras do programa de amostra</div>
+      <ul style="margin:10px 0 0; padding-left:18px; font-size:13px; color:var(--muted); line-height:1.9;">
+        <li>3 pares por semana, um por criador, sem exceção</li>
+        <li>Escolha baseada no score — não em achismo</li>
+        <li>Resultado conferido em 3–4 semanas após o envio</li>
+        <li>Sem venda no prazo → não repetir com o mesmo criador nesse ciclo</li>
+        <li>Oportunidade fora do TikTok → nunca negociada por ele, só qualificada e encaminhada</li>
+      </ul>
+    </div>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════
    METAS & BÔNUS
    ═══════════════════════════════════════════════════════ */
 
@@ -5915,20 +6869,61 @@ function vrInit(){
 
 /* ---------- Autenticação (Supabase Auth) ---------- */
 let appInitialized = false;
+let currentUserRole = null;
 
 function showAuthScreen(){
   document.getElementById('authScreen').style.display = 'flex';
   document.getElementById('app').classList.add('hidden');
 }
 
-function showApp(session){
+/* Esconde tudo que não seja a Central de Afiliados pra quem não é admin.
+   Isso é só reforço visual — a proteção de verdade é o RLS no banco
+   (perfis_usuario + is_admin()), então mesmo que alguém force a UI a
+   mostrar outra aba, a consulta ao Supabase volta vazia. */
+function applyRoleUI(role){
+  const restricted = role !== 'admin';
+  document.querySelectorAll('.nav-item').forEach(item => {
+    const keep = item.dataset.view === 'afiliados';
+    item.style.display = (restricted && !keep) ? 'none' : '';
+  });
+  document.querySelectorAll('.nav-group').forEach(group => {
+    const anyVisible = Array.from(group.querySelectorAll('.nav-item')).some(i => i.style.display !== 'none');
+    group.style.display = (restricted && !anyVisible) ? 'none' : '';
+  });
+  const platformCard = document.querySelector('.sidebar-foot .foot-card:not(.user-card)');
+  if(platformCard) platformCard.style.display = restricted ? 'none' : '';
+  if(restricted){
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    const afNav = document.querySelector('.nav-item[data-view="afiliados"]');
+    if(afNav) afNav.classList.add('active');
+    document.querySelectorAll('.view').forEach(view => view.classList.toggle('active', view.id === 'view-afiliados'));
+    document.getElementById('topTitle').textContent = 'Central de Afiliados';
+    document.getElementById('topEyebrow').textContent = 'Parcerias';
+  }
+}
+
+async function showApp(session){
   document.getElementById('authScreen').style.display = 'none';
   document.getElementById('app').classList.remove('hidden');
   const emailEl = document.getElementById('userEmailLabel');
   if(emailEl) emailEl.textContent = session.user.email;
-  if(!appInitialized){
-    appInitialized = true;
+  if(appInitialized) return;
+  appInitialized = true;
+
+  const email = (session.user.email || '').toLowerCase();
+  const { data: perfil, error } = await sb.from('perfis_usuario').select('role').eq('email', email).maybeSingle();
+  if(error || !perfil){
+    showToast('Sua conta não tem acesso configurado neste sistema. Fale com o administrador.');
+    await sb.auth.signOut();
+    appInitialized = false;
+    return;
+  }
+  currentUserRole = perfil.role;
+  applyRoleUI(currentUserRole);
+  if(currentUserRole === 'admin'){
     loadData();
+  }else{
+    afInit();
   }
 }
 
