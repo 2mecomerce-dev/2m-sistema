@@ -876,7 +876,14 @@
     font-size:12.5px; color:var(--danger); background:var(--danger-soft); border:1px solid var(--danger-line);
     border-radius:var(--r-sm); padding:9px 12px; margin-bottom:14px; text-align:left;
   }
-  #authForm .btn{width:100%; justify-content:center;}
+  .auth-note{
+    font-size:12.5px; color:var(--accent-d); background:var(--accent-soft); border:1px solid var(--accent-line, var(--border));
+    border-radius:var(--r-sm); padding:9px 12px; margin-bottom:14px; text-align:left;
+  }
+  .auth-switch{margin-top:14px; font-size:12.5px;}
+  .auth-switch a{color:var(--muted); text-decoration:underline; cursor:pointer;}
+  .auth-switch a:hover{color:var(--accent);}
+  #authForm .btn, #signupForm .btn{width:100%; justify-content:center;}
   .user-card{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px;}
   .user-email{font-size:11.5px; color:var(--sb-ink); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 </style>
@@ -899,6 +906,30 @@
         <input type="password" id="authPassword" required autocomplete="current-password">
       </div>
       <button type="submit" class="btn btn-accent" id="authSubmitBtn">Entrar</button>
+    </form>
+    <div class="auth-switch">
+      <a href="#" id="authGoSignup">Ainda não tem conta? Criar conta</a>
+    </div>
+
+    <form id="signupForm" style="display:none;">
+      <div class="auth-error" id="signupError" style="display:none;"></div>
+      <div class="auth-note" id="signupNote" style="display:none;"></div>
+      <div class="auth-field">
+        <label>E-mail</label>
+        <input type="email" id="signupEmail" required autocomplete="username">
+      </div>
+      <div class="auth-field">
+        <label>Senha</label>
+        <input type="password" id="signupPassword" required autocomplete="new-password" minlength="6">
+      </div>
+      <div class="auth-field">
+        <label>Confirmar senha</label>
+        <input type="password" id="signupPasswordConfirm" required autocomplete="new-password" minlength="6">
+      </div>
+      <button type="submit" class="btn btn-accent" id="signupSubmitBtn">Criar conta</button>
+      <div class="auth-switch">
+        <a href="#" id="authGoLogin">Já tenho conta, entrar</a>
+      </div>
     </form>
   </div>
 </div>
@@ -6967,6 +6998,70 @@ document.getElementById('authForm').addEventListener('submit', async (e)=>{
   if(error){
     errEl.textContent = 'E-mail ou senha inválidos.';
     errEl.style.display = 'block';
+  }
+});
+
+/* ---------- Criar conta (só e-mail pré-autorizado, via trigger no banco) ---------- */
+document.getElementById('authGoSignup').addEventListener('click', (e)=>{
+  e.preventDefault();
+  document.getElementById('authForm').style.display = 'none';
+  document.querySelector('#authScreen .auth-switch').style.display = 'none';
+  document.getElementById('signupForm').style.display = 'block';
+  document.getElementById('signupEmail').value = document.getElementById('authEmail').value;
+});
+document.getElementById('authGoLogin').addEventListener('click', (e)=>{
+  e.preventDefault();
+  document.getElementById('signupForm').style.display = 'none';
+  document.getElementById('signupError').style.display = 'none';
+  document.getElementById('signupNote').style.display = 'none';
+  document.getElementById('authForm').style.display = 'block';
+  document.querySelector('#authScreen .auth-switch').style.display = 'block';
+});
+
+document.getElementById('signupForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  if(!sb) return;
+  const email = document.getElementById('signupEmail').value.trim().toLowerCase();
+  const password = document.getElementById('signupPassword').value;
+  const passwordConfirm = document.getElementById('signupPasswordConfirm').value;
+  const btn = document.getElementById('signupSubmitBtn');
+  const errEl = document.getElementById('signupError');
+  const noteEl = document.getElementById('signupNote');
+  errEl.style.display = 'none';
+  noteEl.style.display = 'none';
+
+  if(password !== passwordConfirm){
+    errEl.textContent = 'As senhas não coincidem.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if(password.length < 6){
+    errEl.textContent = 'A senha precisa ter pelo menos 6 caracteres.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Criando…';
+  const { data, error } = await sb.auth.signUp({ email, password });
+  btn.disabled = false;
+  btn.textContent = 'Criar conta';
+
+  if(error){
+    errEl.textContent = /não autorizado|not authorized|database error/i.test(error.message)
+      ? 'Este e-mail ainda não foi liberado. Peça para o administrador autorizar antes de criar a conta.'
+      : error.message;
+    errEl.style.display = 'block';
+    return;
+  }
+
+  if(data.session){
+    // e-mail não exige confirmação neste projeto — já entra direto
+    showApp(data.session);
+  }else{
+    noteEl.textContent = 'Conta criada! Verifique seu e-mail e clique no link de confirmação antes de entrar.';
+    noteEl.style.display = 'block';
+    document.getElementById('signupForm').reset();
   }
 });
 
