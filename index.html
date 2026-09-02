@@ -13,7 +13,17 @@
   }catch(e){}
 })();
 </script>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='31' fill='%23fff' stroke='%23E5E7EB' stroke-width='2'/%3E%3Ctext x='19' y='42' font-family='Arial, sans-serif' font-weight='700' font-size='30' fill='%234F97AB'%3E2%3C/text%3E%3Ctext x='34' y='42' font-family='Arial, sans-serif' font-weight='700' font-size='30' fill='%23E87A45'%3EM%3C/text%3E%3C/svg%3E">
+<link rel="icon" type="image/png" href="icons/favicon-32.png">
+<!-- Ícone e comportamento ao "Adicionar à Tela de Início" no iPhone -->
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/apple-touch-icon-152.png">
+<link rel="apple-touch-icon" sizes="120x120" href="icons/apple-touch-icon-120.png">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="2M Central">
+<meta name="theme-color" content="#4F97AB">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -661,8 +671,8 @@
 
   /* ---------- Responsive ---------- */
   @media (max-width:1040px){
-    .grid-2{grid-template-columns:1fr;}
-    .kpi-row{grid-template-columns:repeat(2,1fr);}
+    .grid-2{grid-template-columns:1fr !important;}
+    .kpi-row{grid-template-columns:repeat(2,1fr) !important;}
   }
   @media (max-width:880px){
     .app{grid-template-columns:1fr;}
@@ -673,12 +683,29 @@
     .app.nav-open .sidebar{transform:translateX(0);}
     .app.nav-open .scrim{display:block; position:fixed; inset:0; background:rgba(10,12,18,.5); z-index:35;}
     .menu-btn{display:flex;}
-    .topbar{padding:14px 18px;}
+    .topbar{padding:14px 18px; flex-wrap:wrap; row-gap:10px;}
+    .top-left{width:100%;}
+    .top-left > div{min-width:0;}
+    .top-title{white-space:normal; overflow-wrap:break-word;}
+    .top-right{width:100%; justify-content:flex-end; flex-wrap:wrap; row-gap:8px;}
     .content{padding:20px 18px 50px;}
+    /* tabelas de dados: mantém cada linha numa só linha de texto e deixa
+       quem quiser ver as colunas de fora arrastar de lado, em vez de
+       espremer tudo e quebrar o texto em várias linhas por célula */
+    table.alias-table th, table.alias-table td{white-space:nowrap;}
+    table.alias-table td.wrap-mobile{white-space:normal;}
+  }
+  @media (max-width:640px){
+    .vr-stat-grid{grid-template-columns:1fr !important;}
+  }
+  @media (max-width:480px){
+    .af-funnel-row{grid-template-columns:110px 1fr 32px !important; gap:6px !important;}
+    .af-funnel-row > div:first-child{font-size:11.5px !important; white-space:normal;}
   }
   @media (max-width:520px){
-    .kpi-row{grid-template-columns:repeat(2,1fr); gap:12px;}
-    .kpi-num{font-size:26px;}
+    .kpi-row{grid-template-columns:repeat(2,1fr) !important; gap:12px;}
+    .kpi{min-width:0; padding:14px;}
+    .kpi-num{font-size:22px; overflow-wrap:break-word;}
     .top-title{font-size:17px;}
     .pill.hide-sm{display:none;}
   }
@@ -1249,10 +1276,12 @@
             </div>
             <div class="card-body">
               <div class="fornecedor-warn" id="fornecedorWarn" style="display:none;"></div>
-              <table class="alias-table" id="fornecedorTable">
-                <thead><tr><th>Modelo</th><th style="width:90px;">Pares</th><th style="width:110px;">Custo unit.</th><th style="width:120px;">Subtotal</th></tr></thead>
-                <tbody id="fornecedorTableBody"></tbody>
-              </table>
+              <div style="overflow-x:auto;">
+                <table class="alias-table" id="fornecedorTable">
+                  <thead><tr><th>Modelo</th><th style="width:90px;">Pares</th><th style="width:110px;">Custo unit.</th><th style="width:120px;">Subtotal</th></tr></thead>
+                  <tbody id="fornecedorTableBody"></tbody>
+                </table>
+              </div>
             </div>
           </div>
 
@@ -1264,10 +1293,12 @@
               </div>
             </div>
             <div class="card-body">
-              <table class="alias-table" id="custoTable">
-                <thead><tr><th>Modelo</th><th style="width:130px;">Custo (R$)</th></tr></thead>
-                <tbody id="custoTableBody"></tbody>
-              </table>
+              <div style="overflow-x:auto;">
+                <table class="alias-table" id="custoTable">
+                  <thead><tr><th>Modelo</th><th style="width:130px;">Custo (R$)</th></tr></thead>
+                  <tbody id="custoTableBody"></tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -1288,10 +1319,12 @@
               <input class="name-in" id="newNameInput" placeholder="APELIDO (ex: 070, CRAZY HORSE)">
               <button class="btn btn-accent" id="btnAddAlias">Adicionar produto</button>
             </div>
-            <table class="alias-table">
-              <thead><tr><th style="width:200px;">SKU</th><th>Apelido na lista</th><th style="width:50px;"></th></tr></thead>
-              <tbody id="aliasTableBody"></tbody>
-            </table>
+            <div style="overflow-x:auto;">
+              <table class="alias-table">
+                <thead><tr><th style="width:200px;">SKU</th><th>Apelido na lista</th><th style="width:50px;"></th></tr></thead>
+                <tbody id="aliasTableBody"></tbody>
+              </table>
+            </div>
           </div>
         </div>
       </section>
@@ -5604,7 +5637,7 @@ document.getElementById('afSubtabs').addEventListener('click', (e)=>{
 function afFunnelRow(label, count, max){
   const pct = max ? Math.round(count/max*100) : 0;
   return `
-  <div style="display:grid; grid-template-columns:190px 1fr 40px; align-items:center; gap:10px; margin-bottom:8px;">
+  <div class="af-funnel-row" style="display:grid; grid-template-columns:190px 1fr 40px; align-items:center; gap:10px; margin-bottom:8px;">
     <div style="font-size:12.5px; color:var(--muted); font-weight:600;">${label}</div>
     <div class="progress-track"><div class="progress-fill" style="width:${pct}%;"></div></div>
     <div class="mono" style="font-size:12.5px; text-align:right;">${count}</div>
@@ -6876,7 +6909,7 @@ async function vrBuscar(){
 
     statusEl.textContent = `✓ Atualizado agora · ${VR_PLATAFORMAS.map(p=>p.nome).join(' + ')} · ${label}`;
     resultEl.innerHTML = `
-      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:16px;">
+      <div class="vr-stat-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:16px;">
         <div>
           <div style="font-size:11px; color:var(--muted); font-weight:600;">Valor do pedido</div>
           <div style="font-size:19px; font-weight:700; font-family:'JetBrains Mono',monospace;">${fmtBRL(totalValorPedido)}</div>
