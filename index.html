@@ -5826,9 +5826,10 @@ function afAttachPipelineHandlers(){
 }
 
 /* ---------- Score do criador: calculado, não digitado ----------
-   Segue os mesmos pesos da tabela em Critérios & Metas (soma 100):
+   Segue os mesmos pesos da tabela em Critérios & Metas (soma 90 —
+   comissão aceita e marcas parceiras saíram do cálculo):
    categoria 20 · receita 30d 20 · engajamento 15 · views médias 15 ·
-   audiência 10 · fast growing 10 · comissão aceita 5 · marcas 5.
+   audiência 10 · fast growing 10.
    Os cortes de valor são um ponto de partida — ajustável se o Breno
    quiser calibrar diferente depois de ver o score na prática. */
 function afParseNumeroAbrev(s){
@@ -5863,11 +5864,6 @@ function afComputeScore(rec){
   score += (seg >= 10000 && seg <= 300000) ? 10 : seg > 300000 ? 6 : seg > 0 ? 2 : 0;
 
   score += rec.fast_growing ? 10 : 0;
-
-  const com = afParsePercent(rec.comissao_media);
-  score += com > 20 ? 1 : com > 15 ? 3 : com > 0 ? 5 : 0;
-
-  score += (rec.marcas_parceiras && String(rec.marcas_parceiras).trim()) ? 5 : 0;
 
   return Math.min(100, Math.round(score));
 }
@@ -6414,8 +6410,6 @@ function afRenderCriterios(){
           <tr><td>Visualização média por vídeo</td><td class="mono">15</td><td>Alcance real do conteúdo recente</td></tr>
           <tr><td>Tamanho de audiência</td><td class="mono">10</td><td>Faixa saudável — nem tão pequeno nem tão grande</td></tr>
           <tr><td>Selo "Fast growing"</td><td class="mono">10</td><td>Top 10% em crescimento — vale antecipar</td></tr>
-          <tr><td>Comissão média aceita</td><td class="mono">5</td><td>Compatível com o que a loja consegue pagar</td></tr>
-          <tr><td>Marcas parceiras / histórico</td><td class="mono">5</td><td>Já trabalhou com marcas do nicho, sem conflito direto</td></tr>
         </tbody>
       </table>
     </div>
