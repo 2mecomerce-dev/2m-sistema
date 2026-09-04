@@ -5825,6 +5825,72 @@ function afAttachPipelineHandlers(){
   if(importBtn) importBtn.addEventListener('click', afOpenImportModal);
 }
 
+/* ---------- Score do criador: calculado, não digitado ----------
+   Segue os mesmos pesos da tabela em Critérios & Metas (soma 100):
+   categoria 20 · receita 30d 20 · engajamento 15 · views médias 15 ·
+   audiência 10 · fast growing 10 · comissão aceita 5 · marcas 5.
+   Os cortes de valor são um ponto de partida — ajustável se o Breno
+   quiser calibrar diferente depois de ver o score na prática. */
+function afParseNumeroAbrev(s){
+  if(!s) return 0;
+  const str = String(s).toLowerCase().replace(',', '.').trim();
+  const m = str.match(/([\d.]+)\s*(k|mil|m|mi)?/);
+  if(!m) return 0;
+  let n = parseFloat(m[1]) || 0;
+  if(m[2]==='k' || m[2]==='mil') n *= 1000;
+  if(m[2]==='m' || m[2]==='mi') n *= 1000000;
+  return n;
+}
+function afParsePercent(s){
+  if(!s) return 0;
+  const m = String(s).replace(',', '.').match(/([\d.]+)/);
+  return m ? parseFloat(m[1]) : 0;
+}
+function afComputeScore(rec){
+  let score = 0;
+  score += (rec.categoria && String(rec.categoria).trim()) ? 20 : 0;
+
+  const receita = Number(rec.receita_30d) || 0;
+  score += receita >= 1000 ? 20 : receita >= 500 ? 15 : receita >= 200 ? 10 : receita > 0 ? 5 : 0;
+
+  const eng = afParsePercent(rec.engajamento);
+  score += eng >= 8 ? 15 : eng >= 5 ? 11 : eng >= 2 ? 7 : eng > 0 ? 3 : 0;
+
+  const views = afParseNumeroAbrev(rec.views_medio);
+  score += views >= 20000 ? 15 : views >= 5000 ? 11 : views >= 900 ? 7 : views > 0 ? 3 : 0;
+
+  const seg = afParseNumeroAbrev(rec.seguidores);
+  score += (seg >= 10000 && seg <= 300000) ? 10 : seg > 300000 ? 6 : seg > 0 ? 2 : 0;
+
+  score += rec.fast_growing ? 10 : 0;
+
+  const com = afParsePercent(rec.comissao_media);
+  score += com > 20 ? 1 : com > 15 ? 3 : com > 0 ? 5 : 0;
+
+  score += (rec.marcas_parceiras && String(rec.marcas_parceiras).trim()) ? 5 : 0;
+
+  return Math.min(100, Math.round(score));
+}
+function afReadLeadFormFields(){
+  return {
+    categoria: document.getElementById('af-f-categoria').value.trim(),
+    receita_30d: document.getElementById('af-f-receita').value===''? null : Number(document.getElementById('af-f-receita').value),
+    engajamento: document.getElementById('af-f-eng').value.trim(),
+    views_medio: document.getElementById('af-f-views').value.trim(),
+    seguidores: document.getElementById('af-f-seguidores').value.trim(),
+    comissao_media: document.getElementById('af-f-comissao').value.trim(),
+    fast_growing: document.getElementById('af-f-fast').checked,
+    marcas_parceiras: document.getElementById('af-f-marcas').value.trim()
+  };
+}
+function afUpdateScoreDisplay(){
+  const el = document.getElementById('af-f-score-display');
+  if(!el) return;
+  const score = afComputeScore(afReadLeadFormFields());
+  el.textContent = score;
+  el.style.color = score>=75 ? 'var(--accent-d)' : score>=55 ? 'var(--amber)' : 'var(--danger)';
+}
+
 function afLeadFormHTML(rec){
   return `
   <div class="rt-form-row" style="grid-template-columns:1fr 1fr; margin-top:0;">
@@ -5832,7 +5898,7 @@ function afLeadFormHTML(rec){
     <label class="rt-label">Estágio<select id="af-f-col" class="rt-select">${AF_PIPELINE_COLS.map(c=>`<option value="${c.key}" ${rec?.col===c.key?'selected':''}>${c.title}</option>`).join('')}</select></label>
     <label class="rt-label">Loja<select id="af-f-loja" class="rt-select"><option value="">—</option>${rtState.stores.map(s=>`<option ${rec?.loja===s?'selected':''}>${s}</option>`).join('')}</select></label>
     <label class="rt-label">Origem / status<input type="text" id="af-f-origem" class="rt-input" value="${rec?.origem||''}" placeholder="Inbound, Prospecção, Gerando vendas..."></label>
-    <label class="rt-label">Score (0–100)<input type="number" id="af-f-score" class="rt-input" min="0" max="100" value="${rec?.score ?? ''}"></label>
+    <label class="rt-label">Score (calculado automaticamente)<div id="af-f-score-display" class="rt-input" style="background:var(--surface-2); font-weight:700; font-family:'JetBrains Mono',monospace;">${rec?.score ?? 0}</div></label>
     <label class="rt-label">Categoria<input type="text" id="af-f-categoria" class="rt-input" value="${rec?.categoria||''}" placeholder="Moda / calçados"></label>
     <label class="rt-label">Receita gerada 30d (R$)<input type="number" step="0.01" id="af-f-receita" class="rt-input" value="${rec?.receita_30d ?? ''}"></label>
     <label class="rt-label">Taxa de engajamento<input type="text" id="af-f-eng" class="rt-input" value="${rec?.engajamento||''}" placeholder="5,2%"></label>
@@ -5855,6 +5921,12 @@ function afOpenLeadModal(id, presetCol){
   document.getElementById('afModalBody').innerHTML = afLeadFormHTML(rec);
   if(!rec && presetCol) document.getElementById('af-f-col').value = presetCol;
   document.getElementById('afModalOverlay').style.display = 'flex';
+  // recalcula o score toda vez que um campo que entra na conta muda
+  ['af-f-categoria','af-f-receita','af-f-eng','af-f-views','af-f-seguidores','af-f-comissao','af-f-fast','af-f-marcas'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('input', afUpdateScoreDisplay);
+  });
+  afUpdateScoreDisplay();
 }
 async function afSaveLeadFromForm(){
   const handle = document.getElementById('af-f-handle').value.trim();
@@ -5864,7 +5936,6 @@ async function afSaveLeadFromForm(){
     handle, col: document.getElementById('af-f-col').value,
     loja: document.getElementById('af-f-loja').value || null,
     origem: document.getElementById('af-f-origem').value.trim() || null,
-    score: document.getElementById('af-f-score').value===''? null : Number(document.getElementById('af-f-score').value),
     categoria: document.getElementById('af-f-categoria').value.trim() || null,
     receita_30d: document.getElementById('af-f-receita').value===''? null : Number(document.getElementById('af-f-receita').value),
     engajamento: document.getElementById('af-f-eng').value.trim() || null,
@@ -5880,6 +5951,7 @@ async function afSaveLeadFromForm(){
     observacao: document.getElementById('af-f-observacao').value.trim() || null,
     updated_at: new Date().toISOString()
   };
+  payload.score = afComputeScore(payload);
   if(afModalContext.id){
     const { error } = await sb.from('afiliados_leads').update(payload).eq('id', afModalContext.id);
     if(error){ showToast('Não consegui salvar: '+error.message); return; }
