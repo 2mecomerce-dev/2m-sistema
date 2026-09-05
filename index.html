@@ -1411,6 +1411,26 @@
         </div>
       </div>
 
+      <!-- ===== MODAL: Registro obrigatório de envio de amostra (drag → Amostra enviada) ===== -->
+      <div class="modal-overlay" id="afSampleModalOverlay" style="display:none;">
+        <div class="modal-box" style="max-width:420px;">
+          <div class="modal-head">
+            <h3>Registrar envio de amostra</h3>
+          </div>
+          <div class="modal-body">
+            <p class="card-desc" id="afSampleModalInfo" style="margin-bottom:14px;"></p>
+            <div class="rt-form-row" style="grid-template-columns:1fr; margin-top:0;">
+              <label class="rt-label">Modelo enviado *<select id="af-sample-modelo" class="rt-select"><option value="">—</option></select></label>
+              <label class="rt-label">Tamanho<input type="text" id="af-sample-tamanho" class="rt-input" placeholder="37"></label>
+            </div>
+          </div>
+          <div class="modal-foot" style="display:flex; align-items:center; justify-content:flex-end; gap:8px;">
+            <button type="button" class="btn btn-ghost" id="afSampleModalCancel">Cancelar</button>
+            <button type="button" class="btn btn-accent" id="afSampleModalConfirm">Registrar envio</button>
+          </div>
+        </div>
+      </div>
+
       <!-- ===== VIEW: PRECIFICAÇÃO ===== -->
       <section class="view" id="view-precificacao">
         <div class="kpi-row" id="ppKpiRow"></div>
@@ -5782,6 +5802,50 @@ function afRenderPipeline(){
   </div>`;
 }
 
+/* ---------- Registro obrigatório de amostra ao mover lead p/ "Amostra enviada" ---------- */
+let afPendingSampleConfirm = null;
+function afOpenSampleModal(rec, onConfirm){
+  afPendingSampleConfirm = onConfirm;
+  const modelos = [...new Set(Object.values(aliasMap))].sort();
+  document.getElementById('af-sample-modelo').innerHTML = '<option value="">—</option>' + modelos.map(m=>`<option>${m}</option>`).join('');
+  document.getElementById('af-sample-tamanho').value = '';
+  document.getElementById('afSampleModalInfo').textContent = `Enviando amostra pra ${rec.handle}${rec.loja ? ' ('+rec.loja+')' : ''}. Escolha o modelo enviado pra confirmar o envio — isso já registra em Controle de Amostras.`;
+  document.getElementById('afSampleModalOverlay').style.display = 'flex';
+}
+function afCloseSampleModal(){
+  document.getElementById('afSampleModalOverlay').style.display = 'none';
+  afPendingSampleConfirm = null;
+}
+document.getElementById('afSampleModalCancel').addEventListener('click', () => {
+  afCloseSampleModal();
+  afRenderActive();
+  showToast('Envio cancelado — nada foi movido ou salvo.');
+});
+document.getElementById('afSampleModalOverlay').addEventListener('click', (e) => { if(e.target.id==='afSampleModalOverlay'){ afCloseSampleModal(); afRenderActive(); } });
+document.getElementById('afSampleModalConfirm').addEventListener('click', async () => {
+  const modelo = document.getElementById('af-sample-modelo').value;
+  if(!modelo){ showToast('Escolha o modelo enviado pra confirmar'); return; }
+  const tamanho = document.getElementById('af-sample-tamanho').value.trim() || null;
+  const cb = afPendingSampleConfirm;
+  afCloseSampleModal();
+  if(cb) await cb({ modelo, tamanho });
+});
+async function afRegistrarAmostraAutomatica(rec, modelo, tamanho){
+  const week = afCurrentWeekRange();
+  const payload = {
+    semana_inicio: week.start, semana_fim: week.end,
+    criador: rec.handle, loja: rec.loja || null,
+    modelo, tamanho,
+    data_envio: todayKey(),
+    score: rec.score ?? null
+  };
+  const { data, error } = await sb.from('afiliados_amostras').insert(payload).select().single();
+  if(error){ showToast('Lead movido, mas não consegui registrar a amostra: '+error.message); return; }
+  afState.amostras.unshift(data);
+  showToast('Amostra registrada em Controle de Amostras');
+  afRenderActive();
+}
+
 async function afQuickDelete(kind, id){
   const label = kind === 'lead' ? 'lead' : 'demanda';
   const ok = await confirmDialog(`Excluir ${label}?`, 'Essa ação não pode ser desfeita.', 'Excluir');
@@ -5813,6 +5877,15 @@ function afAttachPipelineHandlers(){
       const rec = afState.leads.find(l => l.id===id);
       const newCol = col.dataset.status;
       if(!rec || rec.col===newCol) return;
+      if(newCol === 'enviada'){
+        afOpenSampleModal(rec, async ({ modelo, tamanho }) => {
+          rec.col = newCol;
+          afRenderActive();
+          await sb.from('afiliados_leads').update({ col:newCol, updated_at:new Date().toISOString() }).eq('id', id);
+          await afRegistrarAmostraAutomatica(rec, modelo, tamanho);
+        });
+        return;
+      }
       rec.col = newCol;
       afRenderActive();
       await sb.from('afiliados_leads').update({ col:newCol, updated_at:new Date().toISOString() }).eq('id', id);
@@ -5948,15 +6021,37 @@ async function afSaveLeadFromForm(){
     updated_at: new Date().toISOString()
   };
   payload.score = afComputeScore(payload);
-  if(afModalContext.id){
-    const { error } = await sb.from('afiliados_leads').update(payload).eq('id', afModalContext.id);
-    if(error){ showToast('Não consegui salvar: '+error.message); return; }
-    Object.assign(afState.leads.find(l=>l.id===afModalContext.id), payload);
-  }else{
-    const { data, error } = await sb.from('afiliados_leads').insert(payload).select().single();
-    if(error){ showToast('Não consegui salvar: '+error.message); return; }
-    afState.leads.push(data);
+
+  const leadId = afModalContext.id;
+  const existing = leadId ? afState.leads.find(l=>l.id===leadId) : null;
+  const enteringEnviada = payload.col === 'enviada' && (!existing || existing.col !== 'enviada');
+
+  const persistLead = async () => {
+    if(leadId){
+      const { error } = await sb.from('afiliados_leads').update(payload).eq('id', leadId);
+      if(error){ showToast('Não consegui salvar: '+error.message); return null; }
+      const rec = afState.leads.find(l=>l.id===leadId);
+      Object.assign(rec, payload);
+      return rec;
+    }else{
+      const { data, error } = await sb.from('afiliados_leads').insert(payload).select().single();
+      if(error){ showToast('Não consegui salvar: '+error.message); return null; }
+      afState.leads.push(data);
+      return data;
+    }
+  };
+
+  if(enteringEnviada){
+    afCloseModal();
+    afOpenSampleModal({ handle, loja: payload.loja, score: payload.score }, async ({ modelo, tamanho }) => {
+      const rec = await persistLead();
+      afRenderActive();
+      if(rec) { showToast('Lead salvo'); await afRegistrarAmostraAutomatica(rec, modelo, tamanho); }
+    });
+    return;
   }
+
+  await persistLead();
   afRenderActive();
   afCloseModal();
   showToast('Lead salvo');
