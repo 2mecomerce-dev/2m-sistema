@@ -624,6 +624,24 @@
   }
   @keyframes shakeX{0%,100%{transform:translateX(0);} 25%{transform:translateX(-4px);} 75%{transform:translateX(4px);}}
 
+  /* ---------- Botão flutuante de sugestões ---------- */
+  .fab-feedback{
+    position:fixed; right:24px; bottom:24px; z-index:90;
+    width:52px; height:52px; border-radius:50%; border:none; cursor:pointer;
+    background:var(--accent); color:#fff; box-shadow:var(--sh-lg);
+    display:flex; align-items:center; justify-content:center;
+    transition:transform .18s var(--ease), box-shadow .18s;
+  }
+  .fab-feedback svg{width:23px; height:23px;}
+  .fab-feedback:hover{transform:translateY(-3px) scale(1.05); box-shadow:0 14px 34px var(--accent-glow); background:var(--accent-d);}
+  .fab-feedback:active{transform:translateY(0) scale(.96);}
+  .fab-badge{
+    position:absolute; top:-3px; right:-3px; min-width:19px; height:19px; padding:0 5px;
+    border-radius:999px; background:var(--danger); color:#fff; font-size:10.5px; font-weight:800;
+    display:flex; align-items:center; justify-content:center; border:2px solid var(--canvas);
+  }
+  @media (max-width:640px){ .fab-feedback{right:16px; bottom:16px;} }
+
   .btn-danger{background:var(--danger); color:#fff;}
   .btn-danger:hover{background:#B83434;}
 
@@ -1594,6 +1612,33 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- ===== Botão flutuante de sugestões de melhoria ===== -->
+<button type="button" class="fab-feedback" id="fabFeedbackBtn" style="display:none;" title="Deixar uma sugestão de melhoria" aria-label="Deixar uma sugestão de melhoria">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-6 6c0 2.2 1.1 3.6 2.1 4.6.6.6 1 1.5 1.1 2.4h5.6c.1-.9.5-1.8 1.1-2.4C17 12.6 18 11.2 18 9a6 6 0 0 0-6-6z"/></svg>
+  <span class="fab-badge" id="fabFeedbackBadge" hidden>0</span>
+</button>
+
+<div class="modal-overlay" id="sugOverlay" style="display:none;">
+  <div class="modal-box" style="max-width:520px;">
+    <div class="modal-head">
+      <h3>💡 Sugestões de melhoria</h3>
+      <button class="modal-x" id="sugClose" type="button" aria-label="Fechar">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="card-desc" style="margin-bottom:12px;">Viu algo que trava, que podia ficar mais fácil, ou teve uma ideia? Deixa aqui — a gente lê e vai atrás de resolver.</p>
+      <div class="rt-form-row" style="grid-template-columns:1fr; margin-top:0;">
+        <label class="rt-label">O que podemos melhorar?<textarea id="sugTexto" class="rt-input" rows="3" placeholder="Ex.: no pipeline, gostaria que..."></textarea></label>
+      </div>
+      <div style="display:flex; justify-content:flex-end; margin-top:10px;">
+        <button type="button" class="btn btn-accent btn-sm" id="sugSubmit">Enviar sugestão</button>
+      </div>
+      <div style="border-top:1px solid var(--border); margin:18px 0 14px;"></div>
+      <div class="card-desc" style="margin-bottom:10px; font-weight:600; color:var(--ink);">Fila de sugestões</div>
+      <div id="sugList" style="display:flex; flex-direction:column; gap:10px; max-height:340px; overflow-y:auto;"></div>
+    </div>
+  </div>
+</div>
 
 <div class="confirm-overlay" id="confirmOverlay">
   <div class="confirm-box">
@@ -7207,13 +7252,145 @@ function vrInit(){
   vrRender();
 }
 
+/* ---------- Botão flutuante de sugestões de melhoria ----------
+   Fica visível pra qualquer perfil logado (admin ou restrito), em
+   qualquer tela. Vira uma fila de trabalho em public.sugestoes:
+   novo → em_andamento → concluído. Só admin muda status/apaga —
+   time restrito só lê e adiciona (RLS reforça isso no banco também). */
+let sugState = { items: [] };
+let sugInitialized = false;
+
+async function sugLoad(){
+  const { data, error } = await sb.from('sugestoes').select('*').order('created_at', { ascending:false });
+  if(error){ syncLog('Sugestões: '+error.message, 'err'); return; }
+  sugState.items = data || [];
+}
+function sugUpdateBadge(){
+  const badge = document.getElementById('fabFeedbackBadge');
+  if(!badge) return;
+  const n = sugState.items.filter(s => s.status !== 'concluido').length;
+  badge.textContent = n > 9 ? '9+' : String(n);
+  badge.hidden = n === 0;
+}
+const SUG_STATUS_MAP = {
+  novo:{cls:'badge-warning', label:'Novo'},
+  em_andamento:{cls:'badge-neutral', label:'Em andamento'},
+  concluido:{cls:'badge-good', label:'Concluído'}
+};
+function sugCardHTML(s){
+  const isAdmin = currentUserRole === 'admin';
+  const date = s.created_at ? new Date(s.created_at).toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit'}) : '';
+  const st = SUG_STATUS_MAP[s.status] || SUG_STATUS_MAP.novo;
+  return `
+  <div class="card" style="padding:12px 14px;">
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px;">
+      <div style="display:flex; align-items:center; gap:7px; flex-wrap:wrap;">
+        <span class="badge ${st.cls}">${st.label}</span>
+        ${s.tela ? `<span class="badge badge-neutral">${s.tela}</span>` : ''}
+      </div>
+      ${isAdmin ? `<button type="button" class="rt-item-delete sug-delete" data-id="${s.id}" title="Excluir sugestão">×</button>` : ''}
+    </div>
+    <div style="font-size:13px; margin-top:8px; white-space:pre-wrap;">${s.mensagem}</div>
+    <div style="font-size:11px; color:var(--faint); margin-top:8px; display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+      <span>${s.autor_nome || s.autor_email} · ${date}</span>
+      ${isAdmin ? `<select class="rt-select sug-status" data-id="${s.id}" style="width:auto; padding:5px 8px; font-size:11px;">
+        <option value="novo" ${s.status==='novo'?'selected':''}>Novo</option>
+        <option value="em_andamento" ${s.status==='em_andamento'?'selected':''}>Em andamento</option>
+        <option value="concluido" ${s.status==='concluido'?'selected':''}>Concluído</option>
+      </select>` : ''}
+    </div>
+    ${s.resposta ? `<div style="font-size:11.5px; color:var(--muted); background:var(--surface-2); border-radius:6px; padding:7px 9px; margin-top:8px;">💬 ${s.resposta}</div>` : ''}
+  </div>`;
+}
+function sugRenderList(){
+  const box = document.getElementById('sugList');
+  if(!box) return;
+  box.innerHTML = sugState.items.length===0
+    ? '<div class="empty-hint">Nenhuma sugestão ainda — seja o primeiro.</div>'
+    : sugState.items.map(sugCardHTML).join('');
+  box.querySelectorAll('.sug-delete').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = Number(btn.dataset.id);
+      const ok = await confirmDialog('Excluir sugestão?', 'Essa ação não pode ser desfeita.', 'Excluir');
+      if(!ok) return;
+      sugState.items = sugState.items.filter(s=>s.id!==id);
+      sugRenderList(); sugUpdateBadge();
+      const { error } = await sb.from('sugestoes').delete().eq('id', id);
+      if(error) showToast('Não consegui excluir: '+error.message);
+    });
+  });
+  box.querySelectorAll('.sug-status').forEach(sel => {
+    sel.addEventListener('change', async () => {
+      const id = Number(sel.dataset.id);
+      const status = sel.value;
+      const rec = sugState.items.find(s=>s.id===id);
+      if(rec) rec.status = status;
+      sugUpdateBadge();
+      const { error } = await sb.from('sugestoes').update({ status, updated_at:new Date().toISOString() }).eq('id', id);
+      if(error){ showToast('Não consegui atualizar: '+error.message); return; }
+      showToast('Status atualizado');
+    });
+  });
+}
+async function sugOpenModal(){
+  document.getElementById('sugOverlay').style.display = 'flex';
+  document.getElementById('sugList').innerHTML = '<div class="loading-state"><span class="loading-spinner"></span>Carregando…</div>';
+  await sugLoad();
+  sugRenderList();
+  sugUpdateBadge();
+}
+function sugCloseModal(){
+  document.getElementById('sugOverlay').style.display = 'none';
+}
+function sugSetupRealtime(){
+  sb.channel('public:sugestoes').on('postgres_changes', { event:'*', schema:'public', table:'sugestoes' }, async ()=>{
+    await sugLoad();
+    if(document.getElementById('sugOverlay').style.display === 'flex') sugRenderList();
+    sugUpdateBadge();
+  }).subscribe();
+}
+async function sugInit(){
+  if(sugInitialized) return;
+  sugInitialized = true;
+  document.getElementById('fabFeedbackBtn').style.display = 'flex';
+  await sugLoad();
+  sugUpdateBadge();
+  sugSetupRealtime();
+}
+document.getElementById('fabFeedbackBtn').addEventListener('click', sugOpenModal);
+document.getElementById('sugClose').addEventListener('click', sugCloseModal);
+document.getElementById('sugOverlay').addEventListener('click', (e) => { if(e.target.id==='sugOverlay') sugCloseModal(); });
+document.getElementById('sugSubmit').addEventListener('click', async () => {
+  const texto = document.getElementById('sugTexto').value.trim();
+  if(!texto){ fieldError('sugTexto', 'Escreva sua sugestão antes de enviar'); return; }
+  const tela = document.getElementById('topTitle')?.textContent || null;
+  const payload = {
+    autor_email: currentUserEmail || '',
+    autor_nome: currentUserNome || currentUserEmail || null,
+    mensagem: texto,
+    tela,
+    status: 'novo'
+  };
+  const { data, error } = await sb.from('sugestoes').insert(payload).select().single();
+  if(error){ showToast('Não consegui enviar: '+error.message); return; }
+  sugState.items.unshift(data);
+  document.getElementById('sugTexto').value = '';
+  sugRenderList();
+  sugUpdateBadge();
+  showToast('Sugestão enviada! Vamos olhar em breve.');
+});
+
 /* ---------- Autenticação (Supabase Auth) ---------- */
 let appInitialized = false;
 let currentUserRole = null;
+let currentUserEmail = null;
+let currentUserNome = null;
 
 function showAuthScreen(){
   document.getElementById('authScreen').style.display = 'flex';
   document.getElementById('app').classList.add('hidden');
+  document.getElementById('fabFeedbackBtn').style.display = 'none';
+  sugCloseModal();
 }
 
 /* Esconde tudo que não seja a Central de Afiliados pra quem não é admin.
@@ -7251,7 +7428,7 @@ async function showApp(session){
   appInitialized = true;
 
   const email = (session.user.email || '').toLowerCase();
-  const { data: perfil, error } = await sb.from('perfis_usuario').select('role').eq('email', email).maybeSingle();
+  const { data: perfil, error } = await sb.from('perfis_usuario').select('role, nome').eq('email', email).maybeSingle();
   if(error || !perfil){
     showToast('Sua conta não tem acesso configurado neste sistema. Fale com o administrador.');
     await sb.auth.signOut();
@@ -7259,7 +7436,10 @@ async function showApp(session){
     return;
   }
   currentUserRole = perfil.role;
+  currentUserEmail = email;
+  currentUserNome = perfil.nome || null;
   applyRoleUI(currentUserRole);
+  sugInit();
   if(currentUserRole === 'admin'){
     loadData();
   }else{
@@ -7270,7 +7450,7 @@ async function showApp(session){
 if(sb){
   sb.auth.onAuthStateChange((_event, session) => {
     if(session){ showApp(session); }
-    else{ appInitialized = false; showAuthScreen(); }
+    else{ appInitialized = false; sugInitialized = false; showAuthScreen(); }
   });
 }else{
   document.getElementById('authError').textContent = 'Biblioteca do Supabase não carregou. Verifique a internet e recarregue.';
