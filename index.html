@@ -6260,7 +6260,11 @@ document.getElementById('afImportTargetCol').addEventListener('change', () => {
 document.getElementById('afImportConfirm').addEventListener('click', async () => {
   if(!afParsedImportRows.length) return;
   const targetCol = document.getElementById('afImportTargetCol').value;
-  const payloads = afParsedImportRows.map(r => ({ ...r, col: targetCol }));
+  const payloads = afParsedImportRows.map(r => {
+    const row = { ...r, col: targetCol };
+    row.score = afComputeScore(row);
+    return row;
+  });
   const { data, error } = await sb.from('afiliados_leads').insert(payloads).select();
   if(error){ showToast('Não consegui importar: '+error.message); return; }
   afState.leads.push(...(data||[]));
