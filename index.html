@@ -454,7 +454,11 @@
   }
   .history-row .n{font-weight:700; font-family:'JetBrains Mono',monospace; color:var(--accent-d); margin-left:auto;}
   .history-row .n small{font-weight:500; color:var(--faint); font-size:11px;}
-  .empty-hint{color:var(--faint); font-size:12.5px; text-align:center; padding:24px 10px; font-style:italic;}
+  .empty-hint{
+    color:var(--faint); font-size:12.5px; text-align:center; padding:24px 10px; line-height:1.45;
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+  }
+  .empty-hint::before{content:'🗂️'; font-size:16px; opacity:.5; filter:grayscale(1);}
 
   /* ---------- Alias table (Produtos) ---------- */
   /* ---------- Period tabs (Fornecedor) ---------- */
@@ -568,11 +572,57 @@
   .toast{
     position:fixed; bottom:26px; left:50%;
     transform:translateX(-50%) translateY(12px);
-    background:var(--ink); color:#fff; padding:12px 22px; border-radius:30px;
+    background:var(--ink); color:#fff; padding:12px 20px 12px 16px; border-radius:30px;
     font-size:13px; font-weight:500; opacity:0; transition:opacity .22s, transform .22s;
     pointer-events:none; z-index:100; box-shadow:var(--sh-lg);
+    display:flex; align-items:center; gap:9px; max-width:min(440px, calc(100vw - 40px));
+  }
+  .toast::before{
+    content:'✓'; flex-shrink:0; width:18px; height:18px; border-radius:50%;
+    background:rgba(255,255,255,.2); display:inline-flex; align-items:center; justify-content:center;
+    font-size:10.5px; font-weight:800; line-height:1;
   }
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  .toast.toast-err{background:var(--danger);}
+  .toast.toast-err::before{content:'!';}
+  .toast.toast-warn{background:var(--amber);}
+  .toast.toast-warn::before{content:'!';}
+
+  /* ---------- Loading state (spinner) ---------- */
+  .loading-state{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px;
+    padding:34px 10px; color:var(--faint); font-size:12.5px; font-style:italic;
+  }
+  .loading-spinner{
+    width:22px; height:22px; border-radius:50%;
+    border:2.5px solid var(--border-strong); border-top-color:var(--accent);
+    animation:spin .7s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* ---------- Tooltip informativo (ⓘ) ---------- */
+  .info-tip{
+    position:relative; display:inline-flex; align-items:center; justify-content:center;
+    width:16px; height:16px; border-radius:50%; margin-left:5px; flex-shrink:0;
+    background:var(--surface-2); border:1px solid var(--border-strong); color:var(--muted);
+    font-size:10px; font-weight:800; font-style:normal; line-height:1; cursor:help;
+    font-family:'Plus Jakarta Sans',sans-serif; vertical-align:middle;
+  }
+  .info-tip:hover, .info-tip:focus-visible, .info-tip.open{background:var(--accent-soft); border-color:var(--accent); color:var(--accent-d); outline:none;}
+  .info-tip-bubble{
+    position:absolute; bottom:calc(100% + 9px); left:50%; transform:translateX(-50%) translateY(4px);
+    background:var(--ink); color:#fff; font-size:11.5px; font-weight:500; font-style:normal;
+    line-height:1.45; letter-spacing:0; text-align:left; white-space:normal;
+    width:max-content; max-width:240px; padding:9px 11px; border-radius:10px; box-shadow:var(--sh-lg);
+    opacity:0; visibility:hidden; pointer-events:none; transition:opacity .15s, transform .15s; z-index:50;
+  }
+  .info-tip:hover .info-tip-bubble, .info-tip:focus-visible .info-tip-bubble, .info-tip.open .info-tip-bubble{opacity:1; visibility:visible; transform:translateX(-50%) translateY(0);}
+
+  /* ---------- Campo com erro de validação ---------- */
+  .rt-input.field-invalid, .rt-select.field-invalid{
+    border-color:var(--danger) !important; animation:shakeX .32s var(--ease);
+  }
+  @keyframes shakeX{0%,100%{transform:translateX(0);} 25%{transform:translateX(-4px);} 75%{transform:translateX(4px);}}
 
   .btn-danger{background:var(--danger); color:#fff;}
   .btn-danger:hover{background:#B83434;}
@@ -1586,12 +1636,60 @@ function todayKey(){
   return `${y}-${m}-${day}`;
 }
 
-function showToast(msg){
+function showToast(msg, kind){
   const t = document.getElementById('toast');
+  msg = String(msg).replace(/^⚠\s*/, '');
+  const auto = /não consegui|erro ao|falhou/i.test(msg) ? 'err' : /^(escolha|preencha|selecione|informe|obrigat)/i.test(msg) ? 'warn' : 'ok';
+  const finalKind = kind || auto;
   t.textContent = msg;
+  t.classList.toggle('toast-err', finalKind === 'err');
+  t.classList.toggle('toast-warn', finalKind === 'warn');
   t.classList.add('show');
-  setTimeout(()=> t.classList.remove('show'), 2400);
+  clearTimeout(t._hideTimer);
+  t._hideTimer = setTimeout(()=> t.classList.remove('show'), 2600);
 }
+
+/* Marca um campo com erro de validação (borda vermelha + shake + foco) e some sozinho ao digitar */
+function fieldError(id, msg){
+  const el = document.getElementById(id);
+  if(el){
+    el.classList.remove('field-invalid');
+    void el.offsetWidth; // reinicia a animação se já tinha erro
+    el.classList.add('field-invalid');
+    el.focus();
+    const clear = () => el.classList.remove('field-invalid');
+    el.addEventListener('input', clear, { once:true });
+    el.addEventListener('change', clear, { once:true });
+  }
+  if(msg) showToast(msg, 'warn');
+}
+
+/* Tooltips informativos (ⓘ): clique/toque alterna, hover/foco reposiciona pra não vazar da tela,
+   clicar fora fecha — tudo delegado, funciona em qualquer tela nova sem precisar religar handler */
+function positionInfoTip(tip){
+  const bubble = tip.querySelector('.info-tip-bubble');
+  if(!bubble) return;
+  bubble.style.transform = 'translateX(-50%)';
+  const rect = bubble.getBoundingClientRect();
+  const margin = 10;
+  let shift = 0;
+  if(rect.left < margin) shift = margin - rect.left;
+  else if(rect.right > window.innerWidth - margin) shift = (window.innerWidth - margin) - rect.right;
+  bubble.style.transform = shift ? `translateX(calc(-50% + ${shift}px))` : 'translateX(-50%)';
+}
+document.addEventListener('mouseover', (e) => {
+  const tip = e.target.closest && e.target.closest('.info-tip');
+  if(tip) positionInfoTip(tip);
+});
+document.addEventListener('focusin', (e) => {
+  const tip = e.target.closest('.info-tip');
+  if(tip) positionInfoTip(tip);
+});
+document.addEventListener('click', (e) => {
+  const tip = e.target.closest('.info-tip');
+  document.querySelectorAll('.info-tip.open').forEach(el => { if(el !== tip) el.classList.remove('open'); });
+  if(tip){ tip.classList.toggle('open'); if(tip.classList.contains('open')) positionInfoTip(tip); }
+});
 
 function confirmDialog(title, msg, okLabel){
   return new Promise((resolve) => {
@@ -2779,7 +2877,7 @@ function setSyncStatus(state){
 }
 
 function syncLog(msg, kind){
-  if(kind === 'err') showToast('⚠ ' + msg);
+  if(kind === 'err') showToast(msg, 'err');
   const box = document.getElementById('syncLog');
   if(!box) return;
   const now = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
@@ -4082,7 +4180,7 @@ function mktRenderActive(){
 }
 
 async function mktInit(){
-  document.getElementById('mktContent').innerHTML = rtInitialized ? '' : '<div class="empty-hint">Carregando…</div>';
+  document.getElementById('mktContent').innerHTML = rtInitialized ? '' : '<div class="loading-state"><span class="loading-spinner"></span>Carregando…</div>';
   await rtInit();
   mktRenderActive();
 }
@@ -4233,7 +4331,7 @@ function rtSetupRealtime(){
 async function rtInit(){
   if(rtInitialized) return;
   rtInitialized = true;
-  document.getElementById('rtContent').innerHTML = '<div class="empty-hint">Carregando…</div>';
+  document.getElementById('rtContent').innerHTML = '<div class="loading-state"><span class="loading-spinner"></span>Carregando…</div>';
   await rtLoad();
   await mkLoad();
   rtSetupRealtime();
@@ -4527,7 +4625,7 @@ function ppSetupRealtime(){
 async function ppInit(){
   if(ppInitialized) return;
   ppInitialized = true;
-  document.getElementById('ppTable').innerHTML = '<tr><td style="padding:16px 10px; color:var(--faint);">Carregando…</td></tr>';
+  document.getElementById('ppTable').innerHTML = '<tr><td colspan="99"><div class="loading-state" style="padding:16px 10px;"><span class="loading-spinner"></span>Carregando…</div></td></tr>';
   await ppLoadConfig();
   await ppLoadProdutos();
   ppRenderConfigForm();
@@ -5225,7 +5323,7 @@ function anSetupRealtime(){
 async function anInit(){
   if(anInitialized) return;
   anInitialized = true;
-  document.getElementById('anContent').innerHTML = '<div class="empty-hint">Carregando…</div>';
+  document.getElementById('anContent').innerHTML = '<div class="loading-state"><span class="loading-spinner"></span>Carregando…</div>';
   await rtInit(); // precisa de rtState.marketing.entries pro card de desempenho por loja
   await Promise.all([anLoadVideos(), anLoadDevolucoes()]);
   anSetupRealtime();
@@ -5630,7 +5728,7 @@ function afSetupRealtime(){
 async function afInit(){
   if(afInitialized) return;
   afInitialized = true;
-  document.getElementById('afContent').innerHTML = '<div class="empty-hint">Carregando…</div>';
+  document.getElementById('afContent').innerHTML = '<div class="loading-state"><span class="loading-spinner"></span>Carregando…</div>';
   await afLoadAliasMap();
   await Promise.all([afLoadLeads(), afLoadAmostras(), afLoadTasks(), afLoadEstado()]);
   afSetupRealtime();
@@ -5765,7 +5863,7 @@ function afLeadCardHTML(rec){
     <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
       <span style="font-weight:700; font-size:13px;">${rec.handle || '(sem @)'}</span>
       <span style="display:flex; align-items:center; gap:6px;">
-        <span class="mono" style="font-weight:700;">${rec.score ?? '—'}</span>
+        <span class="mono" style="font-weight:700; color:${(rec.score??0)>=75?'var(--accent-d)':(rec.score??0)>=55?'var(--amber)':'var(--danger)'};" title="Score ${rec.score ?? 0}/90 — calculado automaticamente (ver Critérios &amp; Metas). ≥75 alta prioridade · 55–74 bom potencial · abaixo de 55 baixo por ora.">${rec.score ?? '—'}</span>
         <button type="button" class="rt-item-delete af-card-delete" data-id="${rec.id}" data-kind="lead" title="Excluir lead">×</button>
       </span>
     </div>
@@ -5964,7 +6062,7 @@ function afLeadFormHTML(rec){
     <label class="rt-label">Estágio<select id="af-f-col" class="rt-select">${AF_PIPELINE_COLS.map(c=>`<option value="${c.key}" ${rec?.col===c.key?'selected':''}>${c.title}</option>`).join('')}</select></label>
     <label class="rt-label">Loja<select id="af-f-loja" class="rt-select"><option value="">—</option>${rtState.stores.map(s=>`<option ${rec?.loja===s?'selected':''}>${s}</option>`).join('')}</select></label>
     <label class="rt-label">Origem / status<input type="text" id="af-f-origem" class="rt-input" value="${rec?.origem||''}" placeholder="Inbound, Prospecção, Gerando vendas..."></label>
-    <label class="rt-label">Score (calculado automaticamente)<div id="af-f-score-display" class="rt-input" style="background:var(--surface-2); font-weight:700; font-family:'JetBrains Mono',monospace;">${rec?.score ?? 0}</div></label>
+    <label class="rt-label">Score (calculado automaticamente)<span class="info-tip" tabindex="0">i<span class="info-tip-bubble">Soma pesos de categoria (20), receita 30d (20), engajamento (15), views médias (15), audiência (10) e fast growing (10). Veja a tabela completa em Critérios &amp; Metas.</span></span><div id="af-f-score-display" class="rt-input" style="background:var(--surface-2); font-weight:700; font-family:'JetBrains Mono',monospace;">${rec?.score ?? 0}</div></label>
     <label class="rt-label">Categoria<input type="text" id="af-f-categoria" class="rt-input" value="${rec?.categoria||''}" placeholder="Moda / calçados"></label>
     <label class="rt-label">Receita gerada 30d (R$)<input type="number" step="0.01" id="af-f-receita" class="rt-input" value="${rec?.receita_30d ?? ''}"></label>
     <label class="rt-label">Taxa de engajamento<input type="text" id="af-f-eng" class="rt-input" value="${rec?.engajamento||''}" placeholder="5,2%"></label>
@@ -5996,7 +6094,7 @@ function afOpenLeadModal(id, presetCol){
 }
 async function afSaveLeadFromForm(){
   const handle = document.getElementById('af-f-handle').value.trim();
-  if(!handle) return;
+  if(!handle){ fieldError('af-f-handle', 'Preencha o perfil (@) do criador'); return; }
   const proximo = document.getElementById('af-f-proximo').value.trim();
   const payload = {
     handle, col: document.getElementById('af-f-col').value,
@@ -6221,7 +6319,7 @@ function afOpenTaskModal(id, presetCol){
 }
 async function afSaveTaskFromForm(){
   const titulo = document.getElementById('af-t-titulo').value.trim();
-  if(!titulo) return;
+  if(!titulo){ fieldError('af-t-titulo', 'Preencha o título da demanda'); return; }
   const payload = {
     titulo, col: document.getElementById('af-t-col').value,
     prioridade: document.getElementById('af-t-prioridade').value || null,
@@ -6495,7 +6593,7 @@ function afRenderCriterios(){
   </div>
 
   <div class="card" style="padding:20px; margin-bottom:20px;">
-    <div class="card-title">Score pra priorizar entre quem já está no ICP (0–100)</div>
+    <div class="card-title">Score pra priorizar entre quem já está no ICP (0–90)</div>
     <div style="overflow-x:auto; margin-top:14px;">
       <table class="alias-table">
         <thead><tr><th>Métrica</th><th>Peso</th><th>O que observar</th></tr></thead>
@@ -6947,7 +7045,7 @@ function mtSetupRealtime(){
 
 async function mtInit(){
   const wrap = document.getElementById('mtContent');
-  if(!mtInitialized && wrap) wrap.innerHTML = '<div class="empty-hint">Carregando…</div>';
+  if(!mtInitialized && wrap) wrap.innerHTML = '<div class="loading-state"><span class="loading-spinner"></span>Carregando…</div>';
   // garante rtState.routine (checklist) e rtState.marketing atualizados — e
   // liga o realtime da Rotina/Marketing, caso o usuário chegue direto aqui
   // sem passar pela aba Rotina antes. Não faz nada se já estava carregado.
