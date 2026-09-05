@@ -1421,7 +1421,6 @@
             <p class="card-desc" id="afSampleModalInfo" style="margin-bottom:14px;"></p>
             <div class="rt-form-row" style="grid-template-columns:1fr; margin-top:0;">
               <label class="rt-label">Modelo enviado *<select id="af-sample-modelo" class="rt-select"><option value="">—</option></select></label>
-              <label class="rt-label">Tamanho<input type="text" id="af-sample-tamanho" class="rt-input" placeholder="37"></label>
             </div>
           </div>
           <div class="modal-foot" style="display:flex; align-items:center; justify-content:flex-end; gap:8px;">
@@ -5808,7 +5807,6 @@ function afOpenSampleModal(rec, onConfirm){
   afPendingSampleConfirm = onConfirm;
   const modelos = [...new Set(Object.values(aliasMap))].sort();
   document.getElementById('af-sample-modelo').innerHTML = '<option value="">—</option>' + modelos.map(m=>`<option>${m}</option>`).join('');
-  document.getElementById('af-sample-tamanho').value = '';
   document.getElementById('afSampleModalInfo').textContent = `Enviando amostra pra ${rec.handle}${rec.loja ? ' ('+rec.loja+')' : ''}. Escolha o modelo enviado pra confirmar o envio — isso já registra em Controle de Amostras.`;
   document.getElementById('afSampleModalOverlay').style.display = 'flex';
 }
@@ -5825,17 +5823,16 @@ document.getElementById('afSampleModalOverlay').addEventListener('click', (e) =>
 document.getElementById('afSampleModalConfirm').addEventListener('click', async () => {
   const modelo = document.getElementById('af-sample-modelo').value;
   if(!modelo){ showToast('Escolha o modelo enviado pra confirmar'); return; }
-  const tamanho = document.getElementById('af-sample-tamanho').value.trim() || null;
   const cb = afPendingSampleConfirm;
   afCloseSampleModal();
-  if(cb) await cb({ modelo, tamanho });
+  if(cb) await cb({ modelo });
 });
-async function afRegistrarAmostraAutomatica(rec, modelo, tamanho){
+async function afRegistrarAmostraAutomatica(rec, modelo){
   const week = afCurrentWeekRange();
   const payload = {
     semana_inicio: week.start, semana_fim: week.end,
     criador: rec.handle, loja: rec.loja || null,
-    modelo, tamanho,
+    modelo,
     data_envio: todayKey(),
     score: rec.score ?? null
   };
@@ -5878,11 +5875,11 @@ function afAttachPipelineHandlers(){
       const newCol = col.dataset.status;
       if(!rec || rec.col===newCol) return;
       if(newCol === 'enviada'){
-        afOpenSampleModal(rec, async ({ modelo, tamanho }) => {
+        afOpenSampleModal(rec, async ({ modelo }) => {
           rec.col = newCol;
           afRenderActive();
           await sb.from('afiliados_leads').update({ col:newCol, updated_at:new Date().toISOString() }).eq('id', id);
-          await afRegistrarAmostraAutomatica(rec, modelo, tamanho);
+          await afRegistrarAmostraAutomatica(rec, modelo);
         });
         return;
       }
@@ -6043,10 +6040,10 @@ async function afSaveLeadFromForm(){
 
   if(enteringEnviada){
     afCloseModal();
-    afOpenSampleModal({ handle, loja: payload.loja, score: payload.score }, async ({ modelo, tamanho }) => {
+    afOpenSampleModal({ handle, loja: payload.loja, score: payload.score }, async ({ modelo }) => {
       const rec = await persistLead();
       afRenderActive();
-      if(rec) { showToast('Lead salvo'); await afRegistrarAmostraAutomatica(rec, modelo, tamanho); }
+      if(rec) { showToast('Lead salvo'); await afRegistrarAmostraAutomatica(rec, modelo); }
     });
     return;
   }
