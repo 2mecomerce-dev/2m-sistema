@@ -59,28 +59,49 @@ precisar ajustar o prompt dela.
 ## Fila de avaliações (`public.avaliacoes`)
 
 Aba "Respostas de Avaliações" (menu Ferramentas, só admin vê): o time
-sobe o print de uma avaliação do Shopee/TikTok Shop (só a loja é
-obrigatória — nota/texto/produto podem ficar em branco). O print vai pro
-bucket privado `avaliacoes-prints` no Storage; a linha correspondente em
-`public.avaliacoes` guarda `print_path`, `loja`, `pedido_id`, `produto`,
+sobe o print de avaliações do Shopee/TikTok Shop (só a loja é
+obrigatória — nota/texto/produto podem ficar em branco), colando com
+Ctrl+V direto na área de upload (ou escolhendo um arquivo manualmente).
+O print vai pro bucket privado `avaliacoes-prints` no Storage; cada linha
+em `public.avaliacoes` guarda `print_path`, `loja`, `pedido_id`, `produto`,
 `variacao`, `estrelas`, `texto`, `status` (`pendente|sugerida|respondida`),
 `resposta_sugerida`, `resposta_final`.
+
+**IMPORTANTE — um print quase sempre traz VÁRIAS avaliações de uma vez**
+(é um recorte da lista de avaliações do seller center, não uma avaliação
+isolada). Cada upload cria só UMA linha em `avaliacoes` (a que tem o
+`print_path`), mas ao ler a imagem — seja numa conversa de chat, seja no
+agente automático — se houver mais de uma avaliação visível no print:
+  1. Preencha a própria linha existente com os dados da PRIMEIRA avaliação
+     do print (a mais no topo) + `resposta_sugerida` + `status='sugerida'`.
+  2. Para cada avaliação ADICIONAL visível no mesmo print, faça um INSERT
+     de uma nova linha em `avaliacoes` reaproveitando o mesmo `print_path`
+     e `loja`, com os campos daquela avaliação específica + `resposta_sugerida`
+     próprio + `status='sugerida'` — não baixe/leia a imagem de novo, uma
+     leitura já basta pra extrair todas.
+  3. Se não der pra distinguir claramente uma avaliação da outra (texto
+     cortado, print de baixa qualidade), preencha o que der e deixe o
+     resto null — não invente conteúdo que não está visível na imagem.
 
 Quando o Breno (ou Murilo/Luiz) pedir numa conversa pra ver as avaliações
 pendentes: consulte `avaliacoes` com `status <> 'respondida'`, gere uma
 `signed URL` do print (`sb.storage...createSignedUrl` via SQL não dá — se
 precisar ver a imagem de dentro de uma sessão de chat, use o Supabase MCP
 pra achar o `print_path` e peça a URL pública/assinada, ou peça o print
-direto no chat) e depois de ler a imagem: preencha `estrelas`/`texto`/
-`produto` que estiverem faltando e escreva uma resposta em
-`resposta_sugerida`, curta, no tom da marca (2M — caloroso mas
+direto no chat) e depois de ler a imagem, siga a regra de "várias
+avaliações por print" acima. Tom da resposta: 2M — caloroso mas
 profissional; agradece avaliação positiva, pede desculpa + oferece
-solução via chat da loja pra negativa), atualizando `status = 'sugerida'`.
+solução via chat da loja pra negativa; emojis com moderação (1-2, no
+máximo); respostas curtas (2-4 frases).
 
-**Ainda não faz parte do agente automático agendado** — a rotina de
-sugestões não tem como baixar/ver os prints (bucket privado, sem
-ferramenta de Storage no toolset dela). Se o Breno pedir pra automatizar
-isso também, a opção mais simples é tornar `avaliacoes-prints` público
-(os paths já são não-adivinháveis) pra rotina conseguir baixar o print
-via `curl` e ler com a ferramenta Read — **confirme com o Breno antes**
-de mudar o bucket pra público, é uma troca de privacidade por automação.
+**Já faz parte do agente automático agendado** (rotina "2M Sistema -
+Revisão de sugestões", 2x por dia, ver Tarefa 2 do prompt dela). Como o
+bucket é privado, a rotina loga com uma conta técnica restrita
+(`2mecomerce+agente-sugestoes@gmail.com`, perfil `afiliados` — mesmo
+nível do Luiz, nunca toca tabela financeira) via
+`POST {SUPABASE_URL}/auth/v1/token?grant_type=password`, gera uma
+signed URL do print via `POST .../storage/v1/object/sign/avaliacoes-prints/{path}`,
+baixa com `curl` e lê com a ferramenta Read. Ver
+`RemoteTrigger get trig_01VtyKA5B96Hf8gMnLBtQMWg` pro prompt completo se
+precisar ajustar (ex.: incluir a regra de "várias avaliações por print"
+lá também, se ainda não estiver).
