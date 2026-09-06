@@ -1084,6 +1084,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="13" width="3" height="5" rx="0.5"/><rect x="12" y="9" width="3" height="9" rx="0.5"/><rect x="17" y="6" width="3" height="12" rx="0.5"/></svg>
         Análise de Dados
       </div>
+      <div class="nav-item" data-view="avaliacoes" data-title="Respostas de Avaliações" data-eyebrow="Operações">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 15.09 8.26 22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        Respostas de Avaliações
+      </div>
     </div>
 
     <div class="nav-group">
@@ -1564,6 +1568,11 @@
       <!-- ===== VIEW: VALOR A RECEBER ===== -->
       <section class="view" id="view-recebiveis">
         <div id="vrContent"></div>
+      </section>
+
+      <!-- ===== VIEW: RESPOSTAS DE AVALIAÇÕES ===== -->
+      <section class="view" id="view-avaliacoes">
+        <div id="avContent"></div>
       </section>
 
       <!-- ===== VIEW: CONFIGURAÇÕES ===== -->
@@ -3236,6 +3245,7 @@ document.querySelectorAll('.nav-item[data-view]').forEach(item => {
     if(v === 'afiliados') afInit();
     if(v === 'metas') mtInit();
     if(v === 'recebiveis') vrInit();
+    if(v === 'avaliacoes') avInit();
   });
 });
 
@@ -7250,6 +7260,192 @@ async function vrBuscar(){
 
 function vrInit(){
   vrRender();
+}
+
+/* ═══════════════════════════════════════════════════════
+   RESPOSTAS DE AVALIAÇÕES
+   O time sobe o print (Shopee/TikTok Shop) — só a loja é obrigatória.
+   O texto/nota/produto, quando não preenchidos à mão, são lidos da
+   imagem por IA (numa conversa ou pelo agente automático agendado),
+   que também escreve a sugestão de resposta em resposta_sugerida.
+   ═══════════════════════════════════════════════════════ */
+let avState = { items: [] };
+let avInitialized = false;
+
+async function avLoad(){
+  const { data, error } = await sb.from('avaliacoes').select('*').order('created_at', { ascending:false });
+  if(error){ syncLog('Avaliações: '+error.message, 'err'); return; }
+  avState.items = data || [];
+}
+
+function avStarsHTML(n){
+  if(!n) return '<span style="color:var(--faint); font-size:11.5px; font-style:italic;">sem nota ainda</span>';
+  return `<span style="color:var(--amber); letter-spacing:1px;">${'★'.repeat(n)}${'☆'.repeat(5-n)}</span>`;
+}
+const AV_STATUS_MAP = {
+  pendente:{cls:'badge-warning', label:'Pendente'},
+  sugerida:{cls:'badge-neutral', label:'Sugestão pronta'},
+  respondida:{cls:'badge-good', label:'Respondida'}
+};
+function avCardHTML(rec){
+  const st = AV_STATUS_MAP[rec.status] || AV_STATUS_MAP.pendente;
+  const date = rec.data_avaliacao
+    ? new Date(rec.data_avaliacao+'T12:00:00').toLocaleDateString('pt-BR')
+    : (rec.created_at ? new Date(rec.created_at).toLocaleDateString('pt-BR') : '');
+  return `
+  <div class="card" style="padding:16px;">
+    <div style="display:flex; gap:14px;">
+      <div class="av-thumb" data-path="${rec.print_path||''}" style="width:64px; height:64px; border-radius:10px; background:var(--surface-2); flex-shrink:0; display:flex; align-items:center; justify-content:center; color:var(--faint); font-size:18px;">🧾</div>
+      <div style="flex:1; min-width:0;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="badge ${st.cls}">${st.label}</span>
+            ${rec.loja ? `<span class="badge badge-neutral">${rec.loja}</span>` : ''}
+            ${avStarsHTML(rec.estrelas)}
+          </div>
+          <button type="button" class="rt-item-delete av-delete" data-id="${rec.id}" title="Excluir avaliação">×</button>
+        </div>
+        ${rec.produto ? `<div style="font-size:12px; color:var(--muted); margin-top:6px;">${rec.produto}${rec.variacao?` — ${rec.variacao}`:''}${rec.pedido_id?` · Pedido ${rec.pedido_id}`:''}</div>` : ''}
+        ${rec.texto
+          ? `<div style="font-size:13px; margin-top:8px; white-space:pre-wrap;">${rec.texto}</div>`
+          : `<div style="font-size:12px; color:var(--faint); font-style:italic; margin-top:8px;">Aguardando a IA ler o print pra extrair o texto da avaliação...</div>`}
+        <div style="font-size:11px; color:var(--faint); margin-top:6px;">${date}</div>
+        <label class="rt-label" style="font-size:11px; margin-top:10px;">Resposta
+          <textarea class="rt-input av-resposta" data-id="${rec.id}" rows="2" placeholder="Aguardando sugestão da IA...">${rec.resposta_final ?? rec.resposta_sugerida ?? ''}</textarea>
+        </label>
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
+          ${rec.status !== 'respondida' ? `<button type="button" class="btn btn-soft btn-sm av-marcar-respondida" data-id="${rec.id}">Marcar como respondida</button>` : ''}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+function avRenderUploadCard(){
+  const pendentes = avState.items.filter(a => a.status !== 'respondida').length;
+  return `
+  <div class="card" style="padding:20px; margin-bottom:20px;">
+    <div class="card-title">⭐ Respostas de Avaliações</div>
+    <div class="card-desc" style="margin-top:4px;">Sobe o print da avaliação (Shopee/TikTok Shop) — só a loja é obrigatória. A Claude lê a imagem e sugere uma resposta em até 12h (ou peça direto numa conversa comigo pra sair na hora). ${pendentes} aguardando resposta.</div>
+    <form id="avUploadForm">
+      <div class="rt-form-row" style="grid-template-columns:1fr 1fr; margin-top:12px;">
+        <label class="rt-label">Print da avaliação *<input type="file" id="av-f-print" class="rt-input" accept="image/*" required></label>
+        <label class="rt-label">Loja *<select id="av-f-loja" class="rt-select" required><option value="">—</option>${rtState.stores.map(s=>`<option>${s}</option>`).join('')}</select></label>
+        <label class="rt-label">Nota (opcional)<select id="av-f-estrelas" class="rt-select"><option value="">— a IA lê do print —</option>${[5,4,3,2,1].map(n=>`<option value="${n}">${n} estrela${n>1?'s':''}</option>`).join('')}</select></label>
+        <label class="rt-label">Pedido (opcional)<input type="text" id="av-f-pedido" class="rt-input" placeholder="ID do pedido"></label>
+        <label class="rt-label" style="grid-column:1/-1;">Produto / variação (opcional)<input type="text" id="av-f-produto" class="rt-input" placeholder="Ex.: Bota Chelsea Marrom, 40"></label>
+        <label class="rt-label" style="grid-column:1/-1;">Texto da avaliação (opcional)<textarea id="av-f-texto" class="rt-input" rows="2" placeholder="Deixe em branco que a IA lê do print..."></textarea></label>
+      </div>
+      <div style="display:flex; justify-content:flex-end; margin-top:10px;">
+        <button type="submit" class="btn btn-accent btn-sm" id="avUploadSubmit">Enviar print</button>
+      </div>
+    </form>
+  </div>`;
+}
+async function avLoadThumbnails(){
+  const thumbs = document.querySelectorAll('.av-thumb[data-path]');
+  for(const el of thumbs){
+    const path = el.dataset.path;
+    if(!path) continue;
+    try{
+      const { data, error } = await sb.storage.from('avaliacoes-prints').createSignedUrl(path, 3600);
+      if(!error && data?.signedUrl){
+        el.style.backgroundImage = `url("${data.signedUrl}")`;
+        el.style.backgroundSize = 'cover';
+        el.style.backgroundPosition = 'center';
+        el.textContent = '';
+      }
+    }catch(e){}
+  }
+}
+function avAttachHandlers(){
+  const form = document.getElementById('avUploadForm');
+  if(form) form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fileInput = document.getElementById('av-f-print');
+    const file = fileInput.files[0];
+    if(!file){ showToast('Escolha o print da avaliação', 'warn'); return; }
+    const loja = document.getElementById('av-f-loja').value;
+    if(!loja){ fieldError('av-f-loja', 'Escolha a loja'); return; }
+    const btn = document.getElementById('avUploadSubmit');
+    btn.disabled = true; btn.textContent = 'Enviando...';
+    const ext = (file.name.split('.').pop() || 'png').toLowerCase();
+    const path = `${loja.replace(/\s+/g,'_')}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+    const { error: upErr } = await sb.storage.from('avaliacoes-prints').upload(path, file, { contentType: file.type || 'image/png' });
+    if(upErr){ showToast('Não consegui subir o print: '+upErr.message); btn.disabled=false; btn.textContent='Enviar print'; return; }
+    const payload = {
+      loja,
+      pedido_id: document.getElementById('av-f-pedido').value.trim() || null,
+      produto: document.getElementById('av-f-produto').value.trim() || null,
+      estrelas: document.getElementById('av-f-estrelas').value === '' ? null : Number(document.getElementById('av-f-estrelas').value),
+      texto: document.getElementById('av-f-texto').value.trim() || null,
+      print_path: path,
+      status: 'pendente'
+    };
+    const { data, error } = await sb.from('avaliacoes').insert(payload).select().single();
+    btn.disabled = false; btn.textContent = 'Enviar print';
+    if(error){ showToast('Não consegui salvar: '+error.message); return; }
+    avState.items.unshift(data);
+    avRenderActive();
+    showToast('Print enviado! A resposta é sugerida em até 12h (ou peça direto no chat).');
+  });
+  document.querySelectorAll('.av-delete').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = Number(btn.dataset.id);
+      const ok = await confirmDialog('Excluir avaliação?', 'Isso remove o registro e o print salvo.', 'Excluir');
+      if(!ok) return;
+      const rec = avState.items.find(r=>r.id===id);
+      avState.items = avState.items.filter(r=>r.id!==id);
+      avRenderActive();
+      if(rec?.print_path) await sb.storage.from('avaliacoes-prints').remove([rec.print_path]);
+      const { error } = await sb.from('avaliacoes').delete().eq('id', id);
+      if(error) showToast('Não consegui excluir: '+error.message);
+    });
+  });
+  document.querySelectorAll('.av-resposta').forEach(ta => {
+    ta.addEventListener('change', async () => {
+      const id = Number(ta.dataset.id);
+      const val = ta.value.trim() || null;
+      const rec = avState.items.find(r=>r.id===id);
+      if(rec) rec.resposta_final = val;
+      const { error } = await sb.from('avaliacoes').update({ resposta_final: val, updated_at:new Date().toISOString() }).eq('id', id);
+      if(error) showToast('Não consegui salvar a resposta: '+error.message);
+    });
+  });
+  document.querySelectorAll('.av-marcar-respondida').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = Number(btn.dataset.id);
+      const texto = document.querySelector(`.av-resposta[data-id="${id}"]`)?.value.trim();
+      if(!texto){ showToast('Escreva ou aguarde a resposta antes de marcar como respondida', 'warn'); return; }
+      const rec = avState.items.find(r=>r.id===id);
+      if(rec){ rec.status = 'respondida'; rec.resposta_final = texto; }
+      avRenderActive();
+      const { error } = await sb.from('avaliacoes').update({ status:'respondida', resposta_final: texto, updated_at:new Date().toISOString() }).eq('id', id);
+      if(error){ showToast('Não consegui atualizar: '+error.message); return; }
+      showToast('Marcada como respondida');
+    });
+  });
+}
+function avRenderActive(){
+  const content = document.getElementById('avContent');
+  if(!content) return;
+  content.innerHTML = avRenderUploadCard() + `<div id="avList" style="display:flex; flex-direction:column; gap:12px;">${
+    avState.items.length===0
+      ? '<div class="empty-hint">Nenhuma avaliação enviada ainda.</div>'
+      : avState.items.map(avCardHTML).join('')
+  }</div>`;
+  avAttachHandlers();
+  avLoadThumbnails();
+}
+function avSetupRealtime(){
+  sb.channel('public:avaliacoes').on('postgres_changes', { event:'*', schema:'public', table:'avaliacoes' }, async ()=>{ await avLoad(); avRenderActive(); }).subscribe();
+}
+async function avInit(){
+  if(avInitialized) return;
+  avInitialized = true;
+  document.getElementById('avContent').innerHTML = '<div class="loading-state"><span class="loading-spinner"></span>Carregando…</div>';
+  await avLoad();
+  avRenderActive();
+  avSetupRealtime();
 }
 
 /* ---------- Botão flutuante de sugestões de melhoria ----------
