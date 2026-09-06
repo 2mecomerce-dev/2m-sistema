@@ -48,3 +48,39 @@ comigo), sempre que houver itens com `status = 'novo'` ou `'em_andamento'`:
 5. Se um item não fizer sentido ou for duplicado de outro já resolvido,
    pode marcar `concluido` com uma `resposta` explicando por quê, em vez
    de deixar parado na fila pra sempre.
+
+O agente agendado (rotina "2M Sistema - Revisão de sugestões", 2x por dia)
+usa o conector MCP do Supabase (acesso admin, ignora RLS) restrito por
+instrução a só usar `execute_sql` na tabela `public.sugestoes` — nunca em
+nenhuma outra tabela, nunca DDL, nunca `auth.users`. Ver a definição
+completa da rotina (`RemoteTrigger get trig_01VtyKA5B96Hf8gMnLBtQMWg`) se
+precisar ajustar o prompt dela.
+
+## Fila de avaliações (`public.avaliacoes`)
+
+Aba "Respostas de Avaliações" (menu Ferramentas, só admin vê): o time
+sobe o print de uma avaliação do Shopee/TikTok Shop (só a loja é
+obrigatória — nota/texto/produto podem ficar em branco). O print vai pro
+bucket privado `avaliacoes-prints` no Storage; a linha correspondente em
+`public.avaliacoes` guarda `print_path`, `loja`, `pedido_id`, `produto`,
+`variacao`, `estrelas`, `texto`, `status` (`pendente|sugerida|respondida`),
+`resposta_sugerida`, `resposta_final`.
+
+Quando o Breno (ou Murilo/Luiz) pedir numa conversa pra ver as avaliações
+pendentes: consulte `avaliacoes` com `status <> 'respondida'`, gere uma
+`signed URL` do print (`sb.storage...createSignedUrl` via SQL não dá — se
+precisar ver a imagem de dentro de uma sessão de chat, use o Supabase MCP
+pra achar o `print_path` e peça a URL pública/assinada, ou peça o print
+direto no chat) e depois de ler a imagem: preencha `estrelas`/`texto`/
+`produto` que estiverem faltando e escreva uma resposta em
+`resposta_sugerida`, curta, no tom da marca (2M — caloroso mas
+profissional; agradece avaliação positiva, pede desculpa + oferece
+solução via chat da loja pra negativa), atualizando `status = 'sugerida'`.
+
+**Ainda não faz parte do agente automático agendado** — a rotina de
+sugestões não tem como baixar/ver os prints (bucket privado, sem
+ferramenta de Storage no toolset dela). Se o Breno pedir pra automatizar
+isso também, a opção mais simples é tornar `avaliacoes-prints` público
+(os paths já são não-adivinháveis) pra rotina conseguir baixar o print
+via `curl` e ler com a ferramenta Read — **confirme com o Breno antes**
+de mudar o bucket pra público, é uma troca de privacidade por automação.
