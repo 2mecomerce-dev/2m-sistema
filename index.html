@@ -7342,7 +7342,10 @@ function avRenderUploadCard(){
       <div class="rt-form-row" style="grid-template-columns:1fr 1fr; margin-top:12px;">
         <label class="rt-label">Print da avaliação *
           <div class="av-paste-zone" id="avPasteZone" tabindex="0">
-            <span id="avPasteText">📋 Clique aqui e cole (Ctrl+V) ou escolha um arquivo</span>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span id="avPasteText">📋 Clique aqui e cole (Ctrl+V) ou escolha um arquivo</span>
+              <button type="button" class="rt-item-delete" id="avPasteRemoveBtn" style="display:none;" title="Remover print">×</button>
+            </div>
             <img id="avPastePreviewImg" style="display:none;">
           </div>
           <input type="file" id="av-f-print" accept="image/*" style="display:none;">
@@ -7386,19 +7389,37 @@ function avUpdatePastePreview(file){
   const zone = document.getElementById('avPasteZone');
   const text = document.getElementById('avPasteText');
   const img = document.getElementById('avPastePreviewImg');
+  const removeBtn = document.getElementById('avPasteRemoveBtn');
   if(!zone || !file) return;
   zone.classList.remove('field-invalid');
   zone.classList.add('has-image');
   text.textContent = `✓ ${file.name || 'print colado'} — clique pra trocar`;
+  if(removeBtn) removeBtn.style.display = '';
   const reader = new FileReader();
   reader.onload = (ev) => { img.src = ev.target.result; img.style.display = 'block'; };
   reader.readAsDataURL(file);
 }
+function avClearPastedFile(){
+  const input = document.getElementById('av-f-print');
+  const zone = document.getElementById('avPasteZone');
+  const text = document.getElementById('avPasteText');
+  const img = document.getElementById('avPastePreviewImg');
+  const removeBtn = document.getElementById('avPasteRemoveBtn');
+  const dt = new DataTransfer();
+  input.files = dt.files;
+  zone.classList.remove('has-image');
+  text.textContent = '📋 Clique aqui e cole (Ctrl+V) ou escolha um arquivo';
+  img.src = '';
+  img.style.display = 'none';
+  if(removeBtn) removeBtn.style.display = 'none';
+}
 function avSetupPasteZone(){
   const zone = document.getElementById('avPasteZone');
   const input = document.getElementById('av-f-print');
+  const removeBtn = document.getElementById('avPasteRemoveBtn');
   if(!zone || !input) return;
   zone.addEventListener('click', () => input.click());
+  if(removeBtn) removeBtn.addEventListener('click', (e) => { e.stopPropagation(); avClearPastedFile(); });
   zone.addEventListener('paste', (e) => {
     const items = e.clipboardData?.items || [];
     for(const item of items){
