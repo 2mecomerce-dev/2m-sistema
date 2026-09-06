@@ -619,10 +619,22 @@
   .info-tip:hover .info-tip-bubble, .info-tip:focus-visible .info-tip-bubble, .info-tip.open .info-tip-bubble{opacity:1; visibility:visible; transform:translateX(-50%) translateY(0);}
 
   /* ---------- Campo com erro de validação ---------- */
-  .rt-input.field-invalid, .rt-select.field-invalid{
+  .rt-input.field-invalid, .rt-select.field-invalid, .av-paste-zone.field-invalid{
     border-color:var(--danger) !important; animation:shakeX .32s var(--ease);
   }
   @keyframes shakeX{0%,100%{transform:translateX(0);} 25%{transform:translateX(-4px);} 75%{transform:translateX(4px);}}
+
+  /* ---------- Zona de colar/escolher print (Ctrl+V) ---------- */
+  .av-paste-zone{
+    border:1.5px dashed var(--border-strong); border-radius:var(--r-sm); background:var(--surface-2);
+    padding:10px 12px; font-size:12px; color:var(--muted); cursor:pointer; text-align:center;
+    min-height:20px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+    transition:border-color .15s, background .15s; line-height:1.4;
+  }
+  .av-paste-zone:hover, .av-paste-zone:focus-visible{border-color:var(--accent); background:var(--accent-soft); outline:none;}
+  .av-paste-zone.has-image{padding:8px; background:var(--surface); border-style:solid; border-color:var(--border-strong);}
+  .av-paste-zone.has-image span{color:var(--accent-d); font-weight:600;}
+  .av-paste-zone img{max-height:90px; max-width:100%; border-radius:6px; display:block;}
 
   /* ---------- Botão flutuante de sugestões ---------- */
   .fab-feedback{
@@ -7328,7 +7340,13 @@ function avRenderUploadCard(){
     <div class="card-desc" style="margin-top:4px;">Sobe o print da avaliação (Shopee/TikTok Shop) — só a loja é obrigatória. A Claude lê a imagem e sugere uma resposta em até 12h (ou peça direto numa conversa comigo pra sair na hora). ${pendentes} aguardando resposta.</div>
     <form id="avUploadForm">
       <div class="rt-form-row" style="grid-template-columns:1fr 1fr; margin-top:12px;">
-        <label class="rt-label">Print da avaliação *<input type="file" id="av-f-print" class="rt-input" accept="image/*" required></label>
+        <label class="rt-label">Print da avaliação *
+          <div class="av-paste-zone" id="avPasteZone" tabindex="0">
+            <span id="avPasteText">📋 Clique aqui e cole (Ctrl+V) ou escolha um arquivo</span>
+            <img id="avPastePreviewImg" style="display:none;">
+          </div>
+          <input type="file" id="av-f-print" accept="image/*" style="display:none;">
+        </label>
         <label class="rt-label">Loja *<select id="av-f-loja" class="rt-select" required><option value="">—</option>${rtState.stores.map(s=>`<option>${s}</option>`).join('')}</select></label>
         <label class="rt-label">Nota (opcional)<select id="av-f-estrelas" class="rt-select"><option value="">— a IA lê do print —</option>${[5,4,3,2,1].map(n=>`<option value="${n}">${n} estrela${n>1?'s':''}</option>`).join('')}</select></label>
         <label class="rt-label">Pedido (opcional)<input type="text" id="av-f-pedido" class="rt-input" placeholder="ID do pedido"></label>
@@ -7357,13 +7375,54 @@ async function avLoadThumbnails(){
     }catch(e){}
   }
 }
+function avSetFileOnInput(file){
+  const input = document.getElementById('av-f-print');
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  input.files = dt.files;
+  avUpdatePastePreview(file);
+}
+function avUpdatePastePreview(file){
+  const zone = document.getElementById('avPasteZone');
+  const text = document.getElementById('avPasteText');
+  const img = document.getElementById('avPastePreviewImg');
+  if(!zone || !file) return;
+  zone.classList.remove('field-invalid');
+  zone.classList.add('has-image');
+  text.textContent = `✓ ${file.name || 'print colado'} — clique pra trocar`;
+  const reader = new FileReader();
+  reader.onload = (ev) => { img.src = ev.target.result; img.style.display = 'block'; };
+  reader.readAsDataURL(file);
+}
+function avSetupPasteZone(){
+  const zone = document.getElementById('avPasteZone');
+  const input = document.getElementById('av-f-print');
+  if(!zone || !input) return;
+  zone.addEventListener('click', () => input.click());
+  zone.addEventListener('paste', (e) => {
+    const items = e.clipboardData?.items || [];
+    for(const item of items){
+      if(item.type && item.type.startsWith('image/')){
+        e.preventDefault();
+        const file = item.getAsFile();
+        if(file) avSetFileOnInput(file);
+        return;
+      }
+    }
+    showToast('Não achei nenhuma imagem na área de transferência', 'warn');
+  });
+  input.addEventListener('change', () => {
+    if(input.files[0]) avUpdatePastePreview(input.files[0]);
+  });
+}
 function avAttachHandlers(){
+  avSetupPasteZone();
   const form = document.getElementById('avUploadForm');
   if(form) form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const fileInput = document.getElementById('av-f-print');
     const file = fileInput.files[0];
-    if(!file){ showToast('Escolha o print da avaliação', 'warn'); return; }
+    if(!file){ fieldError('avPasteZone', 'Cole (Ctrl+V) ou escolha o print da avaliação'); return; }
     const loja = document.getElementById('av-f-loja').value;
     if(!loja){ fieldError('av-f-loja', 'Escolha a loja'); return; }
     const btn = document.getElementById('avUploadSubmit');
