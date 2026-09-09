@@ -2020,7 +2020,7 @@ const CORES_BASE = ['MARROM','PRETO','AZUL','BRANCO','VERDE','VERMELHO','AMARELO
 // Apelidos de produtos que não são calçados (kits, acessórios) — não têm
 // numeração nem cor de par, então a lista de separação mostra só
 // "(qtd) Apelido", sem tentar casar cor/tamanho.
-const APELIDOS_SEM_VARIACAO = ['KIT GRIP', 'CINTO'];
+const APELIDOS_SEM_VARIACAO = ['KIT GRIP', 'CINTO', 'KIT 2 CARTEIRA'];
 
 function splitConcat(s){
   return s.replace(/([a-zà-ÿ])([A-ZÀ-Ý])/g, '$1 $2');
@@ -2104,6 +2104,21 @@ async function extractOrderFromPage(page){
       }
     }
   });
+
+  // Método 3: SKU sem código numérico (ex.: TikTok Shop quando o vendedor não
+  // cadastrou um SKU no anúncio) — o marketplace usa o próprio nome do
+  // produto no campo SKU, numa linha só dele, na mesma altura do cabeçalho
+  // "SKU". Só entra em ação se os métodos 1 e 2 não acharam nenhum código.
+  if(allSkuItems.length === 0){
+    const skuRowCells = cand.filter(it =>
+      it.x0 < headerX - 3 &&
+      Math.abs(it.top - skuTop) <= 5 &&
+      normTxt(it.text) !== 'SKU' &&
+      normTxt(it.text) !== 'TOTAL'
+    );
+    const skuText = skuRowCells.map(it => splitConcat(it.text)).join(' ').trim();
+    if(skuText) allSkuItems.push({ sku: skuText, x0: headerX, top: skuTop });
+  }
   if(allSkuItems.length === 0) return null;
 
   // Células da variação (faixa Variação→QTD)
