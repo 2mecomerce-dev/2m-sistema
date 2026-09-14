@@ -4585,8 +4585,8 @@ function ppRenderTable(){
         };
         return `<tr>
           <td style="font-weight:700;">${p.nome}</td>
-          <td><input type="number" step="0.01" class="pp-edit-custo" data-id="${p.id}" value="${p.custo_produto}" style="width:90px; font-family:'JetBrains Mono',monospace; font-size:13px; padding:6px 8px; border:1px solid var(--border); border-radius:var(--r-sm); background:var(--surface-2);"></td>
-          <td><input type="number" step="0.01" class="pp-edit-taxa" data-id="${p.id}" value="${p.taxa_fixa}" style="width:90px; font-family:'JetBrains Mono',monospace; font-size:13px; padding:6px 8px; border:1px solid var(--border); border-radius:var(--r-sm); background:var(--surface-2);"></td>
+          <td><input type="number" step="0.01" class="pp-edit-custo" data-id="${p.id}" value="${p.custo_produto}" style="width:90px; font-family:'JetBrains Mono',monospace; font-size:13px; padding:6px 8px; border:1px solid var(--border); border-radius:var(--r-sm); background:var(--surface-2); color:var(--ink);"></td>
+          <td><input type="number" step="0.01" class="pp-edit-taxa" data-id="${p.id}" value="${p.taxa_fixa}" style="width:90px; font-family:'JetBrains Mono',monospace; font-size:13px; padding:6px 8px; border:1px solid var(--border); border-radius:var(--r-sm); background:var(--surface-2); color:var(--ink);"></td>
           <td class="mono">${fmtBRL(custoBase)}</td>
           <td class="mono">${cellFor('shopee')}</td>
           <td class="mono">${cellFor('tiktok')}</td>
