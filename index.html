@@ -860,14 +860,6 @@
   .rt-tcard-foot{display:flex; align-items:center; justify-content:space-between; gap:8px;}
   .rt-tcard-foot select{font-size:12px; padding:6px 8px; width:auto;}
 
-  .rt-acct-card{border:1px solid var(--border); border-radius:var(--r-md); padding:14px 16px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;}
-  .rt-acct-name{font-weight:700; font-size:14px; margin-bottom:4px;}
-  .rt-days-row{display:flex; gap:7px; flex-wrap:wrap; margin-left:auto;}
-  .rt-day-chip{display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer;}
-  .rt-day-chip input{display:none;}
-  .rt-day-chip .dcircle{width:26px; height:26px; border-radius:50%; border:2px solid var(--border-strong); display:flex; align-items:center; justify-content:center; font-size:11.5px; color:var(--faint); transition:background .15s,border-color .15s,color .15s;}
-  .rt-day-chip input:checked + .dcircle{background:var(--accent); border-color:var(--accent); color:#fff;}
-  .rt-day-chip .dlabel{font-size:10px; color:var(--faint); font-weight:600;}
 
   .rt-timeline-item{padding:12px 0; border-top:1px dashed var(--border);}
   .rt-timeline-item:first-child{border-top:none; padding-top:0;}
@@ -1748,6 +1740,8 @@
         <label class="rt-label" style="grid-column:1/-1;">Título do post<input type="text" id="ct-f-titulo" class="rt-input" placeholder="Ex.: Prova de conforto andando o dia todo"></label>
         <label class="rt-label" style="grid-column:1/-1;">Ideia / roteiro / observação (opcional)<textarea id="ct-f-ideia" class="rt-input" rows="3" placeholder="Anotações, referência de áudio/trend, gancho do vídeo..."></textarea></label>
         <label class="rt-label" style="flex-direction:row; align-items:center; gap:8px; grid-column:1/-1;"><input type="checkbox" id="ct-f-feito" style="width:auto;"> Já foi postado</label>
+        <label class="rt-label" style="flex-direction:row; align-items:center; gap:8px; grid-column:1/-1;"><input type="checkbox" id="ct-f-impulsionar" style="width:auto;"> Vamos impulsionar esse post (ads)?</label>
+        <label class="rt-label" id="ct-f-valor-wrap" style="grid-column:1/-1; display:none;">Quanto vai investir (R$)<input type="number" step="0.01" min="0" id="ct-f-valor-impulso" class="rt-input" placeholder="0,00"></label>
       </div>
     </div>
     <div class="modal-foot" style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
@@ -3512,7 +3506,7 @@ function rtIsIntervalDue(item){
   return days >= item.intervalDays;
 }
 function rtTiktokGoalMet(){
-  const total = rtComputeTiktokWeekTotal();
+  const total = ctWeekPostsCount();
   const target = rtState.targets.tiktokPerAccount * rtState.tiktok.accounts.length;
   return target > 0 && total >= target;
 }
@@ -3662,25 +3656,6 @@ function rtComputeTasksCompletion(){
   const done = rtState.tasks.filter(t=>t.status==='Concluído').length;
   return { done, total, pct: total? Math.round(done/total*100):0 };
 }
-function rtComputeTiktokWeekTotal(){
-  let total = 0;
-  Object.values(rtState.tiktok.week).forEach(arr => total += arr.filter(Boolean).length);
-  return total;
-}
-function rtGetWeekBounds(){
-  const d = new Date();
-  const start = new Date(d); start.setHours(0,0,0,0); start.setDate(d.getDate() - ((d.getDay()+6)%7));
-  const end = new Date(start); end.setDate(start.getDate()+6); end.setHours(23,59,59,999);
-  return { start, end };
-}
-function rtComputeBoostWeekTotal(){
-  const { start, end } = rtGetWeekBounds();
-  return rtState.tiktok.boosts.filter(b => { const bd = new Date(b.date+'T12:00:00'); return bd>=start && bd<=end; }).reduce((s,b)=>s+b.amount,0);
-}
-function rtComputeBoostAllTimeTotal(){
-  return rtState.tiktok.boosts.reduce((s,b)=>s+b.amount,0);
-}
-
 /* ---------- overview ---------- */
 function rtRenderOverview(){
   const lastW = rtComputeLastWeekMarketing();
@@ -3688,7 +3663,7 @@ function rtRenderOverview(){
   const cpa = lastW ? lastW.cpa : null;
   const routineC = rtComputeRoutineCompletion();
   const tasksC = rtComputeTasksCompletion();
-  const tiktokTotal = rtComputeTiktokWeekTotal();
+  const tiktokTotal = ctWeekPostsCount();
   const tiktokTarget = rtState.targets.tiktokPerAccount * rtState.tiktok.accounts.length;
 
   const roasKind = roas==null ? {k:'neutral', label:'sem dados'} : (roas>=rtState.targets.roas ? {k:'good', label:'meta atingida'} : {k:'critical', label:'abaixo da meta'});
@@ -3814,7 +3789,7 @@ function rtAttachRoutineHandlers(){
         ${cat.items.map(item => {
           const effDone = rtItemEffectiveDone(item);
           if(item.computed === 'tiktok'){
-            const total = rtComputeTiktokWeekTotal();
+            const total = ctWeekPostsCount();
             const target = rtState.targets.tiktokPerAccount * rtState.tiktok.accounts.length;
             return `
             <div class="rt-item-row">
@@ -4055,8 +4030,6 @@ function rtMarketingStatus(roas, cpa){
 }
 
 function rtRenderMarketing(){
-  const tiktokTotal = rtComputeTiktokWeekTotal();
-  const tiktokTarget = rtState.targets.tiktokPerAccount * rtState.tiktok.accounts.length;
   const isAll = rtMarketingStoreFilter === 'Todas';
   const breakdown = rtWeekBreakdown(rtBreakdownWeekLabel, rtBreakdownWindow);
   const availableWeeks = rtConsolidatedWeeks();
@@ -4139,33 +4112,6 @@ function rtRenderMarketing(){
         <table class="alias-table" id="rtStoreBreakdownTable"></table>
       </div>
     </div>` : ''}
-  </div>
-
-  <div class="card" style="padding:20px; margin-bottom:20px;">
-    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
-      <div class="card-title">🎵 Postagens TikTok</div>
-      <span class="badge badge-neutral">${tiktokTotal}/${tiktokTarget} posts nesta semana</span>
-    </div>
-    <div class="card-desc" style="margin-top:4px;">Meta: 3 posts por semana em cada uma das 3 contas. Clique nos dias em que houve postagem.</div>
-    <div style="display:flex; flex-direction:column; gap:12px; margin-top:16px;" id="rtTiktokAccounts"></div>
-  </div>
-
-  <div class="card" style="padding:20px;">
-    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
-      <div class="card-title">🚀 Impulsionamento dos vídeos (Ads no TikTok)</div>
-      <span class="badge badge-neutral">${fmtBRL(rtComputeBoostWeekTotal())} investidos nesta semana</span>
-    </div>
-    <div class="card-desc" style="margin-top:4px;">Separado do investimento geral acima: registre quanto está sendo gasto para impulsionar cada vídeo postado, por conta.</div>
-    <form id="rtBoostForm" class="rt-form-row" style="grid-template-columns:0.9fr 1.6fr 1fr 1fr auto;">
-      <label class="rt-label">Conta<select id="rtBoostAccount" class="rt-select">${rtState.tiktok.accounts.map(a=>`<option>${a}</option>`).join('')}</select></label>
-      <label class="rt-label">Vídeo / tema do post<input type="text" id="rtBoostVideo" class="rt-input" placeholder="Ex: vídeo do produto X" required></label>
-      <label class="rt-label">Data<input type="date" id="rtBoostDate" class="rt-input" required></label>
-      <label class="rt-label">Valor investido (R$)<input type="number" step="0.01" id="rtBoostAmount" class="rt-input" placeholder="0,00" required></label>
-      <button type="submit" class="btn btn-accent">Registrar</button>
-    </form>
-    <div style="overflow-x:auto; margin-top:16px;">
-      <table class="alias-table" id="rtBoostTable"></table>
-    </div>
   </div>`;
 }
 
@@ -4291,84 +4237,6 @@ function rtAttachMarketingHandlers(){
     }
   }
 
-  const wrap = document.getElementById('rtTiktokAccounts');
-  wrap.innerHTML = rtState.tiktok.accounts.map(acc => {
-    const arr = rtState.tiktok.week[acc];
-    const count = arr.filter(Boolean).length;
-    const target = rtState.targets.tiktokPerAccount;
-    const kind = count>=target ? {k:'good',label:'meta batida'} : count>0 ? {k:'warning',label:'em andamento'} : {k:'critical',label:'sem posts'};
-    return `
-    <div class="rt-acct-card">
-      <div>
-        <div class="rt-acct-name">${acc}</div>
-        ${rtStatusBadge(kind.k, kind.label)}
-      </div>
-      <div class="rt-days-row">
-        ${rtState.tiktok.days.map((d,i)=>`
-          <label class="rt-day-chip">
-            <input type="checkbox" class="rt-tiktok-check" data-acc="${acc}" data-day="${i}" ${arr[i]?'checked':''}>
-            <span class="dcircle">${arr[i]?'✓':''}</span>
-            <span class="dlabel">${d}</span>
-          </label>`).join('')}
-      </div>
-    </div>`;
-  }).join('');
-
-  wrap.querySelectorAll('.rt-tiktok-check').forEach(cb=>{
-    cb.addEventListener('change',(e)=>{
-      const acc = e.target.dataset.acc, day = e.target.dataset.day;
-      rtState.tiktok.week[acc][day] = e.target.checked;
-      rtSave();
-      rtRenderActive();
-    });
-  });
-
-  const boostDateInput = document.getElementById('rtBoostDate');
-  if(boostDateInput && !boostDateInput.value){
-    boostDateInput.value = new Date().toISOString().slice(0,10);
-  }
-  document.getElementById('rtBoostForm').addEventListener('submit', (e)=>{
-    e.preventDefault();
-    const account = document.getElementById('rtBoostAccount').value;
-    const video = document.getElementById('rtBoostVideo').value.trim();
-    const date = document.getElementById('rtBoostDate').value;
-    const amount = parseFloat(document.getElementById('rtBoostAmount').value);
-    if(!video || !date || !amount) return;
-    rtState.tiktok.boosts.unshift({ id:'b'+Date.now(), account, video, date, amount });
-    rtSave();
-    rtRenderActive();
-  });
-
-  const boostTable = document.getElementById('rtBoostTable');
-  if(rtState.tiktok.boosts.length===0){
-    boostTable.innerHTML = `<tr><td style="color:var(--faint); font-style:italic; padding:16px 10px;">Nenhum impulsionamento registrado ainda.</td></tr>`;
-  }else{
-    const sorted = [...rtState.tiktok.boosts].sort((a,b)=> b.date.localeCompare(a.date));
-    boostTable.innerHTML = `
-      <thead><tr><th>Data</th><th>Conta</th><th>Vídeo</th><th>Valor investido</th><th></th></tr></thead>
-      <tbody>
-        ${sorted.map(b => `
-          <tr>
-            <td>${new Date(b.date+'T12:00:00').toLocaleDateString('pt-BR')}</td>
-            <td><span class="badge badge-neutral">${b.account}</span></td>
-            <td>${b.video}</td>
-            <td style="font-weight:700;">${fmtBRL(b.amount)}</td>
-            <td><button class="rt-link-danger rt-boost-delete" data-id="${b.id}">Excluir</button></td>
-          </tr>`).join('')}
-        <tr>
-          <td colspan="3" style="text-align:right; font-weight:700;">Total investido em impulsionamento</td>
-          <td style="font-weight:800;">${fmtBRL(rtComputeBoostAllTimeTotal())}</td>
-          <td></td>
-        </tr>
-      </tbody>`;
-  }
-  boostTable.querySelectorAll('.rt-boost-delete').forEach(btn=>{
-    btn.addEventListener('click', (e)=>{
-      rtState.tiktok.boosts = rtState.tiktok.boosts.filter(x=>x.id!==e.target.dataset.id);
-      rtSave();
-      rtRenderActive();
-    });
-  });
 }
 
 /* ---------- router + persistência ---------- */
@@ -4454,6 +4322,26 @@ function ctAccountColorKey(conta){
   const idx = rtState.tiktok.accounts.indexOf(conta);
   return CT_COLOR_KEYS[idx >= 0 ? idx % CT_COLOR_KEYS.length : 0];
 }
+const CT_BOOST_MONTHLY_CAP = 500;
+function ctWeekPostsCount(){
+  const monday = startOfWeek(new Date());
+  const sunday = new Date(monday); sunday.setDate(monday.getDate()+6);
+  const startKey = dateKeyOf(monday), endKey = dateKeyOf(sunday);
+  return ctState.items.filter(p => p.data >= startKey && p.data <= endKey && p.feito).length;
+}
+function ctBoostWeekTotal(){
+  const monday = startOfWeek(new Date());
+  const sunday = new Date(monday); sunday.setDate(monday.getDate()+6);
+  const startKey = dateKeyOf(monday), endKey = dateKeyOf(sunday);
+  return ctState.items.filter(p => p.impulsionar && p.data >= startKey && p.data <= endKey).reduce((s,p)=>s+(Number(p.valor_impulso)||0),0);
+}
+function ctBoostAllTimeTotal(){
+  return ctState.items.filter(p=>p.impulsionar).reduce((s,p)=>s+(Number(p.valor_impulso)||0),0);
+}
+function ctMonthBoostTotal(){
+  const prefix = `${ctViewYear}-${ctPad(ctViewMonth+1)}`;
+  return ctState.items.filter(p => p.impulsionar && p.data && p.data.startsWith(prefix)).reduce((s,p)=>s+(Number(p.valor_impulso)||0),0);
+}
 function ctMonthTitle(){
   return new Date(ctViewYear, ctViewMonth, 1).toLocaleDateString('pt-BR', { month:'long', year:'numeric' });
 }
@@ -4475,9 +4363,10 @@ function ctWeekProgressHTML(){
 
 function ctPostCardHTML(p){
   const colorKey = ctAccountColorKey(p.conta);
+  const boostTitle = p.impulsionar ? ` — impulsionar ${p.valor_impulso!=null ? fmtBRL(p.valor_impulso) : ''}` : '';
   return `
-  <div class="ct-post-card ${p.feito?'ct-done':''}" data-id="${p.id}" style="--ring:var(--${colorKey}-ring); --bg:var(--${colorKey}-bg); --fg:var(--${colorKey}-fg);" title="${p.conta}${p.ideia ? ' — '+p.ideia.replace(/"/g,'&quot;') : ''}">
-    ${p.horario ? `<span class="ct-post-time">${p.horario}</span> ` : ''}<span class="ct-post-title">${p.titulo}</span>
+  <div class="ct-post-card ${p.feito?'ct-done':''}" data-id="${p.id}" style="--ring:var(--${colorKey}-ring); --bg:var(--${colorKey}-bg); --fg:var(--${colorKey}-fg);" title="${p.conta}${p.ideia ? ' — '+p.ideia.replace(/"/g,'&quot;') : ''}${boostTitle}">
+    ${p.horario ? `<span class="ct-post-time">${p.horario}</span> ` : ''}<span class="ct-post-title">${p.titulo}</span>${p.impulsionar ? ' 🚀' : ''}
   </div>`;
 }
 
@@ -4511,6 +4400,13 @@ function ctRenderCalendar(){
     </div>
     <div class="ct-legend" style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
       ${ctWeekProgressHTML()}
+    </div>
+    <div style="margin-top:14px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:6px;">
+        <span>🚀 Impulsionamento do mês (teto R$ ${CT_BOOST_MONTHLY_CAP.toFixed(2).replace('.',',')})</span>
+        <span style="color:${ctMonthBoostTotal()>CT_BOOST_MONTHLY_CAP?'var(--danger)':'var(--ink)'};">${fmtBRL(ctMonthBoostTotal())} / ${fmtBRL(CT_BOOST_MONTHLY_CAP)}</span>
+      </div>
+      ${rtProgressBar(Math.round(ctMonthBoostTotal()/CT_BOOST_MONTHLY_CAP*100), ctMonthBoostTotal()>CT_BOOST_MONTHLY_CAP ? 'var(--danger)' : ctMonthBoostTotal()>CT_BOOST_MONTHLY_CAP*0.8 ? 'var(--amber)' : 'var(--accent)')}
     </div>
     <div class="ct-cal-nav" style="margin-top:16px;">
       <button type="button" class="ct-nav-btn" id="ctPrevMonth">‹</button>
@@ -4550,6 +4446,9 @@ function ctOpenPostModal(rec, presetDate){
   document.getElementById('ct-f-titulo').value = rec?.titulo || '';
   document.getElementById('ct-f-ideia').value = rec?.ideia || '';
   document.getElementById('ct-f-feito').checked = !!rec?.feito;
+  document.getElementById('ct-f-impulsionar').checked = !!rec?.impulsionar;
+  document.getElementById('ct-f-valor-impulso').value = rec?.valor_impulso ?? '';
+  document.getElementById('ct-f-valor-wrap').style.display = rec?.impulsionar ? '' : 'none';
   document.getElementById('ctPostOverlay').style.display = 'flex';
 }
 function ctCloseModal(){
@@ -4559,9 +4458,14 @@ function ctCloseModal(){
 document.getElementById('ctPostClose').addEventListener('click', ctCloseModal);
 document.getElementById('ctPostCancel').addEventListener('click', ctCloseModal);
 document.getElementById('ctPostOverlay').addEventListener('click', (e) => { if(e.target.id==='ctPostOverlay') ctCloseModal(); });
+document.getElementById('ct-f-impulsionar').addEventListener('change', (e) => {
+  document.getElementById('ct-f-valor-wrap').style.display = e.target.checked ? '' : 'none';
+});
 document.getElementById('ctPostSave').addEventListener('click', async () => {
   const titulo = document.getElementById('ct-f-titulo').value.trim();
   if(!titulo){ fieldError('ct-f-titulo', 'Escreva o título do post'); return; }
+  const impulsionar = document.getElementById('ct-f-impulsionar').checked;
+  const valorImpulsoStr = document.getElementById('ct-f-valor-impulso').value;
   const payload = {
     data: document.getElementById('ct-f-data').value,
     horario: document.getElementById('ct-f-horario').value || null,
@@ -4569,6 +4473,8 @@ document.getElementById('ctPostSave').addEventListener('click', async () => {
     titulo,
     ideia: document.getElementById('ct-f-ideia').value.trim() || null,
     feito: document.getElementById('ct-f-feito').checked,
+    impulsionar,
+    valor_impulso: impulsionar && valorImpulsoStr !== '' ? Number(valorImpulsoStr) : null,
     updated_at: new Date().toISOString()
   };
   if(ctModalContext.id){
@@ -4765,6 +4671,7 @@ async function rtInit(){
   document.getElementById('rtContent').innerHTML = '<div class="loading-state"><span class="loading-spinner"></span>Carregando…</div>';
   await rtLoad();
   await mkLoad();
+  await ctEnsureLoaded();
   rtSetupRealtime();
   rtRenderActive();
 }
@@ -5567,7 +5474,7 @@ function repRender(){
     const ticketAnt = mkAnterior && mkAnterior.orders ? mkAnterior.revenue / mkAnterior.orders : null;
     const st = rtMarketingStatus(mkAtual.roas, mkAtual.cpa);
     const breakdown = rtLatestWeekBreakdown();
-    const boostSemana = rtComputeBoostWeekTotal();
+    const boostSemana = ctBoostWeekTotal();
 
     /* cruzamento aproximado: mídia da última semana × pares dos últimos 7 dias */
     const ult7 = repAggregate(repRange('7d', false).from, repRange('7d', false).to);
@@ -5623,7 +5530,7 @@ function repRender(){
       ${repKpi({ icon:'📈', label:'Margem bruta estimada', value:fmtBRL(margem),
         foot:'Faturamento − mídia − custo do fornecedor (7 dias)', kind: margem >= 0 ? 'good' : 'danger' })}
       ${repKpi({ icon:'🚀', label:'Impulsionamento', value:fmtBRL(boostSemana),
-        foot:`Ads de TikTok nesta semana · ${fmtBRL(rtComputeBoostAllTimeTotal())} no total` })}
+        foot:`Ads de TikTok nesta semana · ${fmtBRL(ctBoostAllTimeTotal())} no total` })}
     </div>
 
     <div class="card" style="margin-bottom:16px;">
