@@ -2020,7 +2020,12 @@ const CORES_BASE = ['MARROM','PRETO','AZUL','BRANCO','VERDE','VERMELHO','AMARELO
 // Apelidos de produtos que não são calçados (kits, acessórios) — não têm
 // numeração nem cor de par, então a lista de separação mostra só
 // "(qtd) Apelido", sem tentar casar cor/tamanho.
-const APELIDOS_SEM_VARIACAO = ['KIT GRIP', 'CINTO'];
+const APELIDOS_SEM_VARIACAO = ['KIT GRIP', 'CINTO', 'KIT 2 CARTEIRA'];
+
+// Dentro dos "sem variação" acima, os que são vendidos em par e cuja etiqueta
+// traz a cor de cada peça do par na Variação (ex.: "Marrom/Preto") — mostra
+// a combinação de cores na lista de separação em vez de só o apelido.
+const APELIDOS_COM_PAR_CORES = ['KIT 2 CARTEIRA', 'KIT GRIP'];
 
 function splitConcat(s){
   return s.replace(/([a-zà-ÿ])([A-ZÀ-Ý])/g, '$1 $2');
@@ -2036,6 +2041,28 @@ function extrairCorTamanho(raw){
     if(CORES_BASE.includes(p)){ cor = p; break; }
   }
   return { cor, tamanho };
+}
+
+// Extrai um par de cores (ex.: "Marrom/Preto") de um texto de Variação. O PDF
+// às vezes quebra a palavra no meio ao renderizar a célula ("Marrom/Pr" +
+// "eto" como itens de texto separados), então a busca é feita no texto colado
+// (sem espaços/acentos) em vez de palavra por palavra. Se só uma cor for
+// encontrada, assume que as duas peças do par são da mesma cor.
+function extrairParCores(raw){
+  if(!raw) return null;
+  const colado = raw.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z]/g,'');
+  const achadas = [];
+  CORES_BASE.forEach(cor => {
+    let idx = colado.indexOf(cor);
+    while(idx !== -1){
+      achadas.push({ cor, idx });
+      idx = colado.indexOf(cor, idx + cor.length);
+    }
+  });
+  if(achadas.length === 0) return null;
+  achadas.sort((a,b) => a.idx - b.idx);
+  const cores = achadas.map(a => a.cor);
+  return cores.length === 1 ? `${cores[0]}/${cores[0]}` : `${cores[0]}/${cores[1]}`;
 }
 
 function normTxt(s){
@@ -2104,6 +2131,21 @@ async function extractOrderFromPage(page){
       }
     }
   });
+
+  // Método 3: SKU sem código numérico (ex.: TikTok Shop quando o vendedor não
+  // cadastrou um SKU no anúncio) — o marketplace usa o próprio nome do
+  // produto no campo SKU, numa linha só dele, na mesma altura do cabeçalho
+  // "SKU". Só entra em ação se os métodos 1 e 2 não acharam nenhum código.
+  if(allSkuItems.length === 0){
+    const skuRowCells = cand.filter(it =>
+      it.x0 < headerX - 3 &&
+      Math.abs(it.top - skuTop) <= 5 &&
+      normTxt(it.text) !== 'SKU' &&
+      normTxt(it.text) !== 'TOTAL'
+    );
+    const skuText = skuRowCells.map(it => splitConcat(it.text)).join(' ').trim();
+    if(skuText) allSkuItems.push({ sku: skuText, x0: headerX, top: skuTop });
+  }
   if(allSkuItems.length === 0) return null;
 
   // Células da variação (faixa Variação→QTD)
@@ -2185,7 +2227,8 @@ async function extractOrderFromPage(page){
   if(corCells.length <= 1){
     const raw = varCells.map(it => splitConcat(it.text)).join(' ');
     const { cor, tamanho } = extrairCorTamanho(raw);
-    return [{ sku, cor, tamanho, qty, descricao: descricaoRaw }];
+    const corPar = APELIDOS_COM_PAR_CORES.includes(aliasMap[sku]) ? extrairParCores(raw) : null;
+    return [{ sku, cor, tamanho, qty, descricao: descricaoRaw, corPar }];
   }
 
   // 2b: Múltiplas cores (mesmo SKU) → emparelhar cada cor com tamanho mais próximo
@@ -2213,7 +2256,8 @@ async function extractOrderFromPage(page){
     const coresUnicas = [...new Set(resultados.map(r => r.cor).filter(Boolean))];
     const comTamanho = resultados.find(r => r.tamanho !== '?');
     const tamanhoUnico = comTamanho ? comTamanho.tamanho : extrairCorTamanho(varCells.map(it => splitConcat(it.text)).join(' ')).tamanho;
-    return [{ sku, cor: coresUnicas.join('/'), tamanho: tamanhoUnico, qty, descricao: descricaoRaw }];
+    const corPar = APELIDOS_COM_PAR_CORES.includes(aliasMap[sku]) && coresUnicas.length > 0 ? coresUnicas.join('/') : null;
+    return [{ sku, cor: coresUnicas.join('/'), tamanho: tamanhoUnico, qty, descricao: descricaoRaw, corPar }];
   }
 
   return resultados;
@@ -2250,7 +2294,8 @@ async function extractOrdersFromPdf(file){
         cor: r.cor,
         tamanho: r.tamanho,
         qty: r.qty || 1,
-        descricao: r.descricao || ''
+        descricao: r.descricao || '',
+        corPar: r.corPar || null
       }));
       if(pageItems.length > 1){
         orders.push({ group: pageItems, page: p });
@@ -2308,7 +2353,9 @@ function sugerirApelido(descricao){
 function buildItemLabel(o){
   const apelido = aliasMap[o.sku];
   if(!apelido) return null;
-  if(APELIDOS_SEM_VARIACAO.includes(apelido)) return apelido;
+  if(APELIDOS_SEM_VARIACAO.includes(apelido)){
+    return (APELIDOS_COM_PAR_CORES.includes(apelido) && o.corPar) ? `${apelido} ${o.corPar}` : apelido;
+  }
   return o.cor ? `${apelido} ${o.cor} (${o.tamanho})` : `${apelido} (${o.tamanho})`;
 }
 
@@ -2323,7 +2370,7 @@ function buildOrderedTicket(orders){
     if(o.group){
       const parts = [];
       let groupQty = 0;
-      const semVariacaoContagem = {}; // apelido → qty, pra somar repetições (ex: 2x Kit Grip na mesma etiqueta) em vez de listar duplicado
+      const semVariacaoContagem = {}; // "apelido|corPar" → {label, qty}, pra somar repetições (ex: 2x Kit Grip na mesma etiqueta) em vez de listar duplicado
       o.group.forEach(item => {
         const apelido = aliasMap[item.sku];
         if(!apelido){
@@ -2336,14 +2383,16 @@ function buildOrderedTicket(orders){
         }
         groupQty += (item.qty || 1);
         if(APELIDOS_SEM_VARIACAO.includes(apelido)){
-          semVariacaoContagem[apelido] = (semVariacaoContagem[apelido] || 0) + (item.qty || 1);
+          const label = buildItemLabel(item);
+          const key = apelido + '|' + (item.corPar || '');
+          if(!semVariacaoContagem[key]) semVariacaoContagem[key] = { label, qty: 0 };
+          semVariacaoContagem[key].qty += (item.qty || 1);
         } else {
           parts.push(buildItemLabel(item));
         }
       });
-      Object.keys(semVariacaoContagem).forEach(apelido => {
-        const n = semVariacaoContagem[apelido];
-        parts.push(n > 1 ? `(${n}) ${apelido}` : apelido);
+      Object.values(semVariacaoContagem).forEach(({ label, qty: n }) => {
+        parts.push(n > 1 ? `(${n}) ${label}` : label);
       });
       if(parts.length > 0){
         const label = parts.join(' + ');
@@ -2365,9 +2414,7 @@ function buildOrderedTicket(orders){
       for(let k = 0; k < qty; k++) pendingSkus[o.sku].samples.push(sample);
       return;
     }
-    const base = APELIDOS_SEM_VARIACAO.includes(apelido)
-      ? apelido
-      : (o.cor ? `${apelido} ${o.cor} (${o.tamanho})` : `${apelido} (${o.tamanho})`);
+    const base = buildItemLabel(o);
     const label = qty > 1 ? `(${qty}) ${base}` : base;
     lines.push({ label, bold: qty > 1 });
     distinct.add(base);
@@ -4570,8 +4617,8 @@ function ppRenderTable(){
         };
         return `<tr>
           <td style="font-weight:700;">${p.nome}</td>
-          <td><input type="number" step="0.01" class="pp-edit-custo" data-id="${p.id}" value="${p.custo_produto}" style="width:90px; font-family:'JetBrains Mono',monospace; font-size:13px; padding:6px 8px; border:1px solid var(--border); border-radius:var(--r-sm); background:var(--surface-2);"></td>
-          <td><input type="number" step="0.01" class="pp-edit-taxa" data-id="${p.id}" value="${p.taxa_fixa}" style="width:90px; font-family:'JetBrains Mono',monospace; font-size:13px; padding:6px 8px; border:1px solid var(--border); border-radius:var(--r-sm); background:var(--surface-2);"></td>
+          <td><input type="number" step="0.01" class="pp-edit-custo" data-id="${p.id}" value="${p.custo_produto}" style="width:90px; font-family:'JetBrains Mono',monospace; font-size:13px; padding:6px 8px; border:1px solid var(--border); border-radius:var(--r-sm); background:var(--surface-2); color:var(--ink);"></td>
+          <td><input type="number" step="0.01" class="pp-edit-taxa" data-id="${p.id}" value="${p.taxa_fixa}" style="width:90px; font-family:'JetBrains Mono',monospace; font-size:13px; padding:6px 8px; border:1px solid var(--border); border-radius:var(--r-sm); background:var(--surface-2); color:var(--ink);"></td>
           <td class="mono">${fmtBRL(custoBase)}</td>
           <td class="mono">${cellFor('shopee')}</td>
           <td class="mono">${cellFor('tiktok')}</td>
