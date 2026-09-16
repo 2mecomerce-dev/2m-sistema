@@ -80,6 +80,12 @@
     --person-murilo-ring:#8B5CF6; --person-murilo-bg:rgba(139,92,246,.14); --person-murilo-fg:#6D28D9;
     --person-ambos-ring:#D97706;  --person-ambos-bg:rgba(217,119,6,.14);   --person-ambos-fg:#B45309;
 
+    /* Cores por conta do TikTok (cronograma de conteúdo) — mesmo padrão do
+       seletor de responsável acima */
+    --ct-1-ring:#4F97AB; --ct-1-bg:rgba(79,151,171,.16); --ct-1-fg:#2E6373;
+    --ct-2-ring:#E87A45; --ct-2-bg:rgba(232,122,69,.16); --ct-2-fg:#B85A2E;
+    --ct-3-ring:#8B5CF6; --ct-3-bg:rgba(139,92,246,.16); --ct-3-fg:#6D28D9;
+
     /* ===== Forma e movimento ===== */
     --r-sm:10px; --r-md:14px; --r-lg:20px;
     --sh-sm:0 1px 2px rgba(0,0,0,.04);
@@ -122,6 +128,8 @@
     --person-breno-fg:#93C5FD;
     --person-murilo-fg:#C4B5FD;
     --person-ambos-fg:#FCD34D;
+
+    --ct-1-fg:#8FCBDA; --ct-2-fg:#F0B08C; --ct-3-fg:#C4B5FD;
 
     --sh-sm:0 1px 2px rgba(0,0,0,.45);
     --sh-md:0 4px 16px rgba(0,0,0,.5);
@@ -993,6 +1001,62 @@
   #authForm .btn, #signupForm .btn{width:100%; justify-content:center;}
   .user-card{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px;}
   .user-email{font-size:11.5px; color:var(--sb-ink); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+
+  /* ---------- Cronograma de conteúdo (calendário mensal do TikTok) ---------- */
+  .ct-legend{display:flex; align-items:center; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--muted);}
+  .ct-legend-item{display:flex; align-items:center; gap:6px;}
+  .ct-legend-dot{width:10px; height:10px; border-radius:50%; flex-shrink:0;}
+  .ct-week-progress{display:flex; align-items:center; gap:7px; font-size:11.5px; font-weight:600;}
+  .ct-week-progress .ct-legend-dot{width:8px; height:8px;}
+
+  .ct-cal-nav{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; flex-wrap:wrap;}
+  .ct-cal-title{font-size:17px; font-weight:700; text-transform:capitalize; letter-spacing:-.2px; min-width:170px; text-align:center;}
+  .ct-nav-btn{
+    width:34px; height:34px; border-radius:var(--r-sm); border:1px solid var(--border-strong);
+    background:var(--surface); color:var(--ink); cursor:pointer; display:inline-flex; align-items:center; justify-content:center;
+    transition:background .15s, border-color .15s;
+  }
+  .ct-nav-btn:hover{background:var(--accent-soft); border-color:var(--accent); color:var(--accent-d);}
+
+  .ct-cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:8px;}
+  .ct-cal-dow{font-size:10.5px; text-transform:uppercase; letter-spacing:.6px; color:var(--faint); font-weight:700; text-align:center; padding-bottom:4px;}
+  .ct-day-cell{
+    background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-sm);
+    min-height:108px; padding:7px; display:flex; flex-direction:column; gap:5px;
+    transition:background .15s, border-color .15s;
+  }
+  .ct-day-cell.ct-outside{opacity:.4;}
+  .ct-day-cell.ct-today{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent) inset;}
+  .ct-day-num{font-size:11.5px; font-weight:700; color:var(--muted); display:flex; align-items:center; justify-content:space-between;}
+  .ct-day-cell.ct-today .ct-day-num{color:var(--accent-d);}
+  .ct-day-add{
+    background:none; border:none; color:var(--faint); cursor:pointer; font-size:15px; line-height:1;
+    padding:0 3px; border-radius:5px; opacity:0; transition:opacity .12s, color .12s, background .12s;
+  }
+  .ct-day-cell:hover .ct-day-add{opacity:1;}
+  .ct-day-add:hover{color:var(--accent-d); background:var(--accent-soft);}
+  .ct-post-card{
+    border-radius:7px; padding:4px 7px; font-size:11px; line-height:1.35; cursor:pointer;
+    border-left:3px solid var(--ring); background:var(--bg); color:var(--fg);
+    transition:transform .1s, box-shadow .1s;
+  }
+  .ct-post-card:hover{transform:translateY(-1px); box-shadow:var(--sh-sm);}
+  .ct-post-card.ct-done{opacity:.55;}
+  .ct-post-card.ct-done .ct-post-title{text-decoration:line-through;}
+  .ct-post-time{font-weight:700; font-family:'JetBrains Mono',monospace; font-size:10px;}
+  .ct-post-title{font-weight:600;}
+  @media (max-width:900px){
+    .ct-cal-grid{grid-template-columns:repeat(7,minmax(72px,1fr)); overflow-x:auto;}
+  }
+  @media (max-width:640px){
+    .ct-day-cell{min-height:80px;}
+  }
+
+  .ct-idea-card{
+    background:var(--surface-2); border:1px dashed var(--border-strong); border-radius:var(--r-sm);
+    padding:12px 14px; font-size:12.5px; color:var(--muted); line-height:1.6;
+  }
+  .ct-idea-card b{color:var(--ink);}
 </style>
 </head>
 <body>
@@ -1431,6 +1495,14 @@
 
       <!-- ===== VIEW: MARKETING & TIKTOK ===== -->
       <section class="view" id="view-marketing">
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-body" style="padding:16px 20px;">
+            <div class="period-tabs" id="mktSubtabs">
+              <button class="ptab active" data-subtab="desempenho">📊 Desempenho</button>
+              <button class="ptab" data-subtab="conteudo">🎬 Conteúdo &amp; Cronograma</button>
+            </div>
+          </div>
+        </div>
         <div id="mktContent"></div>
       </section>
 
@@ -1657,6 +1729,33 @@
       <div style="border-top:1px solid var(--border); margin:18px 0 14px;"></div>
       <div class="card-desc" style="margin-bottom:10px; font-weight:600; color:var(--ink);">Fila de sugestões</div>
       <div id="sugList" style="display:flex; flex-direction:column; gap:10px; max-height:340px; overflow-y:auto;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: Post do cronograma de conteúdo (TikTok) ===== -->
+<div class="modal-overlay" id="ctPostOverlay" style="display:none;">
+  <div class="modal-box" style="max-width:440px;">
+    <div class="modal-head">
+      <h3 id="ctPostModalTitle">Novo post</h3>
+      <button class="modal-x" id="ctPostClose" type="button" aria-label="Fechar">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="rt-form-row" style="grid-template-columns:1fr 1fr; margin-top:0;">
+        <label class="rt-label">Data<input type="date" id="ct-f-data" class="rt-input"></label>
+        <label class="rt-label">Horário<input type="time" id="ct-f-horario" class="rt-input" value="18:00"></label>
+        <label class="rt-label" style="grid-column:1/-1;">Conta<select id="ct-f-conta" class="rt-select"></select></label>
+        <label class="rt-label" style="grid-column:1/-1;">Título do post<input type="text" id="ct-f-titulo" class="rt-input" placeholder="Ex.: Prova de conforto andando o dia todo"></label>
+        <label class="rt-label" style="grid-column:1/-1;">Ideia / roteiro / observação (opcional)<textarea id="ct-f-ideia" class="rt-input" rows="3" placeholder="Anotações, referência de áudio/trend, gancho do vídeo..."></textarea></label>
+        <label class="rt-label" style="flex-direction:row; align-items:center; gap:8px; grid-column:1/-1;"><input type="checkbox" id="ct-f-feito" style="width:auto;"> Já foi postado</label>
+      </div>
+    </div>
+    <div class="modal-foot" style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+      <button type="button" class="btn btn-danger btn-sm" id="ctPostDelete" style="display:none;">Excluir</button>
+      <div style="display:flex; gap:8px; margin-left:auto;">
+        <button type="button" class="btn btn-ghost" id="ctPostCancel">Cancelar</button>
+        <button type="button" class="btn btn-accent" id="ctPostSave">Salvar</button>
+      </div>
     </div>
   </div>
 </div>
@@ -4285,18 +4384,236 @@ function rtRenderActive(){
 }
 
 /* Marketing & TikTok agora vive na própria aba, fora da Rotina,
-   mas continua usando o mesmo estado/tabela (rtState.tiktok, marketing_semanal). */
+   mas continua usando o mesmo estado/tabela (rtState.tiktok, marketing_semanal).
+   Tem 2 subabas: "Desempenho" (o que já existia) e "Conteúdo & Cronograma"
+   (calendário mensal de posts, tabela conteudo_posts). */
+let mktActiveSubtab = 'desempenho';
+
 function mktRenderActive(){
   const el = document.getElementById('mktContent');
   if(!el) return;
-  el.innerHTML = rtRenderMarketing();
-  rtAttachMarketingHandlers();
+  document.querySelectorAll('#mktSubtabs .ptab').forEach(b => b.classList.toggle('active', b.dataset.subtab === mktActiveSubtab));
+  if(mktActiveSubtab === 'desempenho'){
+    el.innerHTML = rtRenderMarketing();
+    rtAttachMarketingHandlers();
+    return;
+  }
+  if(mktActiveSubtab === 'conteudo'){
+    if(!ctInitialized){
+      el.innerHTML = '<div class="loading-state"><span class="loading-spinner"></span>Carregando…</div>';
+      ctEnsureLoaded().then(() => { if(mktActiveSubtab === 'conteudo') mktRenderActive(); });
+      return;
+    }
+    el.innerHTML = ctRenderCalendar();
+    ctAttachHandlers();
+  }
 }
 
 async function mktInit(){
   document.getElementById('mktContent').innerHTML = rtInitialized ? '' : '<div class="loading-state"><span class="loading-spinner"></span>Carregando…</div>';
   await rtInit();
   mktRenderActive();
+}
+
+document.getElementById('mktSubtabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('.ptab');
+  if(!btn) return;
+  mktActiveSubtab = btn.dataset.subtab;
+  mktRenderActive();
+});
+
+/* ═══════════════════════════════════════════════════════
+   CONTEÚDO & CRONOGRAMA — calendário mensal de posts do TikTok
+   ═══════════════════════════════════════════════════════ */
+let ctState = { items: [] };
+let ctInitialized = false;
+let ctViewYear = new Date().getFullYear();
+let ctViewMonth = new Date().getMonth();
+let ctModalContext = null; // { id } | null (novo)
+const CT_WEEKDAYS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const CT_COLOR_KEYS = ['ct-1','ct-2','ct-3'];
+
+async function ctLoad(){
+  const { data, error } = await sb.from('conteudo_posts').select('*').order('data', { ascending:true });
+  if(error){ syncLog('Conteúdo: '+error.message, 'err'); return; }
+  ctState.items = data || [];
+}
+function ctSetupRealtime(){
+  sb.channel('public:conteudo_posts').on('postgres_changes', { event:'*', schema:'public', table:'conteudo_posts' }, async ()=>{
+    await ctLoad();
+    if(mktActiveSubtab === 'conteudo') mktRenderActive();
+  }).subscribe();
+}
+async function ctEnsureLoaded(){
+  if(ctInitialized) return;
+  ctInitialized = true;
+  await ctLoad();
+  ctSetupRealtime();
+}
+function ctAccountColorKey(conta){
+  const idx = rtState.tiktok.accounts.indexOf(conta);
+  return CT_COLOR_KEYS[idx >= 0 ? idx % CT_COLOR_KEYS.length : 0];
+}
+function ctMonthTitle(){
+  return new Date(ctViewYear, ctViewMonth, 1).toLocaleDateString('pt-BR', { month:'long', year:'numeric' });
+}
+function ctPad(n){ return String(n).padStart(2,'0'); }
+function ctDateKey(y,m,d){ return `${y}-${ctPad(m+1)}-${ctPad(d)}`; }
+
+function ctWeekProgressHTML(){
+  const monday = startOfWeek(new Date());
+  const sunday = new Date(monday); sunday.setDate(monday.getDate()+6);
+  const startKey = dateKeyOf(monday), endKey = dateKeyOf(sunday);
+  return rtState.tiktok.accounts.map(acc => {
+    const inWeek = ctState.items.filter(p => p.conta === acc && p.data >= startKey && p.data <= endKey);
+    const done = inWeek.filter(p => p.feito).length;
+    const colorKey = ctAccountColorKey(acc);
+    const ok = inWeek.length >= (rtState.targets?.tiktokPerAccount || 3);
+    return `<span class="ct-week-progress" style="color:${ok?'var(--accent-d)':'var(--muted)'};"><span class="ct-legend-dot" style="background:var(--${colorKey}-ring);"></span>${acc}: ${done}/${inWeek.length} feitos (meta ${rtState.targets?.tiktokPerAccount || 3}/sem)</span>`;
+  }).join('');
+}
+
+function ctPostCardHTML(p){
+  const colorKey = ctAccountColorKey(p.conta);
+  return `
+  <div class="ct-post-card ${p.feito?'ct-done':''}" data-id="${p.id}" style="--ring:var(--${colorKey}-ring); --bg:var(--${colorKey}-bg); --fg:var(--${colorKey}-fg);" title="${p.conta}${p.ideia ? ' — '+p.ideia.replace(/"/g,'&quot;') : ''}">
+    ${p.horario ? `<span class="ct-post-time">${p.horario}</span> ` : ''}<span class="ct-post-title">${p.titulo}</span>
+  </div>`;
+}
+
+function ctRenderCalendar(){
+  const firstDay = new Date(ctViewYear, ctViewMonth, 1);
+  const startOffset = firstDay.getDay(); // 0=domingo
+  const daysInMonth = new Date(ctViewYear, ctViewMonth+1, 0).getDate();
+  const daysInPrevMonth = new Date(ctViewYear, ctViewMonth, 0).getDate();
+  const todayKeyStr = todayKey();
+
+  const cells = [];
+  for(let i=0; i<startOffset; i++){
+    const d = daysInPrevMonth - startOffset + 1 + i;
+    cells.push({ day:d, outside:true, key:null });
+  }
+  for(let d=1; d<=daysInMonth; d++){
+    cells.push({ day:d, outside:false, key: ctDateKey(ctViewYear, ctViewMonth, d) });
+  }
+  while(cells.length % 7 !== 0){
+    const d = cells.length - (startOffset + daysInMonth) + 1;
+    cells.push({ day:d, outside:true, key:null });
+  }
+
+  return `
+  <div class="card" style="padding:20px; margin-bottom:20px;">
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+      <div>
+        <div class="card-title">🎬 Cronograma de Conteúdo — TikTok</div>
+        <div class="card-desc" style="margin-top:4px;">Planeje o mês inteiro: 3 contas, meta de 3 posts/semana cada. Clique num dia pra adicionar, clique num post pra editar ou marcar como feito.</div>
+      </div>
+    </div>
+    <div class="ct-legend" style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
+      ${ctWeekProgressHTML()}
+    </div>
+    <div class="ct-cal-nav" style="margin-top:16px;">
+      <button type="button" class="ct-nav-btn" id="ctPrevMonth">‹</button>
+      <div class="ct-cal-title">${ctMonthTitle()}</div>
+      <button type="button" class="ct-nav-btn" id="ctNextMonth">›</button>
+    </div>
+    <div class="ct-cal-grid">
+      ${CT_WEEKDAYS.map(w => `<div class="ct-cal-dow">${w}</div>`).join('')}
+      ${cells.map(c => `
+        <div class="ct-day-cell ${c.outside?'ct-outside':''} ${c.key===todayKeyStr?'ct-today':''}" ${c.key?`data-date="${c.key}"`:''}>
+          <div class="ct-day-num">${c.day}${c.key ? `<button type="button" class="ct-day-add" data-date="${c.key}" title="Adicionar post">+</button>` : ''}</div>
+          ${c.key ? ctState.items.filter(p=>p.data===c.key).map(ctPostCardHTML).join('') : ''}
+        </div>`).join('')}
+    </div>
+  </div>
+
+  <div class="card" style="padding:20px;">
+    <div class="card-title">💡 Ideias de conteúdo pra viralizar</div>
+    <div class="card-desc" style="margin-top:4px;">Pilares de conteúdo que funcionam bem pra marca de calçado vendendo no TikTok Shop — use como ponto de partida ao planejar a semana.</div>
+    <div class="ct-idea-card" style="margin-top:14px;">
+      <b>🎥 Prova social / bastidores:</b> cliente experimentando e reagindo ao calçado; "empacotando seu pedido" (packing); resposta a comentário/dúvida de seguidor; "um dia na fábrica/estoque".<br><br>
+      <b>👟 Produto em uso real:</b> teste de conforto andando o dia todo (POV); antes/depois do pé cansado; comparação lado a lado de dois modelos; unboxing.<br><br>
+      <b>🔥 Trend / formato viral:</b> aproveitar áudio em alta com o produto de forma natural (não forçado); "coisas que só quem usa sapato de couro entende"; challenge de estilizar o mesmo calçado 3 jeitos diferentes.<br><br>
+      <b>💬 Conexão / confiança:</b> mostrar avaliação real de cliente na tela; contar a história da marca/artesão; responder objeção comum ("será que descasca?", "esfrega no calcanhar?") de forma honesta.<br><br>
+      <b>🛍️ Gancho pra venda:</b> "só restam X pares desse tamanho"; combo/kit sugerido; cupom relâmpago mencionado no vídeo com CTA claro pro TikTok Shop.
+    </div>
+  </div>`;
+}
+
+function ctOpenPostModal(rec, presetDate){
+  ctModalContext = { id: rec ? rec.id : null };
+  document.getElementById('ctPostModalTitle').textContent = rec ? 'Editar post' : 'Novo post';
+  document.getElementById('ctPostDelete').style.display = rec ? '' : 'none';
+  document.getElementById('ct-f-conta').innerHTML = rtState.tiktok.accounts.map(a => `<option ${rec?.conta===a?'selected':''}>${a}</option>`).join('');
+  document.getElementById('ct-f-data').value = rec ? rec.data : (presetDate || todayKey());
+  document.getElementById('ct-f-horario').value = rec?.horario || '18:00';
+  document.getElementById('ct-f-titulo').value = rec?.titulo || '';
+  document.getElementById('ct-f-ideia').value = rec?.ideia || '';
+  document.getElementById('ct-f-feito').checked = !!rec?.feito;
+  document.getElementById('ctPostOverlay').style.display = 'flex';
+}
+function ctCloseModal(){
+  document.getElementById('ctPostOverlay').style.display = 'none';
+  ctModalContext = null;
+}
+document.getElementById('ctPostClose').addEventListener('click', ctCloseModal);
+document.getElementById('ctPostCancel').addEventListener('click', ctCloseModal);
+document.getElementById('ctPostOverlay').addEventListener('click', (e) => { if(e.target.id==='ctPostOverlay') ctCloseModal(); });
+document.getElementById('ctPostSave').addEventListener('click', async () => {
+  const titulo = document.getElementById('ct-f-titulo').value.trim();
+  if(!titulo){ fieldError('ct-f-titulo', 'Escreva o título do post'); return; }
+  const payload = {
+    data: document.getElementById('ct-f-data').value,
+    horario: document.getElementById('ct-f-horario').value || null,
+    conta: document.getElementById('ct-f-conta').value,
+    titulo,
+    ideia: document.getElementById('ct-f-ideia').value.trim() || null,
+    feito: document.getElementById('ct-f-feito').checked,
+    updated_at: new Date().toISOString()
+  };
+  if(ctModalContext.id){
+    const { error } = await sb.from('conteudo_posts').update(payload).eq('id', ctModalContext.id);
+    if(error){ showToast('Não consegui salvar: '+error.message); return; }
+    Object.assign(ctState.items.find(p=>p.id===ctModalContext.id), payload);
+  }else{
+    const { data, error } = await sb.from('conteudo_posts').insert(payload).select().single();
+    if(error){ showToast('Não consegui salvar: '+error.message); return; }
+    ctState.items.push(data);
+  }
+  ctCloseModal();
+  mktRenderActive();
+  showToast('Post salvo');
+});
+document.getElementById('ctPostDelete').addEventListener('click', async () => {
+  if(!ctModalContext?.id) return;
+  const id = ctModalContext.id;
+  const ok = await confirmDialog('Excluir post?', 'Essa ação não pode ser desfeita.', 'Excluir');
+  if(!ok) return;
+  ctCloseModal();
+  ctState.items = ctState.items.filter(p=>p.id!==id);
+  mktRenderActive();
+  const { error } = await sb.from('conteudo_posts').delete().eq('id', id);
+  if(error) showToast('Não consegui excluir: '+error.message);
+});
+
+function ctAttachHandlers(){
+  document.getElementById('ctPrevMonth')?.addEventListener('click', () => {
+    ctViewMonth--; if(ctViewMonth<0){ ctViewMonth=11; ctViewYear--; }
+    mktRenderActive();
+  });
+  document.getElementById('ctNextMonth')?.addEventListener('click', () => {
+    ctViewMonth++; if(ctViewMonth>11){ ctViewMonth=0; ctViewYear++; }
+    mktRenderActive();
+  });
+  document.querySelectorAll('.ct-day-add').forEach(btn => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); ctOpenPostModal(null, btn.dataset.date); });
+  });
+  document.querySelectorAll('.ct-post-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const rec = ctState.items.find(p => p.id === Number(card.dataset.id));
+      if(rec) ctOpenPostModal(rec);
+    });
+  });
 }
 
 document.getElementById('rtSubtabs').addEventListener('click', (e) => {
