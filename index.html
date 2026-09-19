@@ -2820,7 +2820,6 @@ async function loadCustoMap(){
 async function saveCustoMap(){
   const ok = await store.set('custo-map', JSON.stringify(custoMap));
   if(!ok) showToast('Não consegui salvar os custos neste navegador');
-  autoSync();
 }
 
 function startOfWeek(d){
@@ -6873,10 +6872,79 @@ function afRenderAmostras(){
     <div style="overflow-x:auto; margin-top:16px;">
       <table class="alias-table" id="afAmostrasTable">${afAmostrasRows()}</table>
     </div>
+    ${currentUserRole === 'admin' ? afCustoSemanaHTML(thisWeek, week) : ''}
     <div class="card-desc" style="margin-top:12px; font-size:11.5px;"><b>Regra de reavaliação:</b> se em 3–4 semanas a amostra não gerar venda registrada, não repetir com o mesmo criador nesse ciclo.</div>
   </div>`;
 }
+
+/* Custo das amostras da semana: cada linha de afiliados_amostras é 1 par, custo vem
+   da mesma tabela de custos do Fornecedor (custoMap). Só admin vê (custos são admin-only). */
+function afCustoSemanaHTML(thisWeek, week){
+  const fmtD = k => k.split('-').reverse().join('/');
+  const grupos = {};
+  thisWeek.forEach(a => {
+    const m = a.modelo || '';
+    grupos[m] = (grupos[m] || 0) + 1;
+  });
+  const linhas = Object.keys(grupos).sort().map(m => ({ modelo:m, qtd:grupos[m], custo: m ? custoMap[m] : undefined }));
+  const semCusto = linhas.filter(l => l.modelo && l.custo === undefined);
+  const total = linhas.reduce((s,l) => s + (l.custo !== undefined ? l.custo * l.qtd : 0), 0);
+  const corpo = linhas.length === 0
+    ? `<tr><td colspan="4" style="color:var(--faint); font-style:italic; padding:14px 10px;">Nenhuma amostra enviada nesta semana ainda.</td></tr>`
+    : linhas.map(l => `
+      <tr>
+        <td style="font-weight:600;">${l.modelo || '<span style="color:var(--faint);">sem modelo informado</span>'}</td>
+        <td class="mono">${l.qtd}</td>
+        <td>${l.custo !== undefined
+          ? `<span class="mono">${fmtBRL(l.custo)}</span>`
+          : l.modelo
+            ? `<div class="cost-wrap" style="max-width:130px;"><span>R$</span><input type="number" step="0.01" min="0" inputmode="decimal" class="af-custo-input" data-modelo="${l.modelo}" placeholder="0,00"></div>`
+            : '—'}</td>
+        <td class="mono" style="font-weight:700;">${l.custo !== undefined ? fmtBRL(l.custo * l.qtd) : '<span class="missing">sem custo</span>'}</td>
+      </tr>`).join('');
+  return `
+  <div style="margin-top:22px; padding-top:18px; border-top:1px solid var(--border);">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+      <div>
+        <div class="card-title" style="font-size:14px;">💰 Custo das amostras da semana</div>
+        <div class="card-desc" style="margin-top:2px;">${fmtD(week.start)} a ${fmtD(week.end)} · custo de cada modelo puxado da aba Fornecedor (Custos por modelo).</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="mono" style="font-size:22px; font-weight:800;">${fmtBRL(total)}</div>
+        <div style="font-size:11.5px; color:var(--muted);">${semCusto.length ? `total parcial · ${semCusto.length} modelo(s) sem custo` : `${thisWeek.length} par(es) enviado(s)`}</div>
+      </div>
+    </div>
+    ${semCusto.length ? `<div class="fin-note" style="margin-top:12px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+      <span>⚠ Falta o custo de: <b>${semCusto.map(l=>l.modelo).join(', ')}</b>. Preencha abaixo — vira o custo oficial desse produto na aba Fornecedor.</span>
+      <button type="button" class="btn btn-soft btn-sm" id="afGoCustos">Abrir custos no Fornecedor</button>
+    </div>` : ''}
+    <div style="overflow-x:auto; margin-top:12px;">
+      <table class="alias-table">
+        <thead><tr><th>Modelo</th><th>Pares</th><th>Custo unit.</th><th>Subtotal</th></tr></thead>
+        <tbody>${corpo}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
 function afAttachAmostrasHandlers(){
+  document.querySelectorAll('.af-custo-input').forEach(inp => {
+    inp.addEventListener('change', async () => {
+      const modelo = inp.dataset.modelo;
+      const val = parseFloat(inp.value.replace(',', '.'));
+      if(isNaN(val) || val <= 0){ fieldError(null, 'Informe um custo maior que zero'); inp.value = ''; return; }
+      custoMap[modelo] = val;
+      await saveCustoMap();
+      sbUpsertCusto(modelo, val);
+      renderCustoTable();
+      showToast(`Custo de ${modelo} salvo — já vale na aba Fornecedor`);
+      afRenderActive();
+    });
+  });
+  const goCustos = document.getElementById('afGoCustos');
+  if(goCustos) goCustos.addEventListener('click', () => {
+    document.querySelector('.nav-item[data-view="fornecedor"]').click();
+    setTimeout(() => document.getElementById('custoTableBody')?.scrollIntoView({ behavior:'smooth', block:'center' }), 200);
+  });
   document.getElementById('afAmostraForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const criador = document.getElementById('af-am-criador').value.trim();
