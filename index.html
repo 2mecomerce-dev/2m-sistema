@@ -1567,9 +1567,9 @@
           </div>
           <div class="modal-body">
             <p class="card-desc" id="afSampleModalInfo" style="margin-bottom:14px;"></p>
-            <div class="rt-form-row" style="grid-template-columns:1fr; margin-top:0;">
-              <label class="rt-label">Modelo enviado *<select id="af-sample-modelo" class="rt-select"><option value="">—</option></select></label>
-            </div>
+            <div class="rt-label" style="margin-bottom:6px;">Modelos enviados *</div>
+            <div id="afSampleModelosList" style="display:flex; flex-direction:column; gap:8px;"></div>
+            <button type="button" class="btn btn-soft btn-sm" id="afSampleAddModelo" style="margin-top:10px;">+ Adicionar outro modelo</button>
           </div>
           <div class="modal-foot" style="display:flex; align-items:center; justify-content:flex-end; gap:8px;">
             <button type="button" class="btn btn-ghost" id="afSampleModalCancel">Cancelar</button>
@@ -6239,13 +6239,27 @@ function afRenderPipeline(){
 
 /* ---------- Registro obrigatório de amostra ao mover lead p/ "Amostra enviada" ---------- */
 let afPendingSampleConfirm = null;
+function afAddSampleModeloRow(){
+  const modelos = [...new Set(Object.values(aliasMap))].sort();
+  const list = document.getElementById('afSampleModelosList');
+  const row = document.createElement('div');
+  row.className = 'af-sample-modelo-row';
+  row.style.cssText = 'display:flex; align-items:center; gap:6px;';
+  row.innerHTML = `<select class="rt-select af-sample-modelo"><option value="">—</option>${modelos.map(m=>`<option>${m}</option>`).join('')}</select>
+    <button type="button" class="rt-item-delete af-sample-rm" title="Remover modelo">×</button>`;
+  row.querySelector('.af-sample-rm').addEventListener('click', () => {
+    if(list.children.length > 1) row.remove();
+  });
+  list.appendChild(row);
+}
 function afOpenSampleModal(rec, onConfirm){
   afPendingSampleConfirm = onConfirm;
-  const modelos = [...new Set(Object.values(aliasMap))].sort();
-  document.getElementById('af-sample-modelo').innerHTML = '<option value="">—</option>' + modelos.map(m=>`<option>${m}</option>`).join('');
-  document.getElementById('afSampleModalInfo').textContent = `Enviando amostra pra ${rec.handle}${rec.loja ? ' ('+rec.loja+')' : ''}. Escolha o modelo enviado pra confirmar o envio — isso já registra em Controle de Amostras.`;
+  document.getElementById('afSampleModelosList').innerHTML = '';
+  afAddSampleModeloRow();
+  document.getElementById('afSampleModalInfo').textContent = `Enviando amostra pra ${rec.handle}${rec.loja ? ' ('+rec.loja+')' : ''}. Escolha o(s) modelo(s) enviado(s) pra confirmar — cada um já é registrado em Controle de Amostras.`;
   document.getElementById('afSampleModalOverlay').style.display = 'flex';
 }
+document.getElementById('afSampleAddModelo').addEventListener('click', afAddSampleModeloRow);
 function afCloseSampleModal(){
   document.getElementById('afSampleModalOverlay').style.display = 'none';
   afPendingSampleConfirm = null;
@@ -6257,25 +6271,25 @@ document.getElementById('afSampleModalCancel').addEventListener('click', () => {
 });
 document.getElementById('afSampleModalOverlay').addEventListener('click', (e) => { if(e.target.id==='afSampleModalOverlay'){ afCloseSampleModal(); afRenderActive(); } });
 document.getElementById('afSampleModalConfirm').addEventListener('click', async () => {
-  const modelo = document.getElementById('af-sample-modelo').value;
-  if(!modelo){ showToast('Escolha o modelo enviado pra confirmar'); return; }
+  const modelos = [...document.querySelectorAll('.af-sample-modelo')].map(s => s.value).filter(Boolean);
+  if(!modelos.length){ showToast('Escolha pelo menos um modelo enviado pra confirmar'); return; }
   const cb = afPendingSampleConfirm;
   afCloseSampleModal();
-  if(cb) await cb({ modelo });
+  if(cb) await cb({ modelos });
 });
-async function afRegistrarAmostraAutomatica(rec, modelo){
+async function afRegistrarAmostrasAutomaticas(rec, modelos){
   const week = afCurrentWeekRange();
-  const payload = {
+  const payload = modelos.map(modelo => ({
     semana_inicio: week.start, semana_fim: week.end,
     criador: rec.handle, loja: rec.loja || null,
     modelo,
     data_envio: todayKey(),
     score: rec.score ?? null
-  };
-  const { data, error } = await sb.from('afiliados_amostras').insert(payload).select().single();
-  if(error){ showToast('Lead movido, mas não consegui registrar a amostra: '+error.message); return; }
-  afState.amostras.unshift(data);
-  showToast('Amostra registrada em Controle de Amostras');
+  }));
+  const { data, error } = await sb.from('afiliados_amostras').insert(payload).select();
+  if(error){ showToast('Lead movido, mas não consegui registrar as amostras: '+error.message); return; }
+  afState.amostras.unshift(...data);
+  showToast(data.length > 1 ? `${data.length} amostras registradas em Controle de Amostras` : 'Amostra registrada em Controle de Amostras');
   afRenderActive();
 }
 
@@ -6311,11 +6325,11 @@ function afAttachPipelineHandlers(){
       const newCol = col.dataset.status;
       if(!rec || rec.col===newCol) return;
       if(newCol === 'enviada'){
-        afOpenSampleModal(rec, async ({ modelo }) => {
+        afOpenSampleModal(rec, async ({ modelos }) => {
           rec.col = newCol;
           afRenderActive();
           await sb.from('afiliados_leads').update({ col:newCol, updated_at:new Date().toISOString() }).eq('id', id);
-          await afRegistrarAmostraAutomatica(rec, modelo);
+          await afRegistrarAmostrasAutomaticas(rec, modelos);
         });
         return;
       }
@@ -6476,10 +6490,10 @@ async function afSaveLeadFromForm(){
 
   if(enteringEnviada){
     afCloseModal();
-    afOpenSampleModal({ handle, loja: payload.loja, score: payload.score }, async ({ modelo }) => {
+    afOpenSampleModal({ handle, loja: payload.loja, score: payload.score }, async ({ modelos }) => {
       const rec = await persistLead();
       afRenderActive();
-      if(rec) { showToast('Lead salvo'); await afRegistrarAmostraAutomatica(rec, modelo); }
+      if(rec) { showToast('Lead salvo'); await afRegistrarAmostrasAutomaticas(rec, modelos); }
     });
     return;
   }
