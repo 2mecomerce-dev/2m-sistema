@@ -6051,6 +6051,16 @@ async function afLoadEstado(){
   }
   if(!afState.estado.rotina) afState.estado.rotina = afDefaultRotina();
   if(!afState.estado.metas) afState.estado.metas = { comissaoMes:0 };
+
+  const weekStart = afCurrentWeekRange().start;
+  if(afState.estado.semanaInicio && afState.estado.semanaInicio !== weekStart){
+    afState.estado.rotina.forEach(cat => cat.items.forEach(item => { item.done = false; }));
+    afState.estado.semanaInicio = weekStart;
+    await afSaveEstado();
+  }else if(!afState.estado.semanaInicio){
+    afState.estado.semanaInicio = weekStart;
+    await afSaveEstado();
+  }
 }
 async function afSaveEstado(){
   await sb.from('afiliados_estado').upsert({ id:'principal', dados: afState.estado, updated_at: new Date().toISOString() });
@@ -6527,7 +6537,7 @@ function afRenderTasks(){
   return `
   <div class="card" style="padding:20px; margin-bottom:20px;">
     <div class="card-title">🔁 Rotina semanal fixa</div>
-    <div class="card-desc" style="margin-top:4px;">Reinicia toda semana — desmarque os itens ao começar uma nova. Dá pra editar os itens de cada categoria.</div>
+    <div class="card-desc" style="margin-top:4px;">Reinicia automaticamente toda semana (segunda-feira). Dá pra editar os itens de cada categoria.</div>
     <div class="rt-cat-grid" id="afRecurGrid" style="margin-top:14px;">
       ${afState.estado.rotina.map((cat,ci) => {
         const color = AF_CAT_COLORS[cat.color] || '#4F97AB';
