@@ -2108,7 +2108,7 @@ document.getElementById('btnAddAlias').addEventListener('click', async ()=>{
 });
 
 const CORES_BASE = ['MARROM','PRETO','AZUL','BRANCO','VERDE','VERMELHO','AMARELO','CINZA',
-  'BEGE','CARAMELO','CAQUI','VINHO','LARANJA','ROSA','DOURADO','PRATA','NUDE'];
+  'BEGE','CARAMELO','CAQUI','VINHO','LARANJA','ROSA','DOURADO','PRATA','NUDE','AMENDOA'];
 
 // Apelidos de produtos que não são calçados (kits, acessórios) — não têm
 // numeração nem cor de par, então a lista de separação mostra só
@@ -2227,8 +2227,8 @@ async function extractOrderFromPage(page){
 
   // Método 3: SKU sem código numérico (ex.: TikTok Shop quando o vendedor não
   // cadastrou um SKU no anúncio) — o marketplace usa o próprio nome do
-  // produto no campo SKU, numa linha só dele, na mesma altura do cabeçalho
-  // "SKU". Só entra em ação se os métodos 1 e 2 não acharam nenhum código.
+  // produto no campo SKU, na mesma altura do cabeçalho "SKU". Só entra em
+  // ação se os métodos 1 e 2 não acharam nenhum código.
   if(allSkuItems.length === 0){
     const skuRowCells = cand.filter(it =>
       it.x0 < headerX - 3 &&
@@ -2236,8 +2236,36 @@ async function extractOrderFromPage(page){
       normTxt(it.text) !== 'SKU' &&
       normTxt(it.text) !== 'TOTAL'
     );
-    const skuText = skuRowCells.map(it => splitConcat(it.text)).join(' ').trim();
-    if(skuText) allSkuItems.push({ sku: skuText, x0: headerX, top: skuTop });
+    // Quando há mais de um produto sem código numérico na mesma etiqueta,
+    // cada um fica numa coluna própria (mesmo x0 reaproveitado nas linhas de
+    // Variação e QTD) — sem isso, todo o texto da linha do SKU cairia junto
+    // num "produto" só, misturando nome+variação de itens diferentes.
+    // Usa as células de QTD (uma por produto) como âncora de cada coluna,
+    // excluindo a própria coluna "Total" (soma geral, não é um produto).
+    const totalHeaderCell = cand.find(it => Math.abs(it.top - skuTop) <= 5 && normTxt(it.text) === 'TOTAL');
+    const qtdCells = qtdHeader
+      ? cand.filter(it =>
+          it.x0 < headerX - 3 &&
+          Math.abs(it.top - qtdHeader.top) <= 10 &&
+          /^\d+$/.test(it.text.trim()) &&
+          !(totalHeaderCell && Math.abs(it.x0 - totalHeaderCell.x0) <= 6)
+        )
+      : [];
+    if(qtdCells.length > 1 && skuRowCells.length){
+      const grupos = qtdCells.map(q => ({ x0: q.x0, cells: [] }));
+      skuRowCells.forEach(it => {
+        let melhor = grupos[0], melhorDist = Infinity;
+        grupos.forEach(g => { const d = Math.abs(it.x0 - g.x0); if(d < melhorDist){ melhorDist = d; melhor = g; } });
+        melhor.cells.push(it);
+      });
+      grupos.forEach(g => {
+        const skuText = g.cells.map(it => splitConcat(it.text)).join(' ').trim();
+        if(skuText) allSkuItems.push({ sku: skuText, x0: g.x0, top: skuTop });
+      });
+    } else {
+      const skuText = skuRowCells.map(it => splitConcat(it.text)).join(' ').trim();
+      if(skuText) allSkuItems.push({ sku: skuText, x0: headerX, top: skuTop });
+    }
   }
   if(allSkuItems.length === 0) return null;
 
@@ -2287,7 +2315,8 @@ async function extractOrderFromPage(page){
       const entry = skuVarMap[si.sku + '_' + si.x0];
       const raw = entry.vars.map(it => splitConcat(it.text)).join(' ');
       const { cor, tamanho } = extrairCorTamanho(raw);
-      return { sku: si.sku, cor, tamanho, qty: 1, descricao: descricaoRaw };
+      const corPar = APELIDOS_COM_PAR_CORES.includes(aliasMap[si.sku]) ? extrairParCores(raw) : null;
+      return { sku: si.sku, cor, tamanho, qty: 1, descricao: descricaoRaw, corPar };
     });
 
     // Se nenhum dos "SKUs" conseguiu achar um tamanho próprio, não são pares
