@@ -2299,7 +2299,7 @@ async function extractOrderFromPage(page){
   if(allSkuItems.length > 1){
     // Para cada célula de variação, atribuir ao SKU mais próximo por x0
     const skuVarMap = {};
-    allSkuItems.forEach(s => { skuVarMap[s.sku + '_' + s.x0] = { ...s, vars: [] }; });
+    allSkuItems.forEach(s => { skuVarMap[s.sku + '_' + s.x0] = { ...s, vars: [], qty: 0 }; });
     const skuEntries = Object.values(skuVarMap);
 
     varCells.forEach(v => {
@@ -2311,12 +2311,37 @@ async function extractOrderFromPage(page){
       if(closest && closestDist < 25) closest.vars.push(v);
     });
 
+    // QTD de cada linha — antes ficava fixo em 1 pra toda linha, errando o
+    // total quando a etiqueta repete o mesmo produto em quantidade >1 (ex.:
+    // "(2)" do lado da variação, num pedido com 2 pares de uma cor e 1 de
+    // outra). A célula de QTD de cada linha fica no mesmo x0 da linha, perto
+    // do topo da coluna QTD — exclui a célula da linha "Total" (soma geral,
+    // não é produto) pelo x0 dela.
+    if(qtdHeader){
+      const totalCell = cand.find(it => Math.abs(it.top - skuTop) <= 5 && normTxt(it.text) === 'TOTAL');
+      const qtdCells = cand.filter(it =>
+        it.x0 < headerX - 3 &&
+        Math.abs(it.top - qtdHeader.top) <= 12 &&
+        /\d/.test(it.text) &&
+        !(totalCell && Math.abs(it.x0 - totalCell.x0) < 8)
+      );
+      qtdCells.forEach(q => {
+        let closest = null, closestDist = Infinity;
+        skuEntries.forEach(s => {
+          const d = Math.abs(q.x0 - s.x0);
+          if(d < closestDist){ closestDist = d; closest = s; }
+        });
+        const qm = q.text.match(/(\d+)/);
+        if(closest && closestDist < 25 && qm) closest.qty += parseInt(qm[1], 10);
+      });
+    }
+
     const resultados = allSkuItems.map(si => {
       const entry = skuVarMap[si.sku + '_' + si.x0];
       const raw = entry.vars.map(it => splitConcat(it.text)).join(' ');
       const { cor, tamanho } = extrairCorTamanho(raw);
       const corPar = APELIDOS_COM_PAR_CORES.includes(aliasMap[si.sku]) ? extrairParCores(raw) : null;
-      return { sku: si.sku, cor, tamanho, qty: 1, descricao: descricaoRaw, corPar };
+      return { sku: si.sku, cor, tamanho, qty: entry.qty || 1, descricao: descricaoRaw, corPar };
     });
 
     // Se nenhum dos "SKUs" conseguiu achar um tamanho próprio, não são pares
@@ -2327,13 +2352,7 @@ async function extractOrderFromPage(page){
     if(resultados.length > 1 && resultados.every(r => r.tamanho === '?')){
       const coresUnicas = [...new Set(resultados.map(r => r.cor).filter(Boolean))];
       const tamanhoUnico = extrairCorTamanho(cand.map(it => splitConcat(it.text)).join(' ')).tamanho;
-      // Quando o SKU é IGUAL em todas as linhas (ex.: Shopee reaproveita o
-      // mesmo SKU entre variações de cor de um kit, diferenciando só pela
-      // Variação), cada linha detectada é uma unidade real — soma a
-      // quantidade em vez de confiar no QTD lido perto do cabeçalho, que só
-      // pega a linha mais próxima e erra a soma quando há mais de uma linha.
-      const skusIguais = new Set(resultados.map(r => r.sku)).size === 1;
-      const qtyFinal = skusIguais ? resultados.reduce((sum, r) => sum + (r.qty || 1), 0) : qty;
+      const qtyFinal = resultados.reduce((sum, r) => sum + (r.qty || 1), 0);
       return [{ sku: resultados[0].sku, cor: coresUnicas.join(' E '), tamanho: tamanhoUnico, qty: qtyFinal, descricao: descricaoRaw }];
     }
 
