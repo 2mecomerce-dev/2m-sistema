@@ -2529,7 +2529,9 @@ function buildOrderedTicket(orders){
           if(!semVariacaoContagem[key]) semVariacaoContagem[key] = { label, qty: 0 };
           semVariacaoContagem[key].qty += (item.qty || 1);
         } else {
-          parts.push(buildItemLabel(item));
+          const label = buildItemLabel(item);
+          const n = item.qty || 1;
+          parts.push(n > 1 ? `(${n}) ${label}` : label);
         }
       });
       Object.values(semVariacaoContagem).forEach(({ label, qty: n }) => {
