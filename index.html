@@ -1128,6 +1128,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 7 13.5 15.5 8.5 10.5 2 17"/><path d="M16 7h6v6"/></svg>
         Marketing & TikTok
       </div>
+      <div class="nav-item" data-view="adsnov" data-title="Rotina de Ads · novembro" data-eyebrow="Marketing · temporário">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+        Ads Novembro <span style="font-size:.58rem;font-weight:700;padding:0 6px;border-radius:999px;border:1px solid currentColor;opacity:.6;margin-left:auto;letter-spacing:.04em;">TEMP</span>
+      </div>
       <div class="nav-item" data-view="afiliados" data-title="Central de Afiliados" data-eyebrow="Parcerias">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Central de Afiliados
@@ -1496,6 +1500,11 @@
           </div>
         </div>
         <div id="mktContent"></div>
+      </section>
+
+      <!-- ===== VIEW: ADS NOVEMBRO (TEMPORÁRIA — remover em dez/2026) ===== -->
+      <section class="view" id="view-adsnov">
+        <iframe id="adsNovFrame" title="Rotina de Ads de novembro" data-src="ads-novembro.html" style="width:100%;min-height:80vh;border:0;display:block;background:transparent;" loading="lazy"></iframe>
       </section>
 
       <!-- ===== VIEW: CENTRAL DE AFILIADOS ===== -->
@@ -3447,8 +3456,36 @@ document.querySelectorAll('.nav-item[data-view]').forEach(item => {
     if(v === 'metas') mtInit();
     if(v === 'recebiveis') vrInit();
     if(v === 'avaliacoes') avInit();
+    if(v === 'adsnov') adsNovInit();
   });
 });
+
+/* ---------- Ads Novembro (aba temporária, página isolada em iframe) ---------- */
+function adsNovSyncTheme(){
+  const f = document.getElementById('adsNovFrame');
+  try{
+    const doc = f && f.contentDocument;
+    if(!doc || !doc.documentElement) return;
+    const t = document.documentElement.getAttribute('data-theme');
+    if(t) doc.documentElement.setAttribute('data-theme', t); else doc.documentElement.removeAttribute('data-theme');
+  }catch(e){}
+}
+function adsNovFit(){
+  const f = document.getElementById('adsNovFrame');
+  try{ const h = f.contentDocument.documentElement.scrollHeight; if(h) f.style.height = h + 'px'; }catch(e){}
+}
+function adsNovInit(){
+  const f = document.getElementById('adsNovFrame');
+  if(!f) return;
+  if(!f.src){
+    f.addEventListener('load', ()=>{
+      adsNovSyncTheme(); adsNovFit();
+      try{ new ResizeObserver(adsNovFit).observe(f.contentDocument.body); }catch(e){}
+    });
+    f.src = f.dataset.src;
+  } else { adsNovSyncTheme(); adsNovFit(); }
+}
+new MutationObserver(adsNovSyncTheme).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
 
 const menuBtn = document.getElementById('menuBtn');
 const appEl = document.getElementById('app');
