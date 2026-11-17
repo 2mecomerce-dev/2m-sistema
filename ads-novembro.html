@@ -221,7 +221,7 @@ body{margin:0}
         <tr><td>Balanços</td><td class="r num">15 · 22 · 29/11</td></tr>
         <tr><td>Balanço de 22/11</td><td class="r"><span class="tag k-subir">PRECISA POSITIVO</span></td></tr>
         <tr><td>Metas congeladas</td><td class="r num">24–30/11</td></tr>
-        <tr><td>Meta mínima TikTok</td><td class="r num">8</td></tr>
+        <tr><td>Meta mínima TikTok</td><td class="r num">8 · Birken 4</td></tr>
       </tbody></table></div>
     </div>
     <div class="panel">
@@ -230,7 +230,9 @@ body{margin:0}
         <tr><td>Crazy Horse <span class="st">TikTok</span></td><td class="r num"><b>R$ 170</b></td></tr>
         <tr><td>070 <span class="st">TikTok</span></td><td class="r num"><b>R$ 155</b></td></tr>
         <tr><td>Chelsea Café <span class="st sp">Shopee</span></td><td class="r"><span class="tag k-meta">A CALCULAR</span></td></tr>
-        <tr><td>Produtos abaixo de R$ 80</td><td class="r"><span class="tag k-pausar">FORA DO ADS</span></td></tr>
+        <tr><td>Kit 2 Birken <span class="st">TikTok</span></td><td class="r num"><b>R$ 135</b></td></tr>
+        <tr><td>Birken avulsa <span class="st">TikTok</span></td><td class="r num"><b>R$ 73</b></td></tr>
+        <tr><td>Outros abaixo de R$ 80</td><td class="r"><span class="tag k-pausar">FORA DO ADS</span></td></tr>
       </tbody></table></div>
     </div>
   </div>
@@ -261,13 +263,17 @@ const CAMPS=[
   t:d=>d<=16?"9":d<=22?"8,5*":"8",tn:d=>d<=16?"Não mexer na meta":d<=22?"8,5 só se ROI real ≥ 10; senão 9":"Meta final do mês"},
  {id:"s_070",s:"shoes",name:"070",b:d=>step(d,[[12,16,60],[17,19,70],[20,22,85],[23,23,95],[24,24,110],[25,26,120],[27,27,160],[28,29,120],[30,30,140]]),
   t:()=>"8,5",tn:d=>d>=17?"Só segue se ROI ≥ 7 em 16/11":"Avaliar em 16/11"},
- {id:"p_ch",s:"shopee",name:"Chelsea Café",sub:"Crazy Horse",b:d=>step(d,[[12,19,100],[20,22,120],[23,23,140],[24,24,155],[25,26,170],[27,27,220],[28,29,160],[30,30,190]]),
-  t:()=>"11",tn:d=>d>=20?"Sobe só com ROAS ≥ 7,5 e orçamento esgotando":"Manter meta 11"},
- {id:"p_bk",s:"shopee",name:"Birken",sub:"2 anúncios",b:d=>d<=16?"40 cada":"decidir",t:()=>"8,2",tn:d=>d<=16?"Até R$ 50 gastos em cada":"ROAS ≥ 8 mantém · < 6,25 pausa"},
- {id:"novos",s:"all",name:"Produtos novos",sub:"2–3 com vídeo de afiliado",b:d=>d<17?null:d<=22?"35 cada":d<=26?"+20%":d===27?"até 100":"por ROI",t:d=>d<17?"—":"8",tn:d=>d<17?"Entram em 17/11":"R$ 60 sem venda → pausar"},
- {id:"x_calc",s:"calc",name:"Pausadas",off:"Asuna · Kit Carteira · Floater · Birken · 302"},
+ {id:"p_ch",s:"shopee",name:"Chelsea Café",sub:"Crazy Horse",b:d=>step(d,[[12,16,100],[17,22,50],[23,26,70],[27,27,100],[28,29,70],[30,30,80]]),
+  t:()=>"11",tn:d=>d>=17?"ROAS 5,1 em 10–17/11 → R$ 50. Sobe só com ROAS ≥ 7,5":"Manter meta 11"},
+ {id:"p_couro",s:"shopee",name:"Chelsea Couro",sub:"070",b:d=>d<17?null:"atual",t:d=>d<17?"—":"10",tn:()=>"ROAS 6,4 → manter, sem subir"},
+ {id:"p_luva",s:"shopee",name:"Luva Grip",b:d=>d<17?null:"atual",t:d=>d<17?"—":"atual",tn:()=>"ROAS 6,7 → manter, sem subir (ticket baixo)"},
+ {id:"p_bk",s:"shopee",name:"Kit 2 Birken",sub:"avulsa pausada",b:d=>d<=16?"40 cada":step(d,[[17,26,40],[27,27,60],[28,30,40]]),t:d=>d<=16?"8,2":"8",tn:d=>d<=16?"Até R$ 50 gastos em cada":"Equilíbrio 7,7 · com kit a R$ 149 a meta pode ir a 6"},
+ {id:"c_bk",s:"calc",name:"Birken avulsa",sub:"FOCO",b:d=>d<17?null:step(d,[[17,19,60],[20,22,90],[23,26,130],[27,27,200],[28,29,140],[30,30,170]]),t:d=>d<17?"—":d<=22?"4":"4,5*",tn:d=>d<17?"Entra em 17/11":d<=22?"Equilíbrio 3,3 · sobe só com ROI ≥ 4 por 3 dias":"4,5 se o volume segurou; senão fica 4"},
+ {id:"c_bkk",s:"calc",name:"Kit 2 Birken",sub:"FOCO · criar",b:d=>d<17?null:step(d,[[17,19,60],[20,22,90],[23,26,130],[27,27,200],[28,29,140],[30,30,170]]),t:d=>d<17?"—":d<=22?"4":"4,5*",tn:d=>d<17?"Criar em 17/11":d<=22?"Equilíbrio 3,6 · R$ 38 de lucro antes do ads":"4,5 se o volume segurou; senão fica 4"},
+ {id:"c_as",s:"calc",name:"Asuna",b:d=>d<17?null:30,t:d=>d<17?"—":"atual",tn:()=>"ROI 11,8 em R$ 24 → manter R$ 30"},
+ {id:"x_calc",s:"calc",name:"Pausadas",off:"Kit Carteira · Floater · 302"},
  {id:"x_shoes",s:"shoes",name:"Pausadas",off:"Asuna · Carteira · Kit Carteiras · Tiger · Crazy Horse"},
- {id:"x_sp",s:"shopee",name:"Pausadas",off:"Chelsea Couro · Luva Grip · Sneaker"},
+ {id:"x_sp",s:"shopee",name:"Pausadas",off:"Sneaker · Birken avulsa"},
 ];
 const MAXB=350;
 const A={
@@ -276,13 +282,13 @@ const A={
 14:[["checar","all","Checar 12h · 18h · 21h"],["checar","all","Estoque e numeração CH e 070 → repor"],["checar","shopee","Birken: ver gasto (máx. R$ 50 cada)"]],
 15:[["balanco","all","Balanço 1: relatórios 12–15/11"],["pausar","all","Semana pior que −R$ 400 → não subir amanhã"]],
 16:[["subir","calc","CH e 070: ROI ≥ 8 e >80% usado → +20%"],["pausar","shoes","070: ROI < 7 → pausar"],["meta","shopee","Birken: ≥ 8 mantém · < 6,25 pausa"],["subir","shopee","Chelsea Café: ROAS ≥ 7,5 e esgotando → +20%"]],
-17:[["subir","all","Degrau 1 da Fase 2 (só no verde)"],["conteudo","all","Lançar 2–3 novos · R$ 35 · meta 8"],["meta","calc","CH 8,5 se ROI ≥ 11 · 070 8,5 se ≥ 10"]],
-18:[["checar","all","Checar 12h · 18h · 21h"],["conteudo","calc","Gravar 3–5 vídeos CH e 070"],["conteudo","shoes","Gravar vídeos do 070"]],
+17:[["preco","calc","Crazy Horse → R$ 170 (ticket está em R$ 154)"],["meta","calc","Birken avulsa → meta 4 · R$ 60"],["subir","calc","Criar GMV Max Kit 2 Birken · meta 4 · R$ 60"],["pausar","calc","Pausar 302, Floater, Kit Carteira"],["pausar","shoes","Pausar Asuna, Carteira, Tiger, Kit Carteiras, CH"],["checar","shoes","Birken só na 2MCalcados (não criar aqui)"],["baixar","shopee","Chelsea Café → R$ 50"],["pausar","shopee","Pausar Birken avulsa"],["meta","shopee","Reativar Kit 2 Birken · meta 8 · R$ 40"]],
+18:[["checar","all","Checar 12h · 18h · 21h"],["conteudo","calc","Afiliados e vídeos das Birkens (foco no kit)"],["conteudo","calc","Gravar 3–5 vídeos CH e 070"],["conteudo","shoes","Gravar vídeos do 070"]],
 19:[["pausar","all","Novos: R$ 60 sem venda → pausar"],["checar","all","Checar 12h · 18h · 21h"]],
-20:[["subir","all","Degrau 2 da Fase 2 (só no verde)"],["preco","all","Definir preços e cupons da BF ≥ mínimos"]],
+20:[["subir","all","Degrau 2 da Fase 2 (só no verde)"],["subir","calc","Birkens: ROI ≥ 4 por 3 dias → R$ 90"],["preco","all","Definir preços e cupons da BF ≥ mínimos"]],
 21:[["checar","all","Agendar promoções da BF"],["checar","all","Confirmar reposição de estoque"]],
 22:[["balanco","all","Balanço 2: relatórios 16–22/11"],["pausar","all","Negativo → Fase 3 repete a Fase 2"],["checar","all","Campanhas da BF prontas"]],
-23:[["subir","all","Fase 3: orçamentos conforme a tabela"],["meta","calc","Última meta do mês: CH e 070 → 8"],["conteudo","all","Afiliados: conteúdo 'vem aí BF'"]],
+23:[["subir","all","Fase 3: orçamentos conforme a tabela"],["meta","calc","Última meta do mês: CH e 070 → 8"],["meta","calc","Birkens → 4,5 se o volume segurou"],["conteudo","all","Afiliados: conteúdo 'vem aí BF'"]],
 24:[["meta","all","Metas congeladas até 30/11"],["subir","all","Orçamentos conforme a tabela"],["checar","all","Checar 12h · 18h · 21h"]],
 25:[["subir","all","Orçamentos conforme a tabela"],["checar","all","Conferir estoque e numeração"]],
 26:[["preco","all","Promoções agendadas ≥ preço mínimo"],["checar","all","Deixar orçamentos do dia 27 prontos"]],
@@ -298,13 +304,14 @@ const W=[
  ["segurar","Usou menos de 30% do orçamento","Não subir · pedir vídeos"],
  ["segurar","ROI < 6,25 só hoje","Não mexer · anotar"],
  ["segurar","Vendas caíram após ajuste de preço","Esperar 2 dias"],
- ["segurar","Vontade de mudar a meta","Só 17 e 23/11 · nunca < 8"],
+ ["segurar","Vontade de mudar a meta","Só 17 e 23/11 · nunca < 8 (Birken: 4)"],
  ["cortar","ROI < 6,25 por 3 dias (≥ R$ 100)","−30% ou pausar"],
  ["cortar","Prejuízo > R$ 100/dia por 2 dias","Voltar ao degrau anterior"],
  ["cortar","Semana pior que −R$ 400","Parar a escada"],
  ["cortar","Campeão sem numeração","−50% até repor"],
  ["cortar","Shopee 'Baixo retorno' 3 dias < 6,25","Pausar"],
  ["cortar","Produto novo: R$ 60 sem venda","Pausar"],
+ ["cortar","Birken TikTok ROI < 3,5 por 3 dias","−30% ou voltar degrau"],
  ["cortar","Preço final abaixo do mínimo","Corrigir antes de subir"]
 ];
 const LBL={subir:"SUBIR",pausar:"PAUSAR",baixar:"BAIXAR",meta:"META",preco:"PREÇO",checar:"CHECAR",balanco:"BALANÇO",conteudo:"CONTEÚDO",segurar:"SEGURAR",cortar:"CORTAR"};
