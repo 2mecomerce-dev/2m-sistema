@@ -221,7 +221,7 @@ body{margin:0}
         <tr><td>Balanços</td><td class="r num">15 · 22 · 29/11</td></tr>
         <tr><td>Balanço de 22/11</td><td class="r"><span class="tag k-subir">PRECISA POSITIVO</span></td></tr>
         <tr><td>Metas congeladas</td><td class="r num">24–30/11</td></tr>
-        <tr><td>Meta mínima TikTok</td><td class="r num">8 · Birken 4</td></tr>
+        <tr><td>Meta mínima TikTok</td><td class="r num">8 · Birken 3,5</td></tr>
       </tbody></table></div>
     </div>
     <div class="panel">
@@ -257,25 +257,25 @@ const PH=d=>d<=16?"Fase 1 · Consolidar":d<=22?"Fase 2 · Testar e aquecer":d<=2
 const DAYS=[];for(let d=12;d<=30;d++)DAYS.push(d);
 function step(d,m){for(const [a,b,v] of m){if(d>=a&&d<=b)return v}return null}
 const CAMPS=[
- {id:"c_ch",s:"calc",name:"Crazy Horse",b:d=>step(d,[[12,16,120],[17,19,145],[20,22,175],[23,23,200],[24,24,230],[25,26,260],[27,27,350],[28,29,250],[30,30,300]]),
-  t:d=>d<=16?"9":d<=22?"8,5*":"8",tn:d=>d<=16?"Não mexer na meta":d<=22?"8,5 só se ROI real ≥ 11; senão 9":"Meta final do mês"},
- {id:"c_070",s:"calc",name:"070",b:d=>step(d,[[12,16,80],[17,19,95],[20,22,115],[23,23,130],[24,24,150],[25,26,170],[27,27,250],[28,29,180],[30,30,220]]),
-  t:d=>d<=16?"9":d<=22?"8,5*":"8",tn:d=>d<=16?"Não mexer na meta":d<=22?"8,5 só se ROI real ≥ 10; senão 9":"Meta final do mês"},
- {id:"s_070",s:"shoes",name:"070",b:d=>step(d,[[12,16,60],[17,19,70],[20,22,85],[23,23,95],[24,24,110],[25,26,120],[27,27,160],[28,29,120],[30,30,140]]),
-  t:()=>"8,5",tn:d=>d>=17?"Só segue se ROI ≥ 7 em 16/11":"Avaliar em 16/11"},
- {id:"p_ch",s:"shopee",name:"Chelsea Café",sub:"Crazy Horse",b:d=>step(d,[[12,16,100],[17,22,50],[23,26,70],[27,27,100],[28,29,70],[30,30,80]]),
-  t:()=>"11",tn:d=>d>=17?"ROAS 5,1 em 10–17/11 → R$ 50. Sobe só com ROAS ≥ 7,5":"Manter meta 11"},
- {id:"p_couro",s:"shopee",name:"Chelsea Couro",sub:"070",b:d=>d<17?null:"atual",t:d=>d<17?"—":"10",tn:()=>"ROAS 6,4 → manter, sem subir"},
- {id:"p_luva",s:"shopee",name:"Luva Grip",b:d=>d<17?null:"atual",t:d=>d<17?"—":"atual",tn:()=>"ROAS 6,7 → manter, sem subir (ticket baixo)"},
- {id:"p_bk",s:"shopee",name:"Kit 2 Birken",sub:"avulsa pausada",b:d=>d<=16?"40 cada":step(d,[[17,26,40],[27,27,60],[28,30,40]]),t:d=>d<=16?"8,2":"8",tn:d=>d<=16?"Até R$ 50 gastos em cada":"Equilíbrio 7,7 · com kit a R$ 149 a meta pode ir a 6"},
- {id:"c_bk",s:"calc",name:"Birken avulsa",sub:"FOCO",b:d=>d<17?null:step(d,[[17,19,60],[20,22,90],[23,26,130],[27,27,200],[28,29,140],[30,30,170]]),t:d=>d<17?"—":d<=22?"4":"4,5*",tn:d=>d<17?"Entra em 17/11":d<=22?"Equilíbrio 3,3 · sobe só com ROI ≥ 4 por 3 dias":"4,5 se o volume segurou; senão fica 4"},
- {id:"c_bkk",s:"calc",name:"Kit 2 Birken",sub:"FOCO · criar",b:d=>d<17?null:step(d,[[17,19,60],[20,22,90],[23,26,130],[27,27,200],[28,29,140],[30,30,170]]),t:d=>d<17?"—":d<=22?"4":"4,5*",tn:d=>d<17?"Criar em 17/11":d<=22?"Equilíbrio 3,6 · R$ 38 de lucro antes do ads":"4,5 se o volume segurou; senão fica 4"},
- {id:"c_as",s:"calc",name:"Asuna",b:d=>d<17?null:30,t:d=>d<17?"—":"atual",tn:()=>"ROI 11,8 em R$ 24 → manter R$ 30"},
- {id:"x_calc",s:"calc",name:"Pausadas",off:"Kit Carteira · Floater · 302"},
- {id:"x_shoes",s:"shoes",name:"Pausadas",off:"Asuna · Carteira · Kit Carteiras · Tiger · Crazy Horse"},
- {id:"x_sp",s:"shopee",name:"Pausadas",off:"Sneaker · Birken avulsa"},
+ {id:"c_ch",s:"calc",name:"Crazy Horse",b:d=>step(d,[[12,16,120],[17,26,300],[27,27,400],[28,29,300],[30,30,350]]),
+  t:d=>d<=16?"9":d<=22?"8,5*":"8",tn:d=>d<=16?"Não mexer na meta":d<=22?"ROI 9,6 em 17–19/11, gastando ~R$ 50/dia. Volume vem de meta e vídeos, não do orçamento":"Meta final do mês"},
+ {id:"c_070",s:"calc",name:"070",b:d=>step(d,[[12,16,80],[17,26,150],[27,27,250],[28,29,150],[30,30,200]]),
+  t:d=>d<=16?"9":d<=22?"8,5*":"8",tn:d=>d<=16?"Não mexer na meta":d<=22?"ROI 11,2 em 17–19/11 · campeão · usa ~1/3 do orçamento":"Meta final do mês"},
+ {id:"c_bk",s:"calc",name:"Birken avulsa",sub:"FOCO",b:d=>d<17?null:step(d,[[17,26,90],[27,27,150],[28,30,90]]),t:d=>d<17?"—":d<=19?"4":d<=22?"3,5":"3,5*",tn:d=>d<17?"Entra em 17/11":d<=19?"Só R$ 43 gastos com meta 4 (ROI 1,7)":d<=22?"Meta 3,5 para destravar entrega · equilíbrio 3,3":"ROI ≥ 3,5 mantém · < 3,3 volta para 4"},
+ {id:"c_bkk",s:"calc",name:"Kit 2 Birken",sub:"FOCO · criar",b:d=>d<17?null:d<=19?"criar":step(d,[[20,26,90],[27,27,150],[28,30,90]]),t:d=>d<20?"—":d<=22?"3,5":"3,5*",tn:d=>d<20?"Ainda não criado":"Equilíbrio 3,6 · R$ 38 de lucro antes do ads"},
+ {id:"c_as",s:"calc",name:"Asuna",b:d=>d<17?null:60,t:d=>d<17?"—":"atual",tn:()=>"R$ 26 sem venda → pausar se passar de R$ 50"},
+ {id:"s_070",s:"shoes",name:"070",b:d=>step(d,[[12,16,60],[17,19,70],[20,26,50],[27,27,70],[28,30,50]]),
+  t:()=>"8,5",tn:d=>d<=19?"ROI 5,7 em 17–19/11":"−30% · pausar se < 6,25 até 22/11 (concentrar 070 na 2MCalcados)"},
+ {id:"p_couro",s:"shopee",name:"Chelsea Couro",sub:"070",b:d=>d<17?null:d===27?120:80,t:d=>d<17?"—":"8,9",tn:()=>"ROAS 7,7 em 17–19/11 → manter"},
+ {id:"p_ch",s:"shopee",name:"Chelsea Café",sub:"Crazy Horse",b:d=>d<=16?100:d===27?150:100,t:d=>d<=16?"11":"9,9",tn:d=>d>=17?"ROAS 4,0 (1 pedido, R$ 45) · gasta ~R$ 15/dia · avaliar em 22/11":"Manter meta 11"},
+ {id:"p_luva",s:"shopee",name:"Luva Grip",b:d=>d<17?null:80,t:d=>d<17?"—":"12",tn:()=>"ROAS 7,8 → manter (ticket baixo)"},
+ {id:"p_bka",s:"shopee",name:"Birken avulsa",sub:"impulsionando",b:d=>d<17?null:d<=19?90:"pausar",t:d=>d<17?"—":"7",tn:d=>d<=19?"ROAS 3,8 · equilíbrio 6,4 · prejuízo":"Desligar impulsionar e pausar"},
+ {id:"p_bk",s:"shopee",name:"Kit 2 Birken",sub:"reativar",b:d=>d<=16?"40 cada":d<=19?"encerrado":step(d,[[20,26,40],[27,27,60],[28,30,40]]),t:d=>d<=16?"8,2":"8",tn:d=>d<=16?"Até R$ 50 gastos em cada":"Equilíbrio 7,7 · com kit a R$ 149 a meta pode ir a 6"},
+ {id:"x_calc",s:"calc",name:"Pausar",off:"Kit Carteira · Floater · 302",pz:"Ainda ativas em 19/11 → pausar"},
+ {id:"x_shoes",s:"shoes",name:"Pausar",off:"Asuna · Carteira · Kit Carteiras · Tiger · Crazy Horse",pz:"Ainda ativas em 19/11 → pausar"},
+ {id:"x_sp",s:"shopee",name:"Pausadas",off:"Sneaker"},
 ];
-const MAXB=350;
+const MAXB=400;
 const A={
 12:[["subir","all","Aplicar orçamentos da Fase 1"],["preco","calc","Crazy Horse → preço final R$ 170"],["pausar","calc","Conferir pausadas (Birken ainda gastou)"],["pausar","shoes","Pausar Asuna, Carteira, Kit Carteiras, Tiger, Crazy Horse"],["preco","shoes","Crazy Horse → mínimo R$ 170"],["pausar","shopee","Pausar Chelsea Couro, Luva Grip, Sneaker"],["checar","shopee","Enviar preço atual do Chelsea Café"]],
 13:[["checar","all","Checar 12h · 18h · 21h"],["checar","all","Inscrever lojas nas campanhas de BF"],["conteudo","calc","Recrutar 20–30 afiliados (CH e 070)"],["conteudo","shoes","Pedir vídeos novos do 070"]],
@@ -285,10 +285,10 @@ const A={
 17:[["preco","calc","Crazy Horse → R$ 170 (ticket está em R$ 154)"],["meta","calc","Birken avulsa → meta 4 · R$ 60"],["subir","calc","Criar GMV Max Kit 2 Birken · meta 4 · R$ 60"],["pausar","calc","Pausar 302, Floater, Kit Carteira"],["pausar","shoes","Pausar Asuna, Carteira, Tiger, Kit Carteiras, CH"],["checar","shoes","Birken só na 2MCalcados (não criar aqui)"],["baixar","shopee","Chelsea Café → R$ 50"],["pausar","shopee","Pausar Birken avulsa"],["meta","shopee","Reativar Kit 2 Birken · meta 8 · R$ 40"]],
 18:[["checar","all","Checar 12h · 18h · 21h"],["conteudo","calc","Afiliados e vídeos das Birkens (foco no kit)"],["conteudo","calc","Gravar 3–5 vídeos CH e 070"],["conteudo","shoes","Gravar vídeos do 070"]],
 19:[["pausar","all","Novos: R$ 60 sem venda → pausar"],["checar","all","Checar 12h · 18h · 21h"]],
-20:[["subir","all","Degrau 2 da Fase 2 (só no verde)"],["subir","calc","Birkens: ROI ≥ 4 por 3 dias → R$ 90"],["preco","all","Definir preços e cupons da BF ≥ mínimos"]],
+20:[["meta","calc","Birken avulsa → meta 3,5 (3 dias)"],["subir","calc","Criar Kit 2 Birken · meta 3,5 · R$ 90"],["conteudo","calc","Amostras de Birken para 5–10 afiliados"],["preco","calc","CH ainda a R$ 152 → corrigir oferta (mín. R$ 170)"],["pausar","calc","Pausar 302, Floater, Kit Carteira"],["baixar","shoes","070 → R$ 50/dia"],["pausar","shoes","Pausar Asuna, Tiger, Carteira, Kit Carteiras, CH"],["pausar","shopee","Birken avulsa: desligar impulsionar e pausar"],["meta","shopee","Reativar Kit 2 Birken · meta 8 · R$ 40"],["preco","all","Definir preços e cupons da BF ≥ mínimos"]],
 21:[["checar","all","Agendar promoções da BF"],["checar","all","Confirmar reposição de estoque"]],
-22:[["balanco","all","Balanço 2: relatórios 16–22/11"],["pausar","all","Negativo → Fase 3 repete a Fase 2"],["checar","all","Campanhas da BF prontas"]],
-23:[["subir","all","Fase 3: orçamentos conforme a tabela"],["meta","calc","Última meta do mês: CH e 070 → 8"],["meta","calc","Birkens → 4,5 se o volume segurou"],["conteudo","all","Afiliados: conteúdo 'vem aí BF'"]],
+22:[["balanco","all","Balanço 2: relatórios 16–22/11"],["pausar","shoes","070 ainda < 6,25 → pausar"],["checar","shopee","Chelsea Café < 6,25 com ≥ R$ 100 → pausar"],["pausar","all","Negativo → Fase 3 repete a Fase 2"],["checar","all","Campanhas da BF prontas"]],
+23:[["subir","all","Fase 3: orçamentos conforme a tabela"],["meta","calc","Última meta do mês: CH e 070 → 8"],["meta","calc","Birkens: ROI ≥ 3,5 mantém · < 3,3 → meta 4"],["conteudo","all","Afiliados: conteúdo 'vem aí BF'"]],
 24:[["meta","all","Metas congeladas até 30/11"],["subir","all","Orçamentos conforme a tabela"],["checar","all","Checar 12h · 18h · 21h"]],
 25:[["subir","all","Orçamentos conforme a tabela"],["checar","all","Conferir estoque e numeração"]],
 26:[["preco","all","Promoções agendadas ≥ preço mínimo"],["checar","all","Deixar orçamentos do dia 27 prontos"]],
@@ -311,7 +311,7 @@ const W=[
  ["cortar","Campeão sem numeração","−50% até repor"],
  ["cortar","Shopee 'Baixo retorno' 3 dias < 6,25","Pausar"],
  ["cortar","Produto novo: R$ 60 sem venda","Pausar"],
- ["cortar","Birken TikTok ROI < 3,5 por 3 dias","−30% ou voltar degrau"],
+ ["cortar","Birken TikTok ROI < 3,3 por 3 dias (≥ R$ 60)","Meta 4 e mais vídeos"],
  ["cortar","Preço final abaixo do mínimo","Corrigir antes de subir"]
 ];
 const LBL={subir:"SUBIR",pausar:"PAUSAR",baixar:"BAIXAR",meta:"META",preco:"PREÇO",checar:"CHECAR",balanco:"BALANÇO",conteudo:"CONTEÚDO",segurar:"SEGURAR",cortar:"CORTAR"};
@@ -344,7 +344,7 @@ function buildMx(){
     h+='<tr class="grp"><th colspan="20">'+(s==="all"?"Todas as lojas":ST[s].n+" <i>· "+ST[s].p+"</i>")+"</th></tr>";
     cs.forEach(c=>{
       h+='<tr data-r="'+c.id+'"><th class="rh" tabindex="0" data-r="'+c.id+'">'+c.name+"<small>"+(c.sub||c.off||"")+"</small></th>";
-      if(c.off){h+='<td class="pz" colspan="19"><span>Pausado o mês todo</span></td></tr>';return}
+      if(c.off){h+='<td class="pz" colspan="19"><span>'+(c.pz||'Pausado o mês todo')+'</span></td></tr>';return}
       DAYS.forEach(d=>{const x=cellData(c,d);h+='<td class="'+x.cls+'" tabindex="-1" data-c="'+c.id+'" data-d="'+d+'" style="'+(x.bg?"background:"+x.bg+";":"")+(x.fg?"color:"+x.fg+";":"")+'">'+x.html+"</td>"});
       h+="</tr>"});
   });
